@@ -10,8 +10,6 @@
 		272728C72A8D6505000CCA22 /* tests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272728C62A8D6505000CCA22 /* tests.cc */; };
 		272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 272728D42A8D6575000CCA22 /* catch_amalgamated.cpp */; };
 		272728E72A8D6619000CCA22 /* libcoro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcoro.a */; };
-		272728FB2A8D6AD4000CCA22 /* coro.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272728F92A8D6AD4000CCA22 /* coro.cc */; };
-		272728FC2A8D6AD4000CCA22 /* coro.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272728FA2A8D6AD4000CCA22 /* coro.hh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,8 +36,10 @@
 		272728F12A8D66EA000CCA22 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
 		272728F22A8D66EA000CCA22 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		272728F32A8D66EA000CCA22 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
-		272728F92A8D6AD4000CCA22 /* coro.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = coro.cc; sourceTree = "<group>"; };
-		272728FA2A8D6AD4000CCA22 /* coro.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = coro.hh; sourceTree = "<group>"; };
+		272728FD2A8D6B43000CCA22 /* Coroutine.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Coroutine.hh; sourceTree = "<group>"; };
+		272728FE2A8D6B43000CCA22 /* Scheduler.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Scheduler.hh; sourceTree = "<group>"; };
+		272728FF2A8D6B43000CCA22 /* Future.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Future.hh; sourceTree = "<group>"; };
+		272729002A8D6B43000CCA22 /* Generator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Generator.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,8 +93,10 @@
 		272728CD2A8D651F000CCA22 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				272728F92A8D6AD4000CCA22 /* coro.cc */,
-				272728FA2A8D6AD4000CCA22 /* coro.hh */,
+				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
+				272728FF2A8D6B43000CCA22 /* Future.hh */,
+				272729002A8D6B43000CCA22 /* Generator.hh */,
+				272728FE2A8D6B43000CCA22 /* Scheduler.hh */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -143,7 +145,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272728FC2A8D6AD4000CCA22 /* coro.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +235,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272728FB2A8D6AD4000CCA22 /* coro.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
