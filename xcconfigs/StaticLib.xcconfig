@@ -1,0 +1,11 @@
+//
+//  StaticLib.xcconfig
+//  Tendril
+//
+//  Created by Jens Alfke on 8/19/22.
+//  Copyright © 2022 Jens Alfke. All rights reserved.
+//
+
+CODE_SIGN_STYLE          = Automatic
+EXECUTABLE_PREFIX        = lib
+SKIP_INSTALL             = YES
