@@ -4,6 +4,7 @@
 // Copyright © 2021 Jens Alfke. All rights reserved.
 //
 
+#pragma once
 #include "Coroutine.hh"
 #include <iterator>
 #include <optional>
@@ -13,7 +14,7 @@
 // Specifically, I started from "co_demo.exception.cpp".
 
 
-namespace tendril::coro {
+namespace snej::coro {
     template <typename T> class Future;
     template <typename T> class Waiter;
 

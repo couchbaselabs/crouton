@@ -13,7 +13,7 @@
 #include <unordered_set>
 #include <cassert>
 
-namespace tendril::coro {
+namespace snej::coro {
     class Scheduler;
 
 
@@ -25,7 +25,7 @@ namespace tendril::coro {
         /// Scheduler will return it from next().
         /// \note This may be called from any thread, but only once.
         /// \warning  The pointer becomes invalid as soon as this is called.
-        void wakeUp();
+        inline void wakeUp();
 
         // internal only, do not call
         Suspension(std::coroutine_handle<> h, Scheduler *s) :_handle(h), _scheduler(s) { }
@@ -70,10 +70,17 @@ namespace tendril::coro {
             while (true) {
                 if (auto w = nextIfAny())
                     return w;
+#if 1
+                _wait();
+#else
                 std::unique_lock<std::mutex> lock(_mutex);
                 _cond.wait(lock); // block until wakeUp() is called on another thread
+#endif
             }
         }
+
+        void _wait();
+        void _wakeUp();
 
         /// Returns the first coroutine handle that's ready to resume, or else nullptr.
         handle nextIfAny() {
@@ -116,8 +123,12 @@ namespace tendril::coro {
         void wakeUp() {
             std::unique_lock<std::mutex> lock(_mutex);
             _woke = true;
+#if 1
+            _wakeUp();
+#else
             if (!isCurrent())
                 _cond.notify_one(); // wakes up next()
+#endif
         }
 
         // Finds any waiting coroutines that want to wake up, removes them from `_waiting`

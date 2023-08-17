@@ -9,7 +9,7 @@
 #include <exception>
 #include <cassert>
 
-namespace tendril::coro {
+namespace snej::coro {
     template <class INSTANCE, class SELF>
     class CoroutineImpl;
 

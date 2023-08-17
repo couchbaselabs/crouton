@@ -55,7 +55,7 @@ CLANG_UNDEFINED_BEHAVIOR_SANITIZER_NULLABILITY = YES
 // Search paths
 ALWAYS_SEARCH_USER_PATHS                       = NO
 
-HEADER_SEARCH_PATHS                            = $(inherited)
+HEADER_SEARCH_PATHS                            = $(inherited) vendor/libuv/include/
 
 SDKROOT                                        = macosx
 

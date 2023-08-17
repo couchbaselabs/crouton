@@ -1,5 +1,5 @@
 //
-// Waiter.hh
+// Future.hh
 //
 // Copyright © 2023 Jens Alfke. All rights reserved.
 //
@@ -10,11 +10,13 @@
 #include <cassert>
 #include <exception>
 
-namespace tendril::coro {
+namespace snej::coro {
     class FutureBase;
     class WaiterBase;
+    template <typename T> class Future;
     template <typename T> class FutureImpl;
     template <typename T> class FutureState;
+    template <typename T> class Waiter;
 
 
     /// The producer side of a Future, which is responsible for setting its value.
@@ -223,6 +225,8 @@ namespace tendril::coro {
         }
 
         std::suspend_never initial_suspend()    {return {};}
+
+        void unhandled_exception()              {_provider.setException(std::current_exception());}
 
         void return_value(T&& value)            {_provider.setValue(std::forward<T>(value));}
 
