@@ -6,41 +6,14 @@
 
 #pragma once
 #include "Future.hh"
-#include "Generator.hh"
 #include "UVBase.hh"
 #include <string>
 
-struct addrinfo;
-struct sockaddr;
+struct uv_buf_t;
 struct uv_stream_s;
 struct uv_tcp_s;
 
 namespace snej::coro::uv {
-
-    /** A DNS lookup. */
-    class AddrInfo {
-    public:
-        AddrInfo() = default;
-        ~AddrInfo();
-
-        /// Asynchronous address lookup.
-        /// \note You can call this a second time after the last lookup has finished.
-        Future<bool> lookup(std::string hostname, uint16_t port =0);
-
-        /// Returns the primary address, either IPv4 or IPv6.
-        struct ::sockaddr const* primaryAddress() const;
-
-        /// Returns the primary address of whatever address family you pass.
-        /// For convenience you can also pass 4 instead of AF_INET, or 6 instead of AF_INET6.
-        struct ::sockaddr const* primaryAddress(int af) const;
-
-        /// The primary address converted to a numeric string.
-        std::string primaryAddressString() const;
-
-    private:
-        struct ::addrinfo* _info = nullptr;
-    };
-
 
     /** A TCP socket. */
     class TCPSocket {
@@ -54,12 +27,11 @@ namespace snej::coro::uv {
         /// Returns true while the socket is connected.
         bool isOpen() const {return _socket != nullptr;}
 
-        /// Returns a reference to a Generator that yields data received from the file.
-        /// You can call this multiple times; it always returns the same Generator.
-        Generator<std::string>& reader();
+        /// Sets the TCP nodelay option.
+        void setNoDelay(bool);
 
-        /// Writes to the socket.
-        Future<void> write(std::string);
+        /// Enables TCP keep-alive with the given ping interval.
+        void keepAlive(unsigned intervalSecs);
 
         /// Closes the write stream, leaving the read stream open until the peer closes it.
         Future<void> shutdown();
@@ -67,12 +39,72 @@ namespace snej::coro::uv {
         /// Closes the socket entirely. (Called by the destructor.)
         void close();
 
-    private:
-        Generator<std::string> _createReader();
+        //---- READING
 
-        uv_tcp_s*                             _tcpHandle;
-        uv_stream_s*                          _socket = nullptr;
-        std::optional<Generator<std::string>> _reader;
+        /// True if the socket has data available to read.
+        bool isReadable() const;
+
+        /// Reads up to `maxLen` bytes, returning a `string_view` pointing into the internal buffer.
+        /// If the read stream is at EOF, returns an empty string.
+        /// Otherwise returns at least one byte, but may return fewer than requested since it reads
+        /// from the socket at most once.
+        /// @warning The result is invalidated by any subsequent read, shutdown or close.
+        Future<WriteBuf> readNoCopy(size_t maxLen);
+
+        /// Reads `len` bytes, copying into memory starting at `dst` (which must remain valid.)
+        /// Will always read the full number of bytes unless it hits EOF.
+        Future<int64_t> read(size_t len, void* dst);
+        Future<int64_t> read(ReadBuf buf)               {return read(buf.len, buf.base);}
+
+        /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
+        Future<void> readExactly(size_t len, void* dst);
+        Future<void> readExactly(ReadBuf buf)        {return readExactly(buf.len, buf.base);}
+
+        /// Reads `len` bytes, returning them as a string.
+        /// Will always read the full number of bytes unless it hits EOF.
+        Future<std::string> read(size_t maxLen);
+
+        /// Reads until EOF.
+        Future<std::string> readAll() {return read(SIZE_MAX);}
+
+        //---- WRITING
+
+        /// True if the socket has buffer space available to write to.
+        bool isWritable() const;
+
+        /// Writes data, fully.
+        /// @warning The data pointed to by the buffer(s) must remain valid until completion.
+        Future<void> write(const WriteBuf buffers[], size_t nBuffers);
+        Future<void> write(std::initializer_list<WriteBuf> buffers);
+        Future<void> write(size_t len, const void *src);
+
+        /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
+        Future<void> write(std::string);
+
+        /// Writes as much as possible immediately, without blocking.
+        /// @return  Number of bytes written, which may be 0 if the write buffer is full.
+        size_t tryWrite(WriteBuf);
+
+    private:
+        struct BufWithCapacity : public ReadBuf {
+            size_t capacity = 0;
+        };
+
+        TCPSocket(TCPSocket const&) = delete;
+        TCPSocket& operator=(TCPSocket const&) = delete;
+
+        void freeInputBuf();
+        Future<int64_t> _read(size_t len, void* dst);
+        Future<WriteBuf> _readNoCopy(size_t maxLen);
+        Future<BufWithCapacity> readBuf();
+
+        uv_tcp_s*       _tcpHandle;         // Handle for TCP operations
+        uv_stream_s*    _socket = nullptr;  // Handle for stream operations (actually the same)
+        BufWithCapacity _inputBuf {};       // The last data read from the socket
+        size_t          _inputOff = 0;      // How many bytes of inputBuf have been consumed
+        BufWithCapacity _spareInputBuf {};  // Second input buffer, for use by next read call
+        bool            _readBusy = false;  // Detects re-entrant calls
+        bool            _writeBusy = false; // Detects re-entrant calls
     };
 
 }

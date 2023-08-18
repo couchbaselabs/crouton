@@ -4,10 +4,9 @@
 //  Created by Jens Alfke on 8/16/23.
 //
 
-#include "Generator.hh"
+#include "AsyncUV.hh"
 #include "Future.hh"
-#include "AsyncFile.hh"
-#include "AsyncSocket.hh"
+#include "Generator.hh"
 #include <iostream>
 #include <sys/socket.h>
 
@@ -159,11 +158,7 @@ static Future<string> readSocket() {
     co_await socket.write("GET / HTTP/1.1\r\nHost: mooseyard.com\r\nConnection: close\r\n\r\n");
 
     cerr << "Reading...\n";
-    string result;
-    while (optional<string> input = co_await socket.reader()) {
-        cerr << "\t...read " << input->size() << " bytes\n";
-        result += *input;
-    }
+    string result = co_await socket.readAll();
     co_return result;
 }
 
@@ -172,4 +167,6 @@ TEST_CASE("Read a socket", "[uv]") {
     Future<string> response = readSocket();
     string contents = response.waitForValue();
     cerr << "HTTP response:\n" << contents << endl;
+    CHECK(contents.starts_with("HTTP/1.1 "));
+    CHECK(contents.size() < 1000);
 }

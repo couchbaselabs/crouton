@@ -24,17 +24,22 @@ namespace snej::coro::uv {
     using namespace std;
 
 
-    static const char* messageFor(int err) {
-        switch (err) {
-            case UV__EAI_NONAME:    return "unknown host";  // default msg is obscure/confusing
-            default:                return uv_strerror(err);
-        }
-    }
-
-    UVError::UVError(int status)
-    :std::runtime_error(messageFor(status))
+    UVError::UVError(const char* what, int status)
+    :std::runtime_error(what)
     ,err(status)
     { }
+
+    const char* UVError::what() const noexcept {
+        if (_message.empty()) {
+            const char* errStr;
+            switch (err) {
+                case UV__EAI_NONAME:    errStr = "unknown host";  break;
+                default:                errStr = uv_strerror(err);
+            }
+            _message = "Error "s + runtime_error::what() + ": " + errStr;
+        }
+        return _message.c_str();
+    }
 
 
     static uint64_t ms(double secs){
@@ -55,7 +60,7 @@ namespace snej::coro::uv {
         closeHandle(_handle);
     }
 
-    void Timer::start(double delaySecs, double repeatSecs) {
+    void Timer::_start(double delaySecs, double repeatSecs) {
         auto callback = [](uv_timer_t *handle) {
             auto self = (Timer*)handle->data;
             try {
@@ -98,5 +103,32 @@ namespace snej::coro::uv {
             }
             delete self;
         });
+    }
+
+
+    struct QueuedWork : public uv_work_t {
+        FutureProvider<void>    provider;
+        std::function<void()>   fn;
+        std::exception_ptr      exception;
+    };
+
+    Future<void> OnBackgroundThread(std::function<void()> fn) {
+        auto work = new QueuedWork{.fn = std::move(fn)};
+        check(uv_queue_work(curLoop(), work, [](uv_work_t *req) {
+            auto work = static_cast<QueuedWork*>(req);
+            try {
+                work->fn();
+            } catch (...) {
+                work->exception = std::current_exception();
+            }
+        }, [](uv_work_t *req, int status) {
+            auto work = static_cast<QueuedWork*>(req);
+            if (work->exception)
+                work->provider.setException(work->exception);
+            else
+                work->provider.setValue();
+            delete work;
+        }), "making a background call");
+        return work->provider.future();
     }
 }

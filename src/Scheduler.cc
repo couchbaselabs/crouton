@@ -22,4 +22,13 @@
 
 namespace snej::coro {
 
+    void Suspension::wakeUp() {
+        if (_wakeMe.test_and_set() == false) {
+            auto sched = _scheduler;
+            assert(sched);
+            _scheduler = nullptr;
+            sched->wakeUp();
+        }
+    }
+
 }

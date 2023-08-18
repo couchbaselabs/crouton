@@ -19,6 +19,8 @@
 		272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730512A8EC61D000CCA22 /* AsyncFile.cc */; };
 		272730552A8ED3D1000CCA22 /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730542A8ED3D1000CCA22 /* Future.cc */; };
 		279D5D3F2A8EEA22005C3066 /* Scheduler+UV.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */; };
+		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
+		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -181,6 +183,9 @@
 		272730512A8EC61D000CCA22 /* AsyncFile.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncFile.cc; sourceTree = "<group>"; };
 		272730542A8ED3D1000CCA22 /* Future.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
 		279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Scheduler+UV.cc"; sourceTree = "<group>"; };
+		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
+		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
+		279D5D442A8FE174005C3066 /* AsyncUV.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncUV.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -471,11 +476,14 @@
 		2727304F2A8EC5E7000CCA22 /* uv */ = {
 			isa = PBXGroup;
 			children = (
+				279D5D442A8FE174005C3066 /* AsyncUV.hh */,
 				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
 				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
 				272730492A8D99B0000CCA22 /* UVInternal.hh */,
 				272730502A8EC61D000CCA22 /* AsyncFile.hh */,
 				272730512A8EC61D000CCA22 /* AsyncFile.cc */,
+				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
+				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
 				2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */,
 				2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */,
 				279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */,
@@ -492,6 +500,7 @@
 			files = (
 				272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */,
 				272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */,
+				279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -615,6 +624,7 @@
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
 				272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
+				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
 				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

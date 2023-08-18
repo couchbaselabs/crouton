@@ -25,7 +25,7 @@ namespace snej::coro {
         assert(isCurrent());
         if (!_uvloop) {
             auto uvloop = new uv_loop_s;
-            uv::check(uv_loop_init(uvloop));
+            uv::check(uv_loop_init(uvloop), "initializing the event loop");
             uvloop->data = this;
             _uvloop = uvloop;
         }

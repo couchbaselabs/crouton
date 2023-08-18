@@ -17,6 +17,7 @@
 //
 
 #include "AsyncSocket.hh"
+#include "AddrInfo.hh"
 #include "Defer.hh"
 #include "UVInternal.hh"
 #include <unistd.h>
@@ -24,113 +25,6 @@
 
 namespace snej::coro::uv {
     using namespace std;
-
-
-#pragma mark - DNS LOOKUP:
-
-
-    class getaddrinfo_request : public uv::RequestWithStatus<uv_getaddrinfo_s> {
-    public:
-        static void callback(uv_getaddrinfo_s *req, int status, struct addrinfo *res) {
-            auto self = static_cast<getaddrinfo_request*>(req);
-            self->info = res;
-            self->callbackWithStatus(req, status);
-        }
-
-        struct addrinfo* info = nullptr;
-    };
-
-
-    AddrInfo::~AddrInfo() {
-        uv_freeaddrinfo(_info);
-    }
-
-
-    Future<bool> AddrInfo::lookup(string hostName, uint16_t port) {
-        uv_freeaddrinfo(_info);
-        _info = nullptr;
-
-        struct addrinfo hints = {
-            .ai_family = AF_UNSPEC,
-            .ai_socktype = SOCK_STREAM,
-            .ai_protocol = IPPROTO_TCP,
-        };
-
-        const char* service = nullptr;
-        char portStr[10];
-        if (port != 0) {
-            snprintf(portStr, 10, "%u", port);
-            service = portStr;  // This causes the 'port' fields of the addrinfos to be filled in
-        }
-
-        getaddrinfo_request req;
-        uv::check(uv_getaddrinfo(curLoop(), &req, req.callback,
-                                 hostName.c_str(), service, &hints));
-        uv::check( co_await req );
-
-        _info = req.info;
-        co_return true;
-    }
-
-
-    struct ::sockaddr const* AddrInfo::primaryAddress(int ipv) const {
-        assert(_info);
-        int af = ipv;
-        switch (ipv) {
-            case 4: af = AF_INET; break;
-            case 6: af = AF_INET6; break;
-        }
-
-        for (auto i = _info; i; i = i->ai_next) {
-            if (i->ai_socktype == SOCK_STREAM && i->ai_protocol == IPPROTO_TCP && i->ai_family == af)
-                return i->ai_addr;
-        }
-        return nullptr;
-    }
-
-    struct ::sockaddr const* AddrInfo::primaryAddress() const {
-        auto addr = primaryAddress(4);
-        return addr ? addr : primaryAddress(6);
-    }
-
-    std::string AddrInfo::primaryAddressString() const {
-        char buf[100];
-        auto *addr = primaryAddress();
-        if (!addr)
-            return "";
-        int err;
-        if (addr->sa_family == PF_INET)
-            err = uv_ip4_name((struct sockaddr_in*)addr, buf, sizeof(buf) - 1);
-        else
-            err = uv_ip6_name((struct sockaddr_in6*)addr, buf, sizeof(buf) - 1);
-        return err ? "" : buf;
-    }
-
-
-
-#pragma mark - TCP SOCKET:
-
-
-    struct Blocker {
-
-        void resume() {
-            assert(_suspension);
-            _suspension->wakeUp();
-            _suspension = nullptr;
-        }
-
-        bool await_ready()      {return false;}
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
-            assert(!_suspension);
-            _suspension = Scheduler::current().suspend(coro);
-            return Scheduler::current().next();
-        }
-        uv_buf_t await_resume()  {return _buf;}
-
-        Suspension* _suspension = nullptr;
-        uv_buf_t _buf = { };
-        ssize_t _nread = 0;
-    };
 
 
     TCPSocket::TCPSocket()
@@ -159,67 +53,22 @@ namespace snej::coro::uv {
                 throw std::runtime_error("no primary address?!");
         }
 
-        uv::connect_request req;
-        uv::check(uv_tcp_connect(&req, _tcpHandle, &addr, req.callbackWithStatus));
-        uv::check( co_await req );
+        connect_request req;
+        check(uv_tcp_connect(&req, _tcpHandle, &addr, req.callbackWithStatus),
+              "opening connection");
+        check( co_await req, "opening connection" );
 
         _socket = req.handle;   // note: this is the same address as _tcpHandle
         co_return;
     }
 
 
-    Generator<std::string>& TCPSocket::reader() {
-        if (!_reader)
-            _reader.emplace(_createReader());
-        return *_reader;
+    void TCPSocket::setNoDelay(bool enable) {
+        uv_tcp_nodelay(_tcpHandle, enable);
     }
 
-
-    Generator<string> TCPSocket::_createReader() {
-        assert(isOpen());
-
-        Blocker blocker;
-        _socket->data = &blocker;
-
-        //TODO: Improve memory management
-        auto allocCallback = [](uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
-            buf->base = (char*)::malloc(suggested_size);
-            buf->len = suggested_size;
-        };
-
-        auto readCallback = [](uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
-            auto blocker = (Blocker*)stream->data;
-            blocker->_nread = nread;
-            blocker->_buf = *buf;
-            blocker->resume();
-        };
-
-        uv::check(uv_read_start(_socket, allocCallback, readCallback));
-
-        DEFER { uv_read_stop(_socket); };
-
-        do {
-            co_await blocker;
-
-            if (blocker._nread == UV_EOF)
-                break;
-            uv::check(blocker._nread);
-            if (blocker._nread > 0)
-                co_yield string(blocker._buf.base, blocker._nread);
-            ::free(blocker._buf.base);
-        } while (blocker._nread > 0);
-    }
-
-
-    Future<void> TCPSocket::write(std::string str) {
-        assert(isOpen());
-
-        uv::write_request req;
-        uv_buf_t buf = {.base = str.data(), .len = str.size()};
-        uv::check(uv_write(&req, _socket, &buf, 1, req.callbackWithStatus));
-        uv::check( co_await req );
-
-        co_return;
+    void TCPSocket::keepAlive(unsigned intervalSecs) {
+        uv_tcp_keepalive(_tcpHandle, (intervalSecs > 0), intervalSecs);
     }
 
 
@@ -227,15 +76,205 @@ namespace snej::coro::uv {
         assert(isOpen());
 
         RequestWithStatus<uv_shutdown_t> req;
-        check( uv_shutdown(&req, _socket, req.callbackWithStatus) );
-        check( co_await req );
+        check( uv_shutdown(&req, _socket, req.callbackWithStatus), "closing connection");
+        check( co_await req, "closing connection" );
         co_return;
     }
 
 
     void TCPSocket::close() {
+        freeInputBuf();
+        if (_spareInputBuf.base) {
+            ::free(_spareInputBuf.base);
+            _spareInputBuf = {};
+        }
         _socket = nullptr;
         closeHandle(_tcpHandle);
     }
 
+
+#pragma mark - READING:
+
+
+    bool TCPSocket::isReadable() const {
+        return _socket && (_inputOff < _inputBuf.len || uv_is_readable(_socket));
+    }
+
+    void TCPSocket::freeInputBuf() {
+        ::free(_inputBuf.base);
+        _inputBuf.base = nullptr;
+    }
+
+
+    Future<void> TCPSocket::readExactly(size_t len, void* dst) {
+        int64_t bytesRead = co_await read(len, dst);
+        if (bytesRead < len)
+            check(int(UV_EOF), "reading from the network");
+        co_return;
+    }
+
+
+    Future<string> TCPSocket::read(size_t maxLen) {
+        NotReentrant nr(_readBusy);
+        static constexpr size_t kGrowSize = 32768;
+        string data;
+        size_t len = 0;
+        while (len < maxLen) {
+            size_t n = std::min(kGrowSize, maxLen - len);
+            data.resize(len + n);
+            size_t bytesRead = co_await _read(n, &data[len]);
+
+            if (bytesRead < n) {
+                data.resize(len + bytesRead);
+                break;
+            }
+            len += bytesRead;
+        }
+        co_return data;
+    }
+
+
+    Future<int64_t> TCPSocket::read(size_t maxLen, void* dst) {
+        NotReentrant nr(_readBusy);
+        return _read(maxLen, dst);
+    }
+
+    Future<int64_t> TCPSocket::_read(size_t maxLen, void* dst) {
+        size_t bytesRead = 0;
+        while (bytesRead < maxLen) {
+            WriteBuf bytes = co_await _readNoCopy(maxLen - bytesRead);
+            if (bytes.len == 0)
+                break;
+            ::memcpy((char*)dst + bytesRead, bytes.base, bytes.len);
+            bytesRead += bytes.len;
+        }
+        co_return bytesRead;
+    }
+
+
+    Future<WriteBuf> TCPSocket::readNoCopy(size_t maxLen) {
+        NotReentrant nr(_readBusy);
+        return _readNoCopy(maxLen);
+    }
+
+
+    Future<WriteBuf> TCPSocket::_readNoCopy(size_t maxLen) {
+        assert(isOpen());
+        if (_inputOff == _inputBuf.len) {
+            // Read buffer exhausted: recycle or free it
+            if (_spareInputBuf.base == nullptr) {
+                _spareInputBuf = _inputBuf;
+                _inputBuf = {};
+            } else {
+                freeInputBuf();
+            }
+        }
+
+        if (!_inputBuf.base) {
+            // Reload the input buffer from the socket:
+            _inputBuf = co_await readBuf();
+
+            _inputOff = 0;
+            if (_inputBuf.len == 0)
+                co_return {};  // Reached EOF
+        }
+
+        // Advance _inputOff and return the pointer:
+        size_t n = std::min(maxLen, _inputBuf.len - _inputOff);
+        WriteBuf result{.base = (char*)_inputBuf.base + _inputOff, .len = n};
+        _inputOff += n;
+        co_return result;
+    }
+
+
+    /// The base read method. Reads once from the uv_stream and returns the result as a
+    /// uv_buf_t. Caller must free it.
+    Future<TCPSocket::BufWithCapacity> TCPSocket::readBuf() {
+        assert(isOpen());
+
+        struct state_t {
+            Blocker<BufWithCapacity> blocker;
+            TCPSocket* self;
+        };
+        state_t state;
+        state.self = this;
+        _socket->data = &state;
+
+        auto allocCallback = [](uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+            auto state = (state_t*)handle->data;
+            if (auto self = state->self; self->_spareInputBuf.base) {
+                buf->base = (char*)self->_spareInputBuf.base;
+                buf->len = self->_spareInputBuf.capacity;
+                self->_spareInputBuf = {};
+            } else {
+                buf->base = (char*)::malloc(suggested_size);
+                buf->len = suggested_size;
+            }
+        };
+
+        auto readCallback = [](uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+            uv_read_stop(stream); // We only want this called once!
+            auto state = (state_t*)stream->data;
+            if (nread >= 0)
+                state->blocker.resume(BufWithCapacity{
+                    {.base = buf->base, .len = size_t(nread)},
+                    .capacity = buf->len});
+            else if (nread == UV_EOF || nread == UV_EINVAL)  // at end, or socket is closing
+                state->blocker.resume(BufWithCapacity{});
+            else
+                state->blocker.fail(int(nread), "reading from the network");
+        };
+
+        check(uv_read_start(_socket, allocCallback, readCallback), "reading from the network");
+
+        BufWithCapacity result = co_await state.blocker;
+
+        _socket->data = nullptr;
+        co_return result;
+    }
+
+
+#pragma mark - WRITING:
+
+
+    bool TCPSocket::isWritable() const {
+        return _socket && uv_is_writable(_socket);
+    }
+
+    Future<void> TCPSocket::write(const WriteBuf buffers[], size_t nBuffers) {
+        NotReentrant nr(_writeBusy);
+        assert(isOpen());
+        write_request req;
+        check(uv_write(&req, _socket, (uv_buf_t*)buffers, unsigned(nBuffers),
+                           req.callbackWithStatus),
+              "sending to the network");
+        check( co_await req, "sending to the network");
+
+        co_return;
+    }
+
+    Future<void> TCPSocket::write(std::initializer_list<WriteBuf> buffers) {
+        return write(buffers.begin(), buffers.size());
+    }
+
+    Future<void> TCPSocket::write(size_t len, const void* src) {
+        WriteBuf buf{src, len};
+        return write(&buf, 1);
+    }
+
+    Future<void> TCPSocket::write(std::string str) {
+        // Use co_await to ensure `str` stays in scope until the write completes.
+        co_await write(str.size(), str.data());
+        co_return;
+    }
+
+
+    size_t TCPSocket::tryWrite(WriteBuf buf) {
+        int result = uv_try_write(_socket, (uv_buf_t*)&buf, 1);
+        if (result == UV_EAGAIN)
+            return 0;
+        else
+            check(result, "sending to the network");
+        return size_t(result);
+    }
 }

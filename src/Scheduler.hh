@@ -27,7 +27,7 @@ namespace snej::coro {
         /// Scheduler will return it from next().
         /// \note This may be called from any thread, but only once.
         /// \warning  The pointer becomes invalid as soon as this is called.
-        inline void wakeUp();
+        void wakeUp();
 
         // internal only, do not call
         Suspension(std::coroutine_handle<> h, Scheduler *s) :_handle(h), _scheduler(s) { }
@@ -148,7 +148,6 @@ namespace snej::coro {
             }
         }
 
-
         static inline __thread Scheduler* sCurSched;
 
         std::deque<handle>                      _ready;         // Coroutines that are ready to run
@@ -158,15 +157,5 @@ namespace snej::coro {
         std::condition_variable                 _cond;          // Notifies next() of coro waking
         uv_loop_s*                              _uvloop = nullptr; // libuv event loop
     };
-
-
-    void Suspension::wakeUp() {
-        if (_wakeMe.test_and_set() == false) {
-            auto sched = _scheduler;
-            assert(sched);
-            _scheduler = nullptr;
-            sched->wakeUp();
-        }
-    }
 
 }

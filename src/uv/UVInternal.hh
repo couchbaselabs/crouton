@@ -14,14 +14,30 @@
 
 namespace snej::coro::uv {
 
-    static inline void check(std::signed_integral auto status) {
+    static inline void check(std::signed_integral auto status, const char* what) {
         if (status < 0)
-            throw UVError(int(status));
+            throw UVError(what, int(status));
     }
 
 
     /// Convenience function that returns `Scheduler::current().uvLoop()`.
     uv_loop_s* curLoop();
+
+
+    class NotReentrant {
+    public:
+        explicit NotReentrant(bool& scope) 
+        :_scope(scope)
+        {
+            if (_scope) throw std::logic_error("Illegal reentrant call");
+            _scope = true;
+        }
+
+        ~NotReentrant() {_scope = false;}
+
+    private:
+        bool& _scope;
+    };
 
 
     template <class T>
@@ -34,7 +50,47 @@ namespace snej::coro::uv {
     }
 
 
-    /// An Awaitable subclass of a libUV request type, such as uv_fs_t.
+
+    /** An Awaitable object that suspends the caller until its resume() method is called. */
+    template <typename T>
+    struct Blocker {
+        template <typename U>
+        void resume(U&& result) {
+            _result = std::forward<U>(result);
+            fail(0, nullptr);
+        }
+
+        void fail(int err, const char* what) {
+            _error = err;
+            _what = what;
+            assert(_suspension);
+            _suspension->wakeUp();
+            _suspension = nullptr;
+        }
+
+        bool await_ready()      {return false;}
+
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
+            assert(!_suspension);
+            _suspension = Scheduler::current().suspend(coro);
+            return Scheduler::current().next();
+        }
+
+        T await_resume()  {
+            check(_error, _what);
+            return std::move(_result);
+        }
+
+    private:
+        Suspension* _suspension = nullptr;
+        int _error = 0;
+        const char* _what = nullptr;
+        T _result = {};
+    };
+
+
+
+    /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
     template <class UV_REQUEST_T>
     class Request : public UV_REQUEST_T {
     public:
@@ -78,15 +134,6 @@ namespace snej::coro::uv {
     };
 
 
-    class fs_request : public Request<uv_fs_s> {
-    public:
-        ~fs_request()       {if (_called) uv_fs_req_cleanup(this);}
-        int await_resume()  {return int(result);}
-    private:
-    };
-
-
     using connect_request = RequestWithStatus<uv_connect_s>;
-
-    using write_request = RequestWithStatus<uv_write_s>;
+    using write_request   = RequestWithStatus<uv_write_s>;
 }

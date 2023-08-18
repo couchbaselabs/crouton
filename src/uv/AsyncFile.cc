@@ -22,56 +22,71 @@
 
 namespace snej::coro::uv {
     using namespace std;
-    
-    
+
+
 #pragma mark - FILE STREAM:
-    
-    
+
+
     const int FileStream::Append = O_APPEND;
     const int FileStream::Create = O_CREAT;
     const int FileStream::ReadOnly = O_RDONLY;
     const int FileStream::ReadWrite = O_RDWR;
     const int FileStream::WriteOnly = O_WRONLY;
-    
-    
+
+
+    class fs_request : public Request<uv_fs_s> {
+    public:
+        ~fs_request()       {if (_called) uv_fs_req_cleanup(this);}
+        int await_resume()  {return int(result);}
+    private:
+    };
+
+
     Future<void> FileStream::open(std::string const& path, int flags, int mode) {
+        NotReentrant nr(_busy);
         assert(!isOpen());
         uv::fs_request req;
-        uv::check(uv_fs_open(curLoop(), &req, path.c_str(), flags, mode, req.callback));
+        uv::check(uv_fs_open(curLoop(), &req, path.c_str(), flags, mode, req.callback),
+                  "opening file");
         co_await req;
-        
-        uv::check(req.result);
+
+        uv::check(req.result, "opening file");
         _fd = int(req.result);
         co_return;
     }
-    
-    
-    Future<int64_t> FileStream::read(size_t len, void* dst) {
+
+
+    Future<size_t> FileStream::preadv(const ReadBuf bufs[], size_t nbufs, int64_t offset) {
+        NotReentrant nr(_busy);
         assert(isOpen());
         uv::fs_request req;
-        uv_buf_t buf = {.len = len, .base = (char*)dst};
-        uv::check(uv_fs_read(curLoop(), &req, _fd, &buf, 1, -1, req.callback));
+        uv::check(uv_fs_read(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
+                             req.callback),
+                  "reading from a file");
         co_await req;
-        
-        uv::check(req.result);
+
+        uv::check(req.result, "reading from a file");
         co_return req.result;
     }
+
     
-    
-    Future<void> FileStream::write(size_t len, const void* src) {
+    Future<void> FileStream::pwritev(const WriteBuf bufs[], size_t nbufs, int64_t offset) {
+        NotReentrant nr(_busy);
         assert(isOpen());
         uv::fs_request req;
-        uv_buf_t buf = {.len = len, .base = (char*)src};
-        uv::check(uv_fs_write(curLoop(), &req, _fd, &buf, 1, -1, req.callback));
+        uv::check(uv_fs_write(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
+                              req.callback),
+                  "writing to a file");
         co_await req;
         
-        uv::check(req.result);
+        uv::check(req.result, "writing to a file");
         co_return;
     }
     
     
     void FileStream::close() {
         if (isOpen()) {
+            assert(!_busy);
             // Close synchronously, for simplicity
             uv_fs_t closeReq;
             uv_fs_close(curLoop(), &closeReq, _fd, nullptr);
