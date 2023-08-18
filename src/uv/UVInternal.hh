@@ -1,13 +1,15 @@
 //
-// UVAwait.hh
+// UVInternal.hh
 //
 // 
 //
 
 #pragma once
 #include "UVBase.hh"
+#include "Scheduler.hh"
 #include "uv.h"
 #include <concepts>
+#include <coroutine>
 #include <stdexcept>
 
 namespace snej::coro::uv {
@@ -15,6 +17,20 @@ namespace snej::coro::uv {
     static inline void check(std::signed_integral auto status) {
         if (status < 0)
             throw UVError(int(status));
+    }
+
+
+    /// Convenience function that returns `Scheduler::current().uvLoop()`.
+    uv_loop_s* curLoop();
+
+
+    template <class T>
+    void closeHandle(T* &handle) {
+        if (handle) {
+            handle->data = nullptr;
+            uv_close((uv_handle_t*)handle, [](uv_handle_t* h) {delete (T*)h;});
+            handle = nullptr;
+        }
     }
 
 

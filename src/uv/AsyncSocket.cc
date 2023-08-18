@@ -1,5 +1,5 @@
 //
-// AsyncIO.cc
+// AsyncSocket.cc
 //
 // 
 //
@@ -16,51 +16,14 @@
 // limitations under the License.
 //
 
-#include "AsyncIO.hh"
+#include "AsyncSocket.hh"
 #include "Defer.hh"
-#include "UVAwait.hh"
+#include "UVInternal.hh"
 #include <unistd.h>
 #include <iostream>
 
 namespace snej::coro::uv {
     using namespace std;
-
-
-#pragma mark - FILE STREAM:
-
-
-    Future<bool> FileStream::open(std::string const& path, Flags flags, int mode) {
-        assert(!isOpen());
-        uv::fs_request req;
-        uv::check(uv_fs_open(uv_default_loop(), &req, path.c_str(), flags, mode, req.callback));
-        co_await req;
-
-        uv::check(req.result);
-        _fd = int(req.result);
-        co_return true;
-    }
-
-
-    Future<int64_t> FileStream::read(size_t len, void* dst) {
-        assert(isOpen());
-        uv::fs_request req;
-        uv_buf_t buf = {.len = len, .base = (char*)dst};
-        uv::check(uv_fs_read(uv_default_loop(), &req, _fd, &buf, 1, -1, req.callback));
-        co_await req;
-
-        uv::check(req.result);
-        co_return req.result;
-    }
-
-
-    void FileStream::close() {
-        if (isOpen()) {
-            // Close synchronously, for simplicity
-            uv_fs_t closeReq;
-            uv_fs_close(uv_default_loop(), &closeReq, _fd, nullptr);
-            _fd = -1;
-        }
-    }
 
 
 #pragma mark - DNS LOOKUP:
@@ -101,7 +64,7 @@ namespace snej::coro::uv {
         }
 
         getaddrinfo_request req;
-        uv::check(uv_getaddrinfo(uv_default_loop(), &req, req.callback,
+        uv::check(uv_getaddrinfo(curLoop(), &req, req.callback,
                                  hostName.c_str(), service, &hints));
         uv::check( co_await req );
 
@@ -171,9 +134,9 @@ namespace snej::coro::uv {
 
 
     TCPSocket::TCPSocket()
-    :_tcpHandle(make_unique<uv_tcp_s>())
+    :_tcpHandle(new uv_tcp_s)
     {
-        uv_tcp_init(uv_default_loop(), _tcpHandle.get());
+        uv_tcp_init(curLoop(), _tcpHandle);
     }
 
 
@@ -182,7 +145,7 @@ namespace snej::coro::uv {
     }
 
 
-    Future<bool> TCPSocket::connect(std::string const& address, uint16_t port) {
+    Future<void> TCPSocket::connect(std::string const& address, uint16_t port) {
         assert(!_socket);
 
         sockaddr addr;
@@ -197,11 +160,11 @@ namespace snej::coro::uv {
         }
 
         uv::connect_request req;
-        uv::check(uv_tcp_connect(&req, _tcpHandle.get(), &addr, req.callbackWithStatus));
+        uv::check(uv_tcp_connect(&req, _tcpHandle, &addr, req.callbackWithStatus));
         uv::check( co_await req );
 
-        _socket = req.handle;
-        co_return true;
+        _socket = req.handle;   // note: this is the same address as _tcpHandle
+        co_return;
     }
 
 
@@ -248,7 +211,7 @@ namespace snej::coro::uv {
     }
 
 
-    Future<bool> TCPSocket::write(std::string str) {
+    Future<void> TCPSocket::write(std::string str) {
         assert(isOpen());
 
         uv::write_request req;
@@ -256,24 +219,23 @@ namespace snej::coro::uv {
         uv::check(uv_write(&req, _socket, &buf, 1, req.callbackWithStatus));
         uv::check( co_await req );
 
-        co_return true;
+        co_return;
     }
 
 
-    Future<bool> TCPSocket::shutdown() {
+    Future<void> TCPSocket::shutdown() {
         assert(isOpen());
 
         RequestWithStatus<uv_shutdown_t> req;
         check( uv_shutdown(&req, _socket, req.callbackWithStatus) );
         check( co_await req );
-        co_return true;
+        co_return;
     }
 
 
     void TCPSocket::close() {
-        if (_socket) {
-            uv_close((uv_handle_t*)_socket, nullptr);
-        }
+        _socket = nullptr;
+        closeHandle(_tcpHandle);
     }
 
 }

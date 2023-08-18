@@ -35,6 +35,7 @@ namespace snej::coro {
 
     private:
         friend class CoroutineImpl<CoroutineHandle<IMPL>,IMPL>;
+        
         handle_type _handle;    // The internal coroutine handle
     };
 

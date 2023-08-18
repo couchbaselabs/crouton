@@ -1,5 +1,5 @@
 //
-// AsyncIO.hh
+// AsyncSocket.hh
 //
 // 
 //
@@ -16,33 +16,6 @@ struct uv_stream_s;
 struct uv_tcp_s;
 
 namespace snej::coro::uv {
-
-    class FileStream {
-    public:
-        enum Flags {
-            ReadOnly = 0,
-            WriteOnly = 1,
-            ReadWrite = 2,
-        };
-
-        FileStream() = default;
-        ~FileStream()   {close();}
-
-        /// Asynchronously opens a file.
-        Future<bool> open(std::string const& path, Flags = ReadOnly, int mode = 0644);
-
-        bool isOpen() const {return _fd >= 0;}
-
-        /// Reads from the file.
-        Future<int64_t> read(size_t len, void* buf);
-
-        /// Closes the file, if it's open. This method is synchronous.
-        void close();
-
-    private:
-        int _fd = -1;
-    };
-
 
     /** A DNS lookup. */
     class AddrInfo {
@@ -76,7 +49,7 @@ namespace snej::coro::uv {
         ~TCPSocket();
 
         /// Connects to an address/port. The address may be a hostname or dotted-quad IPv4 address.
-        Future<bool> connect(std::string const& address, uint16_t port);
+        Future<void> connect(std::string const& address, uint16_t port);
 
         /// Returns true while the socket is connected.
         bool isOpen() const {return _socket != nullptr;}
@@ -86,10 +59,10 @@ namespace snej::coro::uv {
         Generator<std::string>& reader();
 
         /// Writes to the socket.
-        Future<bool> write(std::string);
+        Future<void> write(std::string);
 
         /// Closes the write stream, leaving the read stream open until the peer closes it.
-        Future<bool> shutdown();
+        Future<void> shutdown();
 
         /// Closes the socket entirely. (Called by the destructor.)
         void close();
@@ -97,7 +70,7 @@ namespace snej::coro::uv {
     private:
         Generator<std::string> _createReader();
 
-        std::unique_ptr<uv_tcp_s>             _tcpHandle;
+        uv_tcp_s*                             _tcpHandle;
         uv_stream_s*                          _socket = nullptr;
         std::optional<Generator<std::string>> _reader;
     };

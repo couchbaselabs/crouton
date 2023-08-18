@@ -6,9 +6,9 @@
 
 #include "Generator.hh"
 #include "Future.hh"
-#include "AsyncIO.hh"
+#include "AsyncFile.hh"
+#include "AsyncSocket.hh"
 #include <iostream>
-#include <future>
 #include <sys/socket.h>
 
 #include "catch_amalgamated.hpp"
@@ -69,15 +69,12 @@ TEST_CASE("Generator coroutine", "[coroutines]") {
 }
 
 
-static Future<bool> waitFor(chrono::milliseconds ms) {
-    FutureProvider<bool> f;
-    thread thrd([ms,f] {
-        cerr << "\tthread running...\n";
-        this_thread::sleep_for(ms);
-        cerr << "\tthread calling resume...\n";
-        f.setValue(true);
+static Future<void> waitFor(chrono::milliseconds ms) {
+    FutureProvider<void> f;
+    Timer::after(ms.count() / 1000.0, [f] {
+        cerr << "\tTimer fired\n";
+        f.setValue();
     });
-    thrd.detach();
     return f;
 }
 
@@ -118,11 +115,7 @@ TEST_CASE("Future coroutine") {
 static Future<string> readFile(string const& path) {
     string contents;
     FileStream f;
-    bool ok = co_await f.open(path);
-    if (!ok) {
-        cerr << "Couldn't open file " << path << endl;
-        co_return contents;
-    }
+    co_await f.open(path);
     char buffer[100];
     while (true) {
         int64_t len = co_await f.read(sizeof(buffer), &buffer[0]);

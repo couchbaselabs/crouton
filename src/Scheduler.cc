@@ -22,14 +22,4 @@
 
 namespace snej::coro {
 
-    void Scheduler::_wait() {
-        std::cerr << "UV loop starting...\n";
-        uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-        std::cerr << "UV loop stopped\n";
-    }
-
-    void Scheduler::_wakeUp() {
-        uv_stop(uv_default_loop());
-    }
-
 }

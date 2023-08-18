@@ -13,6 +13,8 @@
 #include <unordered_set>
 #include <cassert>
 
+struct uv_loop_s;
+
 namespace snej::coro {
     class Scheduler;
 
@@ -70,12 +72,7 @@ namespace snej::coro {
             while (true) {
                 if (auto w = nextIfAny())
                     return w;
-#if 1
                 _wait();
-#else
-                std::unique_lock<std::mutex> lock(_mutex);
-                _cond.wait(lock); // block until wakeUp() is called on another thread
-#endif
             }
         }
 
@@ -104,6 +101,15 @@ namespace snej::coro {
             return &i->second;
         }
 
+        //---- libuv additions:
+
+        /// Returns the associated libuv event loop. If there is none, it creates one.
+        uv_loop_s* uvLoop();
+
+        /// Associates an existing libuv event loop with this Scheduler/thread.
+        /// Must be called before the first call to `uvLoop`.
+        void useUVLoop(uv_loop_s*);
+
     private:
         friend class Suspension;
         
@@ -123,12 +129,7 @@ namespace snej::coro {
         void wakeUp() {
             std::unique_lock<std::mutex> lock(_mutex);
             _woke = true;
-#if 1
             _wakeUp();
-#else
-            if (!isCurrent())
-                _cond.notify_one(); // wakes up next()
-#endif
         }
 
         // Finds any waiting coroutines that want to wake up, removes them from `_waiting`
@@ -155,6 +156,7 @@ namespace snej::coro {
         std::atomic<bool>                       _woke = false;  // True if a suspended is waking
         std::mutex                              _mutex;         // Synchronizes _cond
         std::condition_variable                 _cond;          // Notifies next() of coro waking
+        uv_loop_s*                              _uvloop = nullptr; // libuv event loop
     };
 
 

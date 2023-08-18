@@ -10,11 +10,15 @@
 		272728C72A8D6505000CCA22 /* tests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272728C62A8D6505000CCA22 /* tests.cc */; };
 		272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 272728D42A8D6575000CCA22 /* catch_amalgamated.cpp */; };
 		272728E72A8D6619000CCA22 /* libcoro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcoro.a */; };
-		272730402A8D6F35000CCA22 /* AsyncIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2727303E2A8D6F35000CCA22 /* AsyncIO.hh */; };
-		272730412A8D6F35000CCA22 /* AsyncIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727303F2A8D6F35000CCA22 /* AsyncIO.cc */; };
+		272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */; };
+		272730412A8D6F35000CCA22 /* AsyncSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */; };
 		272730462A8D874B000CCA22 /* libuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272730442A8D8736000CCA22 /* libuv.a */; };
 		272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730472A8D8A73000CCA22 /* Scheduler.cc */; };
 		2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727304D2A8E9D99000CCA22 /* UVBase.cc */; };
+		272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272730502A8EC61D000CCA22 /* AsyncFile.hh */; };
+		272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730512A8EC61D000CCA22 /* AsyncFile.cc */; };
+		272730552A8ED3D1000CCA22 /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730542A8ED3D1000CCA22 /* Future.cc */; };
+		279D5D3F2A8EEA22005C3066 /* Scheduler+UV.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -165,14 +169,18 @@
 		27272F9D2A8D6D2C000CCA22 /* thread-common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "thread-common.c"; sourceTree = "<group>"; };
 		27272F9E2A8D6D2C000CCA22 /* strscpy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = strscpy.h; sourceTree = "<group>"; };
 		2727301C2A8D6DFA000CCA22 /* libuvw.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libuvw.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		2727303E2A8D6F35000CCA22 /* AsyncIO.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncIO.hh; sourceTree = "<group>"; };
-		2727303F2A8D6F35000CCA22 /* AsyncIO.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncIO.cc; sourceTree = "<group>"; };
+		2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncSocket.hh; sourceTree = "<group>"; };
+		2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncSocket.cc; sourceTree = "<group>"; };
 		272730442A8D8736000CCA22 /* libuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libuv.a; sourceTree = "<group>"; };
 		272730472A8D8A73000CCA22 /* Scheduler.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Scheduler.cc; sourceTree = "<group>"; };
-		272730492A8D99B0000CCA22 /* UVAwait.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UVAwait.hh; sourceTree = "<group>"; };
+		272730492A8D99B0000CCA22 /* UVInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UVInternal.hh; sourceTree = "<group>"; };
 		2727304B2A8E811B000CCA22 /* Defer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Defer.hh; sourceTree = "<group>"; };
 		2727304C2A8E9D48000CCA22 /* UVBase.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UVBase.hh; sourceTree = "<group>"; };
 		2727304D2A8E9D99000CCA22 /* UVBase.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UVBase.cc; sourceTree = "<group>"; };
+		272730502A8EC61D000CCA22 /* AsyncFile.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncFile.hh; sourceTree = "<group>"; };
+		272730512A8EC61D000CCA22 /* AsyncFile.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncFile.cc; sourceTree = "<group>"; };
+		272730542A8ED3D1000CCA22 /* Future.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
+		279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Scheduler+UV.cc"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -238,15 +246,12 @@
 			children = (
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
+				272730542A8ED3D1000CCA22 /* Future.cc */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				272728FE2A8D6B43000CCA22 /* Scheduler.hh */,
 				272730472A8D8A73000CCA22 /* Scheduler.cc */,
-				272730492A8D99B0000CCA22 /* UVAwait.hh */,
-				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
-				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
-				2727303E2A8D6F35000CCA22 /* AsyncIO.hh */,
-				2727303F2A8D6F35000CCA22 /* AsyncIO.cc */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
+				2727304F2A8EC5E7000CCA22 /* uv */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -463,6 +468,21 @@
 			path = libs;
 			sourceTree = "<group>";
 		};
+		2727304F2A8EC5E7000CCA22 /* uv */ = {
+			isa = PBXGroup;
+			children = (
+				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
+				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
+				272730492A8D99B0000CCA22 /* UVInternal.hh */,
+				272730502A8EC61D000CCA22 /* AsyncFile.hh */,
+				272730512A8EC61D000CCA22 /* AsyncFile.cc */,
+				2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */,
+				2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */,
+				279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */,
+			);
+			path = uv;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -470,7 +490,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272730402A8D6F35000CCA22 /* AsyncIO.hh in Headers */,
+				272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */,
+				272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -589,9 +610,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272730412A8D6F35000CCA22 /* AsyncIO.cc in Sources */,
+				279D5D3F2A8EEA22005C3066 /* Scheduler+UV.cc in Sources */,
+				272730412A8D6F35000CCA22 /* AsyncSocket.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
+				272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
+				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -11,12 +11,57 @@
 #include <exception>
 
 namespace snej::coro {
-    class FutureBase;
-    class WaiterBase;
     template <typename T> class Future;
     template <typename T> class FutureImpl;
-    template <typename T> class FutureState;
-    template <typename T> class Waiter;
+
+    template <typename T> struct ref { using type = T&; };
+    template <> struct ref<void> {using type = void; };
+
+
+    class FutureStateBase {
+    public:
+        bool hasValue() const;
+        std::coroutine_handle<> suspend(std::coroutine_handle<> coro);
+        void setException(std::exception_ptr x);
+
+    protected:
+        void _gotValue();
+        void _checkValue();
+
+        mutable std::mutex  _mutex;
+        Suspension*         _suspension = nullptr;
+        std::exception_ptr  _exception;
+        bool                _hasValue = false;
+    };
+
+
+    template <typename T>
+    class FutureState : public FutureStateBase {
+    public:
+        T& value() {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _checkValue();
+            assert(_value);
+            return *_value;
+        }
+
+        void setValue(T&& value) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _value = std::forward<T>(value);
+            _gotValue();
+        }
+
+    private:
+        std::optional<T> _value {};
+    };
+
+    template <>
+    class FutureState<void> : public FutureStateBase {
+    public:
+        void value();
+        void setValue();
+    };
+
 
 
     /// The producer side of a Future, which is responsible for setting its value.
@@ -25,13 +70,6 @@ namespace snej::coro {
     public:
         /// Constructs a Future that doesn't have a value yet.
         FutureProvider()                        :_state(std::make_shared<FutureState<T>>()) { }
-
-        /// Constructs a Future that already has a value.
-        explicit FutureProvider(T&& t)
-        :FutureProvider()
-        {
-            _state->_value = std::forward<T>(t);
-        }
 
         /// Creates a Future that can be returned to callers.
         Future<T> future()                      {return Future<T>(_state);}
@@ -55,6 +93,20 @@ namespace snej::coro {
         std::shared_ptr<FutureState<T>> _state;
     };
 
+    template <>
+    class FutureProvider<void> {
+    public:
+        FutureProvider()                        :_state(std::make_shared<FutureState<void>>()) { }
+        Future<void> future();
+        operator Future<void>();
+        bool hasValue() const                   {return _state->hasValue();}
+        void setValue() const                   {_state->setValue();}
+        void setException(std::exception_ptr x) {_state->setException(x);}
+        void value() const                      {return _state->value();}
+    private:
+        std::shared_ptr<FutureState<void>> _state;
+    };
+
 
 
     /// Represents a value, produced by a `FutureProvider<T>`, that may not be available yet.
@@ -63,135 +115,27 @@ namespace snej::coro {
     template <typename T>
     class Future : public CoroutineHandle<FutureImpl<T>> {
     public:
-        using super = CoroutineHandle<FutureImpl<T>>;
-
-        bool hasValue() const            {return _state->hasValue();}
+        bool hasValue() const           {return _state->hasValue();}
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
         /// Requires that this Future be returned from a coroutine.
-        T& waitForValue()               {return super::handle().promise().waitForValue();}
+        ref<T>::type waitForValue()     {return this->handle().promise().waitForValue();}
+
+        // These methods make Future awaitable:
+        bool await_ready()              {return _state->hasValue();}
+        ref<T>::type await_resume()     {return _state->value();}
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept{
+            return _state->suspend(coro);
+        }
 
     private:
-        friend class Waiter<T>;
         friend class FutureProvider<T>;
         friend class FutureImpl<T>;
 
-        Future(std::shared_ptr<FutureState<T>> state)
-        :_state(std::move(state))
-        { }
+        Future(std::shared_ptr<FutureState<T>> state)   :_state(std::move(state)) { }
 
         std::shared_ptr<FutureState<T>>  _state;
     };
-
-
-#pragma mark - AWAITING A FUTURE:
-
-
-    class FutureStateBase {
-    public:
-        bool hasValue() const {
-            std::unique_lock<std::mutex> lock(_mutex);
-            return _hasValue;
-        }
-
-        bool suspend(std::coroutine_handle<> coro) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            if (_hasValue)
-                return false;
-            assert(!_suspension);
-            Scheduler& sched = Scheduler::current();
-            _suspension = sched.suspend(coro);
-            return true;
-        }
-
-    protected:
-        void _gotValue() {
-            _hasValue = true;
-            if (_suspension) {
-                _suspension->wakeUp();
-                _suspension = nullptr;
-            }
-        }
-
-        mutable std::mutex  _mutex;
-        Suspension* _suspension = nullptr;
-        bool _hasValue = false;
-    };
-
-
-    template <typename T>
-    class FutureState : public FutureStateBase {
-    public:
-        T& value() {
-            std::unique_lock<std::mutex> lock(_mutex);
-            if (_exception)
-                std::rethrow_exception(_exception);
-            if (_result)
-                return *_result;
-            else
-                throw std::logic_error("Future does not have a value yet");
-        }
-
-        void setValue(T&& value) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            if (_hasValue)
-                throw std::logic_error("Future's value can only be set once");
-            _result = std::forward<T>(value);
-            _gotValue();
-        }
-
-        void setException(std::exception_ptr x) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            if (_hasValue)
-                throw std::logic_error("Future's value can only be set once");
-            _exception = x;
-            _gotValue();
-        }
-
-    private:
-        std::optional<T>   _result {};
-        std::exception_ptr _exception;
-    };
-
-
-
-    // Base class of Waiter<T>
-    class WaiterBase {
-    public:
-        WaiterBase(std::shared_ptr<FutureStateBase> state)
-        :_state(std::move(state))
-        { }
-
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
-            if (_state->suspend(coro))
-                return Scheduler::current().next();
-            else
-                return coro;
-        }
-
-    protected:
-        std::shared_ptr<FutureStateBase> _state;
-    };
-
-
-    // The 'awaiter' object representing a coroutine that's awaiting a Future.
-    template <typename T>
-    class Waiter : public WaiterBase {
-    public:
-        Waiter(Future<T>& f)    :WaiterBase(f._state) { }
-        Waiter(Future<T>&& f)   :WaiterBase(std::move(f._state)) { }
-        
-        bool await_ready()      {return state().hasValue();}
-        T& await_resume()       {return state().value();}
-    private:
-        FutureState<T>& state() {return static_cast<FutureState<T>&>(*_state);}
-    };
-
-    // Makes Future awaitable:
-    template <typename T>
-    Waiter<T> operator co_await(Future<T>& cond)    {return Waiter<T>(cond);}
-    template <typename T>
-    Waiter<T> operator co_await(Future<T>&& cond)   {return Waiter<T>(cond);}
 
 
 #pragma mark - FUTURE IMPL:
@@ -205,10 +149,6 @@ namespace snej::coro {
         using handle_type = super::handle_type;
 
         FutureImpl() = default;
-
-        handle_type handle() {
-            return handle_type::from_promise(*this);
-        }
 
         T& waitForValue() {
             while (!_provider.hasValue())
@@ -225,13 +165,29 @@ namespace snej::coro {
         }
 
         std::suspend_never initial_suspend()    {return {};}
-
         void unhandled_exception()              {_provider.setException(std::current_exception());}
-
         void return_value(T&& value)            {_provider.setValue(std::forward<T>(value));}
 
     private:
+        handle_type handle()                    {return handle_type::from_promise(*this);}
         FutureProvider<T> _provider;
+    };
+
+
+    template <>
+    class FutureImpl<void> : public CoroutineImpl<Future<void>,FutureImpl<void>> {
+    public:
+        using super = CoroutineImpl<Future<void>,FutureImpl<void>>;
+        using handle_type = super::handle_type;
+        FutureImpl() = default;
+        void waitForValue();
+        Future<void> get_return_object();
+        std::suspend_never initial_suspend();
+        void unhandled_exception();
+        void return_void();
+    private:
+        handle_type handle();
+        FutureProvider<void> _provider;
     };
 
 }
