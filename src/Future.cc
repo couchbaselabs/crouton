@@ -78,8 +78,6 @@ namespace snej::coro {
     FutureProvider<void>::operator Future<void>()                    {return future();}
 
 
-    FutureImpl<void>::handle_type FutureImpl<void>::handle()                    {return handle_type::from_promise(*this);}
-
     void FutureImpl<void>::waitForValue() {
         while (!_provider.hasValue())
             handle().resume();
@@ -91,9 +89,5 @@ namespace snej::coro {
         f.setHandle(handle());
         return f;
     }
-
-    std::suspend_never FutureImpl<void>::initial_suspend()    {return {};}
-    void FutureImpl<void>::unhandled_exception()              {_provider.setException(std::current_exception());}
-    void FutureImpl<void>::return_void()                      {_provider.setValue();}
 
 }

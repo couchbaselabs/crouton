@@ -22,7 +22,7 @@ namespace snej::coro::uv {
         ~TCPSocket();
 
         /// Connects to an address/port. The address may be a hostname or dotted-quad IPv4 address.
-        Future<void> connect(std::string const& address, uint16_t port);
+        [[nodiscard]] Future<void> connect(std::string const& address, uint16_t port);
 
         /// Returns true while the socket is connected.
         bool isOpen() const {return _socket != nullptr;}
@@ -34,7 +34,7 @@ namespace snej::coro::uv {
         void keepAlive(unsigned intervalSecs);
 
         /// Closes the write stream, leaving the read stream open until the peer closes it.
-        Future<void> shutdown();
+        [[nodiscard]] Future<void> shutdown();
 
         /// Closes the socket entirely. (Called by the destructor.)
         void close();
@@ -49,23 +49,27 @@ namespace snej::coro::uv {
         /// Otherwise returns at least one byte, but may return fewer than requested since it reads
         /// from the socket at most once.
         /// @warning The result is invalidated by any subsequent read, shutdown or close.
-        Future<WriteBuf> readNoCopy(size_t maxLen);
+        [[nodiscard]] Future<WriteBuf> readNoCopy(size_t maxLen);
 
         /// Reads `len` bytes, copying into memory starting at `dst` (which must remain valid.)
         /// Will always read the full number of bytes unless it hits EOF.
-        Future<int64_t> read(size_t len, void* dst);
-        Future<int64_t> read(ReadBuf buf)               {return read(buf.len, buf.base);}
+        [[nodiscard]] Future<int64_t> read(size_t len, void* dst);
+        [[nodiscard]] Future<int64_t> read(ReadBuf buf)               {return read(buf.len, buf.base);}
 
         /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
-        Future<void> readExactly(size_t len, void* dst);
-        Future<void> readExactly(ReadBuf buf)        {return readExactly(buf.len, buf.base);}
+        [[nodiscard]] Future<void> readExactly(size_t len, void* dst);
+        [[nodiscard]] Future<void> readExactly(ReadBuf buf)        {return readExactly(buf.len, buf.base);}
 
         /// Reads `len` bytes, returning them as a string.
         /// Will always read the full number of bytes unless it hits EOF.
-        Future<std::string> read(size_t maxLen);
+        [[nodiscard]] Future<std::string> read(size_t maxLen);
+
+        /// Reads up through the first occurrence of the string `end`.
+        /// Throws `UV_EOF` if it hits EOF first.
+        Future<std::string> readUntil(std::string end);
 
         /// Reads until EOF.
-        Future<std::string> readAll() {return read(SIZE_MAX);}
+        [[nodiscard]] Future<std::string> readAll() {return read(SIZE_MAX);}
 
         //---- WRITING
 
@@ -74,29 +78,34 @@ namespace snej::coro::uv {
 
         /// Writes data, fully.
         /// @warning The data pointed to by the buffer(s) must remain valid until completion.
-        Future<void> write(const WriteBuf buffers[], size_t nBuffers);
-        Future<void> write(std::initializer_list<WriteBuf> buffers);
-        Future<void> write(size_t len, const void *src);
+        [[nodiscard]] Future<void> write(const WriteBuf buffers[], size_t nBuffers);
+        [[nodiscard]] Future<void> write(std::initializer_list<WriteBuf> buffers);
+        [[nodiscard]] Future<void> write(size_t len, const void *src);
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
-        Future<void> write(std::string);
+        [[nodiscard]] Future<void> write(std::string);
 
         /// Writes as much as possible immediately, without blocking.
         /// @return  Number of bytes written, which may be 0 if the write buffer is full.
         size_t tryWrite(WriteBuf);
 
     private:
+        friend class TCPServer;
+        
         struct BufWithCapacity : public ReadBuf {
             size_t capacity = 0;
         };
+
+        void acceptFrom(uv_tcp_s* server);
 
         TCPSocket(TCPSocket const&) = delete;
         TCPSocket& operator=(TCPSocket const&) = delete;
 
         void freeInputBuf();
-        Future<int64_t> _read(size_t len, void* dst);
-        Future<WriteBuf> _readNoCopy(size_t maxLen);
-        Future<BufWithCapacity> readBuf();
+        [[nodiscard]] Future<int64_t> _read(size_t len, void* dst);
+        [[nodiscard]] Future<WriteBuf> _readNoCopy(size_t maxLen);
+        [[nodiscard]] Future<BufWithCapacity> readBuf();
+        [[nodiscard]] Future<void> _read();
 
         uv_tcp_s*       _tcpHandle;         // Handle for TCP operations
         uv_stream_s*    _socket = nullptr;  // Handle for stream operations (actually the same)

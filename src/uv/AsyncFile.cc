@@ -48,11 +48,11 @@ namespace snej::coro::uv {
         uv::fs_request req;
         uv::check(uv_fs_open(curLoop(), &req, path.c_str(), flags, mode, req.callback),
                   "opening file");
-        co_await req;
+        AWAIT req;
 
         uv::check(req.result, "opening file");
         _fd = int(req.result);
-        co_return;
+        RETURN;
     }
 
 
@@ -63,10 +63,10 @@ namespace snej::coro::uv {
         uv::check(uv_fs_read(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
                              req.callback),
                   "reading from a file");
-        co_await req;
+        AWAIT req;
 
         uv::check(req.result, "reading from a file");
-        co_return req.result;
+        RETURN req.result;
     }
 
     
@@ -77,10 +77,10 @@ namespace snej::coro::uv {
         uv::check(uv_fs_write(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
                               req.callback),
                   "writing to a file");
-        co_await req;
+        AWAIT req;
         
         uv::check(req.result, "writing to a file");
-        co_return;
+        RETURN;
     }
     
     

@@ -20,9 +20,9 @@ using namespace snej::coro::uv;
 // An example Generator of Fibonacci numbers.
 static Generator<int64_t> fibonacci(int64_t limit) {
     int64_t a = 1, b = 1;
-    co_yield a;
+    YIELD a;
     while (b <= limit) {
-        co_yield b;
+        YIELD b;
         tie(a, b) = pair{b, a + b};
     }
 }
@@ -31,17 +31,17 @@ static Generator<int64_t> fibonacci(int64_t limit) {
 // A filter that passes only even numbers. Also takes int64 and produces int
 static Generator<int64_t> onlyEven(Generator<int64_t> source) {
     // In a coroutine, you co_await a Generator instead of calling next():
-    while (optional<int64_t> value = co_await source) {
+    while (optional<int64_t> value = AWAIT source) {
         if (*value % 2 == 0)
-            co_yield *value;
+            YIELD *value;
     }
 }
 
 
 // Converts int to string
 static Generator<string> toString(Generator <int64_t> source) {
-    while (optional<int> value = co_await source) {
-        co_yield to_string(*value) + "i";
+    while (optional<int> value = AWAIT source) {
+        YIELD to_string(*value) + "i";
     }
 }
 
@@ -81,18 +81,18 @@ static Future<void> waitFor(chrono::milliseconds ms) {
 static Generator<int> waiter(string name) {
     for (int i = 1; i < 4; i++) {
         cerr << "waiter " << name << " generating " << i << endl;
-        co_yield i;
+        YIELD i;
         cerr << "waiter " << name << " waiting..." << endl;
 
-        co_await waitFor(500ms);
+        AWAIT waitFor(500ms);
     }
     cerr << "waiter " << name << " done" << endl;
 }
 
 
 static Future<int> futuristicSquare(int n) {
-    co_await waitFor(500ms);
-    co_return n * n;
+    AWAIT waitFor(500ms);
+    RETURN n * n;
 }
 
 
@@ -114,10 +114,10 @@ TEST_CASE("Future coroutine") {
 static Future<string> readFile(string const& path) {
     string contents;
     FileStream f;
-    co_await f.open(path);
+    AWAIT f.open(path);
     char buffer[100];
     while (true) {
-        int64_t len = co_await f.read(sizeof(buffer), &buffer[0]);
+        int64_t len = AWAIT f.read(sizeof(buffer), &buffer[0]);
         if (len < 0)
             cerr << "File read error " << len << endl;
         if (len <= 0)
@@ -126,7 +126,7 @@ static Future<string> readFile(string const& path) {
         contents.append(buffer, len);
     }
     cerr << "Returning contents\n";
-    co_return contents;
+    RETURN contents;
 }
 
 
@@ -152,14 +152,14 @@ TEST_CASE("DNS lookup", "[uv]") {
 static Future<string> readSocket() {
     TCPSocket socket;
     cerr << "Connecting...\n";
-    co_await socket.connect("mooseyard.com", 80);
+    AWAIT socket.connect("mooseyard.com", 80);
 
     cerr << "Writing...\n";
-    co_await socket.write("GET / HTTP/1.1\r\nHost: mooseyard.com\r\nConnection: close\r\n\r\n");
+    AWAIT socket.write("GET / HTTP/1.1\r\nHost: mooseyard.com\r\nConnection: close\r\n\r\n");
 
     cerr << "Reading...\n";
-    string result = co_await socket.readAll();
-    co_return result;
+    string result = AWAIT socket.readAll();
+    RETURN result;
 }
 
 

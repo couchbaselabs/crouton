@@ -6,10 +6,16 @@
 
 #pragma once
 #include "Future.hh"
+#include "EventLoop.hh"
 #include <stdexcept>
 #include <functional>
 
+struct uv_loop_s;
 struct uv_timer_s;
+
+namespace snej::coro {
+    class Task;
+}
 
 namespace snej::coro::uv {
 
@@ -36,6 +42,29 @@ namespace snej::coro::uv {
         int err; ///< libuv error code
     private:
         mutable std::string _message;
+    };
+
+
+    /** Main process function that runs an event loop. */
+    int UVMain(int argc, const char * argv[], std::function<void()>);
+
+    /// Process arguments, as captured by UVMain.
+    extern std::vector<std::string_view> UVArgs;
+
+
+    class UVEventLoop final : public EventLoop {
+    public:
+        UVEventLoop();
+        void run() override;
+        void runOnce(bool waitForIO =true) override;
+        void stop() override;
+        void perform(std::function<void()>) override;
+
+        uv_loop_s* uvLoop() {return _loop.get();}
+    private:
+        void _run(int mode);
+
+        std::unique_ptr<uv_loop_s> _loop;
     };
 
 
@@ -69,22 +98,23 @@ namespace snej::coro::uv {
     };
 
 
-    /// Calls the given function on the next iteration of the libuv event loop.
-    void OnEventLoop(std::function<void()>);
+    /// Calls the given function on the next iteration of this thread's libuv event loop.
+    void OnEventLoop(Scheduler&, std::function<void()>);
+    void OnEventLoop(std::function<void()> fn);
 
 
     /// Calls the given function on a background thread managed by libuv.
-    Future<void> OnBackgroundThread(std::function<void()> fn);
+    [[nodiscard]] Future<void> OnBackgroundThread(std::function<void()> fn);
 
 
     /// Calls the given function on a background thread managed by libuv,
     /// returning its value (or exception) asynchronously.
     template <typename T>
-    Future<T> OnBackgroundThread(std::function<T()> fn) {
-        T result;
-        co_await bgthread([&] {
+    [[nodiscard]] Future<T> OnBackgroundThread(std::function<T()> fn) {
+        std::optional<T> result;
+        AWAIT OnBackgroundThread([&]() -> void {
             result = fn();
         });
-        co_return result;
+        RETURN std::move(result.value());
     }
 }

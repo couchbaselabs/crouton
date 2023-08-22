@@ -16,6 +16,7 @@ DEAD_CODE_STRIPPING          = YES
 DEBUG_INFORMATION_FORMAT     = dwarf-with-dsym
 ENABLE_NS_ASSERTIONS         = NO
 LLVM_LTO                     = YES
+//ONLY_ACTIVE_ARCH             = YES
 
 // https://www.emergetools.com/blog/posts/how-xcode14-unintentionally-increases-app-size
 DEPLOYMENT_POSTPROCESSING    = YES

@@ -95,7 +95,8 @@ namespace snej::coro {
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
         std::optional<T> next() {
             clear();
-            if (auto h = this->handle(); !h.done())
+            auto h = this->handle();
+            while(!h.done())
                 h.resume();   // Resume coroutine fn, unless it already completed.
             return yielded_value();
         }
@@ -115,11 +116,11 @@ namespace snej::coro {
 
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
         template <std::convertible_to<T> From>
-        Yielder yield_value(From&& value) {
+        YielderTo yield_value(From&& value) {
             _yielded_value = std::forward<From>(value);
             auto resumer = _consumer;
             _consumer = std::noop_coroutine();
-            return Yielder{resumer};
+            return YielderTo{resumer};
         }
 
         // Invoked when the coroutine fn returns without a result, implicitly or via co_return.

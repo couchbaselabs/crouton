@@ -18,13 +18,28 @@
 		272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272730502A8EC61D000CCA22 /* AsyncFile.hh */; };
 		272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730512A8EC61D000CCA22 /* AsyncFile.cc */; };
 		272730552A8ED3D1000CCA22 /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730542A8ED3D1000CCA22 /* Future.cc */; };
-		279D5D3F2A8EEA22005C3066 /* Scheduler+UV.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */; };
 		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
+		279D5D472A902588005C3066 /* AsyncServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* AsyncServer.hh */; };
+		279D5D482A902588005C3066 /* AsyncServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D462A902588005C3066 /* AsyncServer.cc */; };
+		279D5D502A9031EF005C3066 /* testserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D4F2A9031EF005C3066 /* testserver.cc */; };
+		279D5D552A90389F005C3066 /* libcoro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcoro.a */; };
+		279D5D562A9038A7005C3066 /* libuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272730442A8D8736000CCA22 /* libuv.a */; };
+		279D5D5A2A9146FE005C3066 /* Backtrace.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D582A9146FE005C3066 /* Backtrace.cc */; };
+		279D5D5B2A9146FE005C3066 /* Backtrace.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D592A9146FE005C3066 /* Backtrace.hh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		272728C12A8D6505000CCA22 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		279D5D4B2A9031EF005C3066 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -170,7 +185,6 @@
 		27272F9C2A8D6D2C000CCA22 /* queue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = queue.h; sourceTree = "<group>"; };
 		27272F9D2A8D6D2C000CCA22 /* thread-common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "thread-common.c"; sourceTree = "<group>"; };
 		27272F9E2A8D6D2C000CCA22 /* strscpy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = strscpy.h; sourceTree = "<group>"; };
-		2727301C2A8D6DFA000CCA22 /* libuvw.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libuvw.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncSocket.hh; sourceTree = "<group>"; };
 		2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncSocket.cc; sourceTree = "<group>"; };
 		272730442A8D8736000CCA22 /* libuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libuv.a; sourceTree = "<group>"; };
@@ -182,10 +196,19 @@
 		272730502A8EC61D000CCA22 /* AsyncFile.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncFile.hh; sourceTree = "<group>"; };
 		272730512A8EC61D000CCA22 /* AsyncFile.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncFile.cc; sourceTree = "<group>"; };
 		272730542A8ED3D1000CCA22 /* Future.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
-		279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Scheduler+UV.cc"; sourceTree = "<group>"; };
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* AsyncUV.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncUV.hh; sourceTree = "<group>"; };
+		279D5D452A902588005C3066 /* AsyncServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncServer.hh; sourceTree = "<group>"; };
+		279D5D462A902588005C3066 /* AsyncServer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncServer.cc; sourceTree = "<group>"; };
+		279D5D4D2A9031EF005C3066 /* testserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = testserver; sourceTree = BUILT_PRODUCTS_DIR; };
+		279D5D4F2A9031EF005C3066 /* testserver.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testserver.cc; sourceTree = "<group>"; };
+		279D5D542A903403005C3066 /* Task.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Task.hh; sourceTree = "<group>"; };
+		279D5D582A9146FE005C3066 /* Backtrace.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backtrace.cc; path = ../../../tendril/vendor/Couchbase/Backtrace.cc; sourceTree = "<group>"; };
+		279D5D592A9146FE005C3066 /* Backtrace.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Backtrace.hh; path = ../../../tendril/vendor/Couchbase/Backtrace.hh; sourceTree = "<group>"; };
+		279D5D5C2A93BB5C005C3066 /* EventLoop.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EventLoop.hh; sourceTree = "<group>"; };
+		279D5D5D2A951599005C3066 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		279D5D5E2A95163D005C3066 /* testserver.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = testserver.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,10 +228,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		2727301A2A8D6DFA000CCA22 /* Frameworks */ = {
+		279D5D4A2A9031EF005C3066 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279D5D552A90389F005C3066 /* libcoro.a in Frameworks */,
+				279D5D562A9038A7005C3066 /* libuv.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,6 +245,7 @@
 			children = (
 				272728CD2A8D651F000CCA22 /* src */,
 				272728C52A8D6505000CCA22 /* tests */,
+				279D5D4E2A9031EF005C3066 /* testserver */,
 				272728D22A8D654C000CCA22 /* vendor */,
 				272730432A8D8736000CCA22 /* libs */,
 				272728EC2A8D66C3000CCA22 /* xcconfigs */,
@@ -233,7 +259,7 @@
 			children = (
 				272728C32A8D6505000CCA22 /* Tests */,
 				272728DB2A8D6604000CCA22 /* libcoro.a */,
-				2727301C2A8D6DFA000CCA22 /* libuvw.a */,
+				279D5D4D2A9031EF005C3066 /* testserver */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -250,13 +276,15 @@
 			isa = PBXGroup;
 			children = (
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
+				279D5D542A903403005C3066 /* Task.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272730542A8ED3D1000CCA22 /* Future.cc */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				272728FE2A8D6B43000CCA22 /* Scheduler.hh */,
 				272730472A8D8A73000CCA22 /* Scheduler.cc */,
-				2727304B2A8E811B000CCA22 /* Defer.hh */,
+				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
 				2727304F2A8EC5E7000CCA22 /* uv */,
+				279D5D572A9146DA005C3066 /* support */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -486,9 +514,30 @@
 				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
 				2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */,
 				2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */,
-				279D5D3D2A8EEA22005C3066 /* Scheduler+UV.cc */,
+				279D5D452A902588005C3066 /* AsyncServer.hh */,
+				279D5D462A902588005C3066 /* AsyncServer.cc */,
 			);
 			path = uv;
+			sourceTree = "<group>";
+		};
+		279D5D4E2A9031EF005C3066 /* testserver */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D5E2A95163D005C3066 /* testserver.entitlements */,
+				279D5D4F2A9031EF005C3066 /* testserver.cc */,
+				279D5D5D2A951599005C3066 /* Info.plist */,
+			);
+			path = testserver;
+			sourceTree = "<group>";
+		};
+		279D5D572A9146DA005C3066 /* support */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D582A9146FE005C3066 /* Backtrace.cc */,
+				279D5D592A9146FE005C3066 /* Backtrace.hh */,
+				2727304B2A8E811B000CCA22 /* Defer.hh */,
+			);
+			path = support;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -499,15 +548,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */,
+				279D5D5B2A9146FE005C3066 /* Backtrace.hh in Headers */,
+				279D5D472A902588005C3066 /* AsyncServer.hh in Headers */,
 				272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */,
 				279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		272730182A8D6DFA000CCA22 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -548,22 +592,22 @@
 			productReference = 272728DB2A8D6604000CCA22 /* libcoro.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		2727301B2A8D6DFA000CCA22 /* uvw */ = {
+		279D5D4C2A9031EF005C3066 /* testserver */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 272730242A8D6DFA000CCA22 /* Build configuration list for PBXNativeTarget "uvw" */;
+			buildConfigurationList = 279D5D512A9031EF005C3066 /* Build configuration list for PBXNativeTarget "testserver" */;
 			buildPhases = (
-				272730182A8D6DFA000CCA22 /* Headers */,
-				272730192A8D6DFA000CCA22 /* Sources */,
-				2727301A2A8D6DFA000CCA22 /* Frameworks */,
+				279D5D492A9031EF005C3066 /* Sources */,
+				279D5D4A2A9031EF005C3066 /* Frameworks */,
+				279D5D4B2A9031EF005C3066 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = uvw;
-			productName = uvw;
-			productReference = 2727301C2A8D6DFA000CCA22 /* libuvw.a */;
-			productType = "com.apple.product-type.library.static";
+			name = testserver;
+			productName = testserver;
+			productReference = 279D5D4D2A9031EF005C3066 /* testserver */;
+			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
@@ -580,7 +624,7 @@
 					272728DA2A8D6604000CCA22 = {
 						CreatedOnToolsVersion = 15.0;
 					};
-					2727301B2A8D6DFA000CCA22 = {
+					279D5D4C2A9031EF005C3066 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -600,7 +644,7 @@
 			targets = (
 				272728DA2A8D6604000CCA22 /* coro */,
 				272728C22A8D6505000CCA22 /* Tests */,
-				2727301B2A8D6DFA000CCA22 /* uvw */,
+				279D5D4C2A9031EF005C3066 /* testserver */,
 			);
 		};
 /* End PBXProject section */
@@ -619,20 +663,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D5D3F2A8EEA22005C3066 /* Scheduler+UV.cc in Sources */,
 				272730412A8D6F35000CCA22 /* AsyncSocket.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
 				272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
 				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
 				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,
+				279D5D5A2A9146FE005C3066 /* Backtrace.cc in Sources */,
+				279D5D482A902588005C3066 /* AsyncServer.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		272730192A8D6DFA000CCA22 /* Sources */ = {
+		279D5D492A9031EF005C3066 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279D5D502A9031EF005C3066 /* testserver.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -691,15 +737,39 @@
 			};
 			name = Release;
 		};
-		272730252A8D6DFA000CCA22 /* Debug */ = {
+		279D5D522A9031EF005C3066 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = testserver/testserver.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z62S7RW88Y;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
+				INFOPLIST_FILE = testserver/Info.plist;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/libs",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mooseyard.coro.testserver;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
-		272730262A8D6DFA000CCA22 /* Release */ = {
+		279D5D532A9031EF005C3066 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = testserver/testserver.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z62S7RW88Y;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = YES;
+				INFOPLIST_FILE = testserver/Info.plist;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/libs",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mooseyard.coro.testserver;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;
 		};
@@ -733,11 +803,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		272730242A8D6DFA000CCA22 /* Build configuration list for PBXNativeTarget "uvw" */ = {
+		279D5D512A9031EF005C3066 /* Build configuration list for PBXNativeTarget "testserver" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				272730252A8D6DFA000CCA22 /* Debug */,
-				272730262A8D6DFA000CCA22 /* Release */,
+				279D5D522A9031EF005C3066 /* Debug */,
+				279D5D532A9031EF005C3066 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

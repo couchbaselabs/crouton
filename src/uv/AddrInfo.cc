@@ -67,10 +67,10 @@ namespace snej::coro::uv {
         uv::check(uv_getaddrinfo(curLoop(), &req, req.callback,
                                  hostName.c_str(), service, &hints),
                   "looking up hostname");
-        uv::check( co_await req, "looking up hostname" );
+        uv::check( AWAIT req, "looking up hostname" );
 
         _info = req.info;
-        co_return true;
+        RETURN true;
     }
 
 

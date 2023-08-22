@@ -28,9 +28,16 @@ namespace snej::coro::uv {
 
 
     TCPSocket::TCPSocket()
-    :_tcpHandle(new uv_tcp_s)
+    :_tcpHandle(new uv_tcp_s) // will be deleted by close's call to closeHandle
     {
         uv_tcp_init(curLoop(), _tcpHandle);
+    }
+
+
+    void TCPSocket::acceptFrom(uv_tcp_s* server) {
+        check(uv_accept((uv_stream_t*)server, (uv_stream_t*)_tcpHandle),
+              "accepting client connection");
+        _socket = (uv_stream_t*)_tcpHandle;
     }
 
 
@@ -46,7 +53,7 @@ namespace snej::coro::uv {
         int status = uv_ip4_addr(address.c_str(), port, (sockaddr_in*)&addr);
         if (status < 0) {
             AddrInfo ai;
-            co_await ai.lookup(address, port);
+            AWAIT ai.lookup(address, port);
             if (sockaddr const* socka = ai.primaryAddress())
                 addr = *socka;
             else
@@ -56,10 +63,10 @@ namespace snej::coro::uv {
         connect_request req;
         check(uv_tcp_connect(&req, _tcpHandle, &addr, req.callbackWithStatus),
               "opening connection");
-        check( co_await req, "opening connection" );
+        check( AWAIT req, "opening connection" );
 
         _socket = req.handle;   // note: this is the same address as _tcpHandle
-        co_return;
+        RETURN;
     }
 
 
@@ -77,12 +84,13 @@ namespace snej::coro::uv {
 
         RequestWithStatus<uv_shutdown_t> req;
         check( uv_shutdown(&req, _socket, req.callbackWithStatus), "closing connection");
-        check( co_await req, "closing connection" );
-        co_return;
+        check( AWAIT req, "closing connection" );
+        RETURN;
     }
 
 
     void TCPSocket::close() {
+        assert(!_readBusy && !_writeBusy);
         freeInputBuf();
         if (_spareInputBuf.base) {
             ::free(_spareInputBuf.base);
@@ -107,10 +115,55 @@ namespace snej::coro::uv {
 
 
     Future<void> TCPSocket::readExactly(size_t len, void* dst) {
-        int64_t bytesRead = co_await read(len, dst);
+        int64_t bytesRead = AWAIT read(len, dst);
         if (bytesRead < len)
             check(int(UV_EOF), "reading from the network");
-        co_return;
+        RETURN;
+    }
+
+
+    Future<string> TCPSocket::readUntil(std::string end) {
+        NotReentrant nr(_readBusy);
+        string data;
+        for(;;) {
+            auto available = _inputBuf.len - _inputOff;
+            if (available == 0) {
+                // Read from the socket:
+                AWAIT _read();
+                available = _inputBuf.len - _inputOff;
+                if (available == 0)
+                    check(int(UV_EOF), "reading");  // Failure: Reached EOF
+            }
+            auto newBytes = (char*)_inputBuf.base + _inputOff;
+
+            // Check for a match that's split between the old and new data:
+            if (!data.empty()) {
+                auto dataLen = data.size();
+                data.append(newBytes, min(end.size() - 1, available));
+                size_t startingAt = 0; //TODO: Start at end.size-1 bytes before dataLen
+                if (auto found = data.find(end, startingAt); found != string::npos) {
+                    found += end.size();
+                    data.resize(found);
+                    _inputOff += found - dataLen;
+                    RETURN data;
+                } else {
+                    data.resize(dataLen);
+                }
+            }
+
+            // Check for a match in the new data:
+            if (auto found = string_view(newBytes, available).find(end); found != string::npos) {
+                found += end.size();
+                data.append(newBytes, found);
+                _inputOff += found;
+                RETURN data;
+            }
+
+            // Otherwise append all the input data and read more:
+            data.append(newBytes, available);
+            _inputOff += available;
+            assert(_inputOff == _inputBuf.len);
+        }
     }
 
 
@@ -122,7 +175,7 @@ namespace snej::coro::uv {
         while (len < maxLen) {
             size_t n = std::min(kGrowSize, maxLen - len);
             data.resize(len + n);
-            size_t bytesRead = co_await _read(n, &data[len]);
+            size_t bytesRead = AWAIT _read(n, &data[len]);
 
             if (bytesRead < n) {
                 data.resize(len + bytesRead);
@@ -130,7 +183,7 @@ namespace snej::coro::uv {
             }
             len += bytesRead;
         }
-        co_return data;
+        RETURN data;
     }
 
 
@@ -142,13 +195,13 @@ namespace snej::coro::uv {
     Future<int64_t> TCPSocket::_read(size_t maxLen, void* dst) {
         size_t bytesRead = 0;
         while (bytesRead < maxLen) {
-            WriteBuf bytes = co_await _readNoCopy(maxLen - bytesRead);
+            WriteBuf bytes = AWAIT _readNoCopy(maxLen - bytesRead);
             if (bytes.len == 0)
                 break;
             ::memcpy((char*)dst + bytesRead, bytes.base, bytes.len);
             bytesRead += bytes.len;
         }
-        co_return bytesRead;
+        RETURN bytesRead;
     }
 
 
@@ -159,6 +212,24 @@ namespace snej::coro::uv {
 
 
     Future<WriteBuf> TCPSocket::_readNoCopy(size_t maxLen) {
+        assert(isOpen());
+        auto available = _inputBuf.len - _inputOff;
+        if (available == 0) {
+            AWAIT _read();
+            available = _inputBuf.len - _inputOff;
+            if (available == 0)
+                RETURN {};  // Reached EOF
+        }
+
+        // Advance _inputOff and return the pointer:
+        size_t n = std::min(maxLen, available);
+        WriteBuf result{.base = (char*)_inputBuf.base + _inputOff, .len = n};
+        _inputOff += n;
+        RETURN result;
+    }
+
+
+    Future<void> TCPSocket::_read() {
         assert(isOpen());
         if (_inputOff == _inputBuf.len) {
             // Read buffer exhausted: recycle or free it
@@ -172,18 +243,9 @@ namespace snej::coro::uv {
 
         if (!_inputBuf.base) {
             // Reload the input buffer from the socket:
-            _inputBuf = co_await readBuf();
-
+            _inputBuf = AWAIT readBuf();
             _inputOff = 0;
-            if (_inputBuf.len == 0)
-                co_return {};  // Reached EOF
         }
-
-        // Advance _inputOff and return the pointer:
-        size_t n = std::min(maxLen, _inputBuf.len - _inputOff);
-        WriteBuf result{.base = (char*)_inputBuf.base + _inputOff, .len = n};
-        _inputOff += n;
-        co_return result;
     }
 
 
@@ -200,7 +262,7 @@ namespace snej::coro::uv {
         state.self = this;
         _socket->data = &state;
 
-        auto allocCallback = [](uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) {
+        auto allocCallback = [](uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf) noexcept {
             auto state = (state_t*)handle->data;
             if (auto self = state->self; self->_spareInputBuf.base) {
                 buf->base = (char*)self->_spareInputBuf.base;
@@ -212,7 +274,7 @@ namespace snej::coro::uv {
             }
         };
 
-        auto readCallback = [](uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+        auto readCallback = [](uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) noexcept {
             uv_read_stop(stream); // We only want this called once!
             auto state = (state_t*)stream->data;
             if (nread >= 0)
@@ -227,10 +289,10 @@ namespace snej::coro::uv {
 
         check(uv_read_start(_socket, allocCallback, readCallback), "reading from the network");
 
-        BufWithCapacity result = co_await state.blocker;
+        BufWithCapacity result = AWAIT state.blocker;
 
         _socket->data = nullptr;
-        co_return result;
+        RETURN result;
     }
 
 
@@ -248,9 +310,9 @@ namespace snej::coro::uv {
         check(uv_write(&req, _socket, (uv_buf_t*)buffers, unsigned(nBuffers),
                            req.callbackWithStatus),
               "sending to the network");
-        check( co_await req, "sending to the network");
+        check( AWAIT req, "sending to the network");
 
-        co_return;
+        RETURN;
     }
 
     Future<void> TCPSocket::write(std::initializer_list<WriteBuf> buffers) {
@@ -264,8 +326,8 @@ namespace snej::coro::uv {
 
     Future<void> TCPSocket::write(std::string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
-        co_await write(str.size(), str.data());
-        co_return;
+        AWAIT write(str.size(), str.data());
+        RETURN;
     }
 
 

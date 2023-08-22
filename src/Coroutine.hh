@@ -8,6 +8,15 @@
 #include <coroutine>
 #include <exception>
 #include <cassert>
+#include <iosfwd>
+#include <stdexcept>
+#include <iostream>//TEMP
+
+
+// Synonyms for coroutine primitives. Optional, but they're more visible in the code.
+#define AWAIT  co_await
+#define YIELD  co_yield
+#define RETURN co_return
 
 namespace snej::coro {
     template <class INSTANCE, class SELF>
@@ -31,8 +40,7 @@ namespace snej::coro {
         CoroutineHandle() = default;
         explicit CoroutineHandle(handle_type h)   :_handle(h) {}
         handle_type handle()                        {return _handle;}
-        void setHandle(handle_type h)               {assert(!_handle); _handle = h;}
-
+        void setHandle(handle_type h)               {_handle = h;}
     private:
         friend class CoroutineImpl<CoroutineHandle<IMPL>,IMPL>;
         
@@ -56,7 +64,10 @@ namespace snej::coro {
         //INSTANCE get_return_object()            {return INSTANCE(handle());}
 
         // Determines whether the coroutine starts suspended when created, or runs immediately.
-        std::suspend_always initial_suspend()   {return {};}
+        std::suspend_always initial_suspend()   {
+            std::cerr << "New " << typeid(SELF).name() << " " << handle() << std::endl;
+            return {};
+        }
 
         // Invoked if the coroutine throws an exception
         void unhandled_exception()              {_exception = std::current_exception();}
@@ -66,6 +77,11 @@ namespace snej::coro {
         // running! The only useful thing you might do in this method other than returning straight
         // to the  caller is to transfer control to a different suspended coroutine."
         std::suspend_always final_suspend() noexcept { return {}; }
+
+        // Other important methods for subclasses:
+        // XXX yield_value(YYY value) { ... }
+        // void return_value(XXX value) { ... }
+        // void return_void() { ... }
 
     protected:
         CoroutineImpl(CoroutineImpl&) = delete;
@@ -78,20 +94,20 @@ namespace snej::coro {
         std::exception_ptr  _exception = nullptr;             // Latest exception thrown
     };
 
-    
+
 
     /// General purpose awaiter that manages control flow during `co_yield`.
     /// It arranges for a specific 'consumer' coroutine, given in the constructor,
     /// to be resumed by the `co_yield` call. It can be `std::noop_coroutine()` to instead resume
     /// the outer non-coro code that called `resume`.
-    class Yielder {
+    class YielderTo {
     public:
         /// Arranges for `consumer` to be returned from `await_suspend`, making it the next
         /// coroutine to run after the `co_yield`.
-        explicit Yielder(std::coroutine_handle<> consumer) : _consumer(consumer) {}
+        explicit YielderTo(std::coroutine_handle<> consumer) : _consumer(consumer) {}
 
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
-        explicit Yielder() :Yielder(std::noop_coroutine()) { }
+        explicit YielderTo() :YielderTo(std::noop_coroutine()) { }
 
         bool await_ready() { return false; }
 
@@ -102,5 +118,25 @@ namespace snej::coro {
     private:
         std::coroutine_handle<> _consumer; // The coroutine that's awaiting my result, or null if none.
     };
+
+
+    class NotReentrant {
+    public:
+        explicit NotReentrant(bool& scope) 
+        :_scope(scope)
+        {
+            if (_scope) throw std::logic_error("Illegal reentrant call");
+            _scope = true;
+        }
+
+        ~NotReentrant() {_scope = false;}
+
+    private:
+        bool& _scope;
+    };
+
+
+    std::string CoroutineName(std::coroutine_handle<>);
+    std::ostream& operator<< (std::ostream&, std::coroutine_handle<>);
 
 }

@@ -9,7 +9,6 @@
 #include "Scheduler.hh"
 #include "uv.h"
 #include <concepts>
-#include <coroutine>
 #include <stdexcept>
 
 namespace snej::coro::uv {
@@ -24,27 +23,15 @@ namespace snej::coro::uv {
     uv_loop_s* curLoop();
 
 
-    class NotReentrant {
-    public:
-        explicit NotReentrant(bool& scope) 
-        :_scope(scope)
-        {
-            if (_scope) throw std::logic_error("Illegal reentrant call");
-            _scope = true;
-        }
-
-        ~NotReentrant() {_scope = false;}
-
-    private:
-        bool& _scope;
-    };
-
-
+    /// Closes any type compatible with uv_handle_t. Calls `delete` on the struct pointer
+    /// after the close completes.
     template <class T>
     void closeHandle(T* &handle) {
         if (handle) {
             handle->data = nullptr;
-            uv_close((uv_handle_t*)handle, [](uv_handle_t* h) {delete (T*)h;});
+            uv_close((uv_handle_t*)handle, [](uv_handle_t* h) noexcept {
+                delete (T*)h;
+            });
             handle = nullptr;
         }
     }

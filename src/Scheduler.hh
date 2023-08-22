@@ -5,19 +5,22 @@
 //
 
 #pragma once
+#include "Coroutine.hh"
 #include <atomic>
 #include <coroutine>
 #include <deque>
 #include <mutex>
 #include <ranges>
-#include <unordered_set>
+#include <unordered_map>
 #include <cassert>
+#include <iostream> //TEMP
 
 struct uv_loop_s;
 
 namespace snej::coro {
+    class EventLoop;
     class Scheduler;
-
+    class Task;
 
     /// Represents a coroutine handle that's been suspended by calling Scheduler::suspend().
     class Suspension {
@@ -41,79 +44,130 @@ namespace snej::coro {
     };
 
 
-    // Schedules coroutines on a single thread. Each thread has an instance of this.
+    /** Schedules coroutines on a single thread. Each thread has an instance of this.
+        @warning The API is *not* thread-safe, except as noted. */
     class Scheduler {
     public:
         using handle = std::coroutine_handle<>;
 
-        /// Returns the Scheduler instance for the current thread.
+        /// Returns the Scheduler instance for the current thread. (Thread-safe, obviously.)
         static Scheduler& current() {
             if (!sCurSched)
                 sCurSched = new Scheduler();
             return *sCurSched;
         }
 
-        /// True if this is the current thread's Scheduler.
-        bool isCurrent()            {return this == sCurSched;}
+        /// True if this is the current thread's Scheduler. (Thread-safe.)
+        bool isCurrent() const           {return this == sCurSched;}
 
+        /// True if there are no tasks waiting to run.
+        bool isIdle() const {
+            return _ready.empty() && !_woke;
+        }
 
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
         /// be returned from next().
         void schedule(handle h) {
+            std::cerr << "Scheduler::schedule " << h << "\n";
             assert(isCurrent());
-            assert(!isReady(h));
             assert(!isWaiting(h));
-            _ready.push_back(h);
+            if (!isReady(h))
+                _ready.push_back(h);
         }
 
-        /// Returns the first coroutine handle that's ready to resume. If none is ready, blocks.
-        handle next() {
-            assert(isCurrent());
-            while (true) {
-                if (auto w = nextIfAny())
-                    return w;
-                _wait();
-            }
-        }
-
-        void _wait();
-        void _wakeUp();
-
-        /// Returns the first coroutine handle that's ready to resume, or else nullptr.
-        handle nextIfAny() {
-            scheduleWakers();
-            if (_ready.empty()) {
-                return nullptr;
+        /// Allows a running coroutine `h` to give another ready coroutine some time.
+        /// Returns the coroutine that should run next, possibly `h` if no others are ready.
+        handle yield(handle h) {
+            if (handle nxt = nextOr(nullptr)) {
+                schedule(h);
+                return nxt;
             } else {
-                handle h = _ready.front();
-                _ready.pop_front();
+                std::cerr << "Scheduler::yield " << h << " -- continue running\n";
                 return h;
             }
         }
 
+        void resumed(handle h) {
+            assert(isCurrent());
+            if (auto i = std::find(_ready.begin(), _ready.end(), h); i != _ready.end())
+                _ready.erase(i);
+        }
+
+        /// Returns the coroutine that should be resumed. If none is ready, blocks.
+        handle next() {
+            return nextOr(std::noop_coroutine());
+        }
+
+        /// Returns the coroutine that should be resumed, or else `dflt`.
+        handle nextOr(handle dflt) {
+            assert(isCurrent());
+            scheduleWakers();
+            if (_ready.empty()) {
+                return dflt;
+            } else {
+                handle h = _ready.front();
+                _ready.pop_front();
+                std::cerr << "Scheduler::resume " << h << std::endl;
+                return h;
+            }
+        }
+
+        /// Returns the coroutine that should be resumed,
+        /// or else the no-op coroutine to return to the outer caller.
+        handle finished(handle h) {
+            std::cerr << "Scheduler::finished " << h << "\n";
+            assert(isCurrent());
+            assert(h.done());
+            assert(!isReady(h));
+            assert(!isWaiting(h));
+            // Always continue on to the caller of `h`, otherwise things get confused.
+            return std::noop_coroutine();
+        }
+
         /// Adds a coroutine handle to the suspension set.
-        /// To make it runnable again, call the returned Suspension's `wakeUp` method once
+        /// To make it runnable again, call the returned Suspension's `wakeUp` method
         /// from any thread.
         Suspension* suspend(handle h) {
+            std::cerr << "Scheduler::suspend " << h << "\n";
             assert(isCurrent());
             assert(!isReady(h));
             auto [i, added] = _suspended.try_emplace(h, h, this);
             return &i->second;
         }
 
+        /// Called from "normal" code.
+        /// Resumes the next ready coroutine and returns true.
+        /// If no coroutines are ready, returns false.
+        bool resume() {
+            if (handle h = nextOr(nullptr)) {
+                h.resume();
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         //---- libuv additions:
 
-        /// Returns the associated libuv event loop. If there is none, it creates one.
-        uv_loop_s* uvLoop();
+        /// Returns the associated event loop. If there is none, it creates one.
+        EventLoop& eventLoop();
 
         /// Associates an existing libuv event loop with this Scheduler/thread.
         /// Must be called before the first call to `uvLoop`.
-        void useUVLoop(uv_loop_s*);
+        void useEventLoop(EventLoop*);
+
+        void run();
+
+        void onEventLoop(std::function<void()>);
 
     private:
         friend class Suspension;
         
         Scheduler() = default;
+
+        EventLoop* newEventLoop();
+
+        Task eventLoopTask();
 
         bool isReady(handle h) const {
             return std::ranges::any_of(_ready, [=](auto x) {return x == h;});
@@ -123,22 +177,24 @@ namespace snej::coro {
             return _suspended.find(h) != _suspended.end();
         }
 
+        void _wakeUp();
+
         /// Changes a waiting coroutine's state to 'ready' and notifies the Scheduler to resume
         /// if it's blocked in next(). At some point next() will return this coroutine.
         /// \note  This method is thread-safe.
         void wakeUp() {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _woke = true;
-            _wakeUp();
+            if (_woke.exchange(true) == false)
+                _wakeUp();
         }
 
         // Finds any waiting coroutines that want to wake up, removes them from `_waiting`
         // and adds them to `_ready`.
         void scheduleWakers() {
-            while (_woke.exchange(false)) {
+            while (_woke.exchange(false) == true) {
                 // Some waiting coroutine is now ready:
                 for (auto i = _suspended.begin(); i != _suspended.end();) {
                     if (i->second._wakeMe.test()) {
+                        std::cerr << "Scheduler::scheduleWaker(" << i->first << ")\n";
                         _ready.push_back(i->first);
                         i = _suspended.erase(i);
                     } else {
@@ -148,14 +204,43 @@ namespace snej::coro {
             }
         }
 
-        static inline __thread Scheduler* sCurSched;
+        using SuspensionMap = std::unordered_map<handle,Suspension>;
 
-        std::deque<handle>                      _ready;         // Coroutines that are ready to run
-        std::unordered_map<handle,Suspension>   _suspended;     // Suspended/sleeping coroutines
-        std::atomic<bool>                       _woke = false;  // True if a suspended is waking
-        std::mutex                              _mutex;         // Synchronizes _cond
-        std::condition_variable                 _cond;          // Notifies next() of coro waking
-        uv_loop_s*                              _uvloop = nullptr; // libuv event loop
+        static inline __thread Scheduler* sCurSched; // Current thread's instance
+
+        std::deque<handle>  _ready;         // Coroutines that are ready to run
+        SuspensionMap       _suspended;     // Suspended/sleeping coroutines
+        std::atomic<bool>   _woke = false;  // True if a suspended is waking
+        EventLoop*          _eventLoop;
+        bool                _ownsEventLoop = false;
+        handle              _eventLoopTask = nullptr;
+        bool                _inEventLoopTask = false;
     };
+
+
+
+    /** General purpose Awaitable to return from `yield_value`.
+        It does nothing, just allows the Scheduler to schedule another runnable task if any. */
+    struct Yielder : public std::suspend_always {
+        explicit Yielder(std::coroutine_handle<> myHandle) :_handle(myHandle) { }
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
+            return Scheduler::current().yield(h);
+        }
+        void await_resume() const noexcept {
+            Scheduler::current().resumed(_handle);
+        }
+    private:
+        std::coroutine_handle<> _handle;
+    };
+
+
+    /** General purpose Awaitable to return from `final_suspend`.
+        It does nothing, just allows the Scheduler to schedule another runnable task if any. */
+    struct Finisher : public std::suspend_always {
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
+            return Scheduler::current().finished(h);
+        }
+    };
+
 
 }

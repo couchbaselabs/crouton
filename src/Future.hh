@@ -9,13 +9,11 @@
 #include "Scheduler.hh"
 #include <cassert>
 #include <exception>
+#include <iostream>//TEMP
 
 namespace snej::coro {
     template <typename T> class Future;
     template <typename T> class FutureImpl;
-
-    template <typename T> struct ref { using type = T&; };
-    template <> struct ref<void> {using type = void; };
 
 
     class FutureStateBase {
@@ -47,7 +45,7 @@ namespace snej::coro {
 
         void setValue(T&& value) {
             std::unique_lock<std::mutex> lock(_mutex);
-            _value = std::forward<T>(value);
+            _value = std::move(value);
             _gotValue();
         }
 
@@ -79,7 +77,7 @@ namespace snej::coro {
         bool hasValue() const                   {return _state->hasValue();}
 
         /// Sets the Future's value and unblocks anyone waiting for it.
-        void setValue(T&& t) const              {_state->setValue(std::forward<T>(t));}
+        void setValue(T&& t) const              {_state->setValue(std::move(t));}
 
         /// Sets the Future's result as an exception and unblocks anyone waiting for it.
         /// Calling value() will re-throw the exception.
@@ -119,14 +117,12 @@ namespace snej::coro {
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
         /// Requires that this Future be returned from a coroutine.
-        ref<T>::type waitForValue()     {return this->handle().promise().waitForValue();}
+        auto waitForValue()             {return this->handle().promise().waitForValue();}
 
         // These methods make Future awaitable:
         bool await_ready()              {return _state->hasValue();}
-        ref<T>::type await_resume()     {return _state->value();}
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept{
-            return _state->suspend(coro);
-        }
+        auto await_resume()             {return _state->value();}
+        auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
 
     private:
         friend class FutureProvider<T>;
@@ -164,9 +160,13 @@ namespace snej::coro {
             return f;
         }
 
-        std::suspend_never initial_suspend()    {return {};}
+        std::suspend_never initial_suspend() {
+            std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
+            return {};
+        }
         void unhandled_exception()              {_provider.setException(std::current_exception());}
-        void return_value(T&& value)            {_provider.setValue(std::forward<T>(value));}
+        void return_value(T&& value)            {_provider.setValue(std::move(value));}
+        Finisher final_suspend() noexcept       {return {};}
 
     private:
         handle_type handle()                    {return handle_type::from_promise(*this);}
@@ -182,11 +182,15 @@ namespace snej::coro {
         FutureImpl() = default;
         void waitForValue();
         Future<void> get_return_object();
-        std::suspend_never initial_suspend();
-        void unhandled_exception();
-        void return_void();
+        std::suspend_never initial_suspend()    {
+            std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
+            return {};
+        }
+        void unhandled_exception()              {_provider.setException(std::current_exception());}
+        void return_void()                      {_provider.setValue();}
+        Finisher final_suspend() noexcept       {return {};}
     private:
-        handle_type handle();
+        handle_type handle()                    {return handle_type::from_promise(*this);}
         FutureProvider<void> _provider;
     };
 
