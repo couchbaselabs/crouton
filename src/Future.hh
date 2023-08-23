@@ -36,11 +36,11 @@ namespace snej::coro {
     template <typename T>
     class FutureState : public FutureStateBase {
     public:
-        T& value() {
+        T&& value() {
             std::unique_lock<std::mutex> lock(_mutex);
             _checkValue();
             assert(_value);
-            return *_value;
+            return std::move(*_value);
         }
 
         void setValue(T&& value) {
@@ -85,7 +85,7 @@ namespace snej::coro {
 
         /// Gets the future's value, or throws its exception.
         /// It's illegal to call this before a value is set.
-        T& value() const                        {return _state->value();}
+        T&& value() const                        {return std::move(_state->value());}
 
     private:
         std::shared_ptr<FutureState<T>> _state;
@@ -117,11 +117,11 @@ namespace snej::coro {
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
         /// Requires that this Future be returned from a coroutine.
-        auto waitForValue()             {return this->handle().promise().waitForValue();}
+        T&& waitForValue()             {return std::move(this->handle().promise().waitForValue());}
 
         // These methods make Future awaitable:
         bool await_ready()              {return _state->hasValue();}
-        auto await_resume()             {return _state->value();}
+        T&& await_resume()              {return std::move(_state->value());}
         auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
 
     private:
@@ -131,6 +131,30 @@ namespace snej::coro {
         Future(std::shared_ptr<FutureState<T>> state)   :_state(std::move(state)) { }
 
         std::shared_ptr<FutureState<T>>  _state;
+    };
+
+
+    template <>
+    class Future<void> : public CoroutineHandle<FutureImpl<void>> {
+    public:
+        bool hasValue() const           {return _state->hasValue();}
+
+        /// Blocks until the value is available. Must NOT be called from a coroutine!
+        /// Requires that this Future be returned from a coroutine.
+        inline void waitForValue();
+
+        // These methods make Future awaitable:
+        bool await_ready()              {return _state->hasValue();}
+        void await_resume()             {_state->value();}
+        auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
+
+    private:
+        friend class FutureProvider<void>;
+        friend class FutureImpl<void>;
+
+        Future(std::shared_ptr<FutureState<void>> state)   :_state(std::move(state)) { }
+
+        std::shared_ptr<FutureState<void>>  _state;
     };
 
 
@@ -146,10 +170,9 @@ namespace snej::coro {
 
         FutureImpl() = default;
 
-        T& waitForValue() {
-            while (!_provider.hasValue())
-                handle().resume();
-            return _provider.value();
+        T&& waitForValue() {
+            Scheduler::current().runUntil([&]{ return _provider.hasValue(); });
+            return std::move(_provider.value());
         }
 
         //---- C++ coroutine internal API:
@@ -193,5 +216,7 @@ namespace snej::coro {
         handle_type handle()                    {return handle_type::from_promise(*this);}
         FutureProvider<void> _provider;
     };
+
+    void Future<void>::waitForValue()             {this->handle().promise().waitForValue();}
 
 }

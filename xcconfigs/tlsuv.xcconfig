@@ -1,0 +1,20 @@
+//
+//  tlsuv.xcconfig
+//  coro
+//
+//  Created by Jens Alfke on 8/22/23.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "StaticLib.xcconfig"
+
+HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/src vendor/tlsuv/deps/uv_link_t
+SYSTEM_HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/include vendor/tlsuv/deps/uv_link_t/include vendor/mbedtls/include
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited)  USE_MBEDTLS
+
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-shorten-64-to-32  -Wno-unused-variable  -Wno-missing-prototypes -Wno-strict-prototypes -Wno-newline-eof -Wno-format-nonliteral -Wno-unused-function -Wno-implicit-int-conversion
+
+CLANG_ENABLE_MODULES = NO

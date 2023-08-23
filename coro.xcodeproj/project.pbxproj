@@ -10,8 +10,8 @@
 		272728C72A8D6505000CCA22 /* tests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272728C62A8D6505000CCA22 /* tests.cc */; };
 		272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 272728D42A8D6575000CCA22 /* catch_amalgamated.cpp */; };
 		272728E72A8D6619000CCA22 /* libcoro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcoro.a */; };
-		272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */; };
-		272730412A8D6F35000CCA22 /* AsyncSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */; };
+		272730402A8D6F35000CCA22 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2727303E2A8D6F35000CCA22 /* TCPSocket.hh */; };
+		272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727303F2A8D6F35000CCA22 /* TCPSocket.cc */; };
 		272730462A8D874B000CCA22 /* libuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272730442A8D8736000CCA22 /* libuv.a */; };
 		272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730472A8D8A73000CCA22 /* Scheduler.cc */; };
 		2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727304D2A8E9D99000CCA22 /* UVBase.cc */; };
@@ -20,13 +20,40 @@
 		272730552A8ED3D1000CCA22 /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730542A8ED3D1000CCA22 /* Future.cc */; };
 		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
-		279D5D472A902588005C3066 /* AsyncServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* AsyncServer.hh */; };
-		279D5D482A902588005C3066 /* AsyncServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D462A902588005C3066 /* AsyncServer.cc */; };
+		279D5D472A902588005C3066 /* TCPServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* TCPServer.hh */; };
+		279D5D482A902588005C3066 /* TCPServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D462A902588005C3066 /* TCPServer.cc */; };
 		279D5D502A9031EF005C3066 /* testserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D4F2A9031EF005C3066 /* testserver.cc */; };
 		279D5D552A90389F005C3066 /* libcoro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcoro.a */; };
 		279D5D562A9038A7005C3066 /* libuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272730442A8D8736000CCA22 /* libuv.a */; };
 		279D5D5A2A9146FE005C3066 /* Backtrace.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D582A9146FE005C3066 /* Backtrace.cc */; };
 		279D5D5B2A9146FE005C3066 /* Backtrace.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D592A9146FE005C3066 /* Backtrace.hh */; };
+		279D5D612A952986005C3066 /* Stream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D5F2A952986005C3066 /* Stream.hh */; };
+		279D5D622A952986005C3066 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D602A952986005C3066 /* Stream.cc */; };
+		279D5D652A952DD1005C3066 /* Pipe.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D632A952DD1005C3066 /* Pipe.hh */; };
+		279D5D662A952DD1005C3066 /* Pipe.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D642A952DD1005C3066 /* Pipe.cc */; };
+		279D5E382A954670005C3066 /* tlsuv.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E222A954561005C3066 /* tlsuv.c */; };
+		279D5E392A954670005C3066 /* tcp_src.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E202A954561005C3066 /* tcp_src.c */; };
+		279D5E3A2A954670005C3066 /* um_debug.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E1A2A954561005C3066 /* um_debug.c */; };
+		279D5E3C2A954670005C3066 /* compression.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E212A954561005C3066 /* compression.c */; };
+		279D5E3D2A954670005C3066 /* bio.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E0F2A954561005C3066 /* bio.c */; };
+		279D5E3E2A954670005C3066 /* base64.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E112A954561005C3066 /* base64.c */; };
+		279D5E402A954670005C3066 /* p11.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E1F2A954561005C3066 /* p11.c */; };
+		279D5E412A954670005C3066 /* tls_link.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E0D2A954561005C3066 /* tls_link.c */; };
+		279D5E422A954670005C3066 /* tls_engine.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E0B2A954561005C3066 /* tls_engine.c */; };
+		279D5E432A95469F005C3066 /* libtlsuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E302A954627005C3066 /* libtlsuv.a */; };
+		279D5E452A954A37005C3066 /* engine.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E062A954561005C3066 /* engine.c */; };
+		279D5E462A954A37005C3066 /* p11_ecdsa.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E0A2A954561005C3066 /* p11_ecdsa.c */; };
+		279D5E472A954A37005C3066 /* p11_rsa.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E092A954561005C3066 /* p11_rsa.c */; };
+		279D5E482A954A37005C3066 /* mbed_p11.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E052A954561005C3066 /* mbed_p11.c */; };
+		279D5E492A954A37005C3066 /* keys.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5E072A954561005C3066 /* keys.c */; };
+		279D5E4E2A9555C1005C3066 /* libmbedx509.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E4B2A9555C1005C3066 /* libmbedx509.a */; };
+		279D5E4F2A9555C1005C3066 /* libmbedcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E4C2A9555C1005C3066 /* libmbedcrypto.a */; };
+		279D5E502A9555C1005C3066 /* libmbedtls.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E4D2A9555C1005C3066 /* libmbedtls.a */; };
+		279D5E512A95608F005C3066 /* uv_link_source_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5DE22A954561005C3066 /* uv_link_source_t.c */; };
+		279D5E522A95608F005C3066 /* uv_link_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5DE42A954561005C3066 /* uv_link_t.c */; };
+		279D5E532A95608F005C3066 /* defaults.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5DE32A954561005C3066 /* defaults.c */; };
+		279D5E542A95608F005C3066 /* uv_link_observer_t.c in Sources */ = {isa = PBXBuildFile; fileRef = 279D5DE12A954561005C3066 /* uv_link_observer_t.c */; };
+		279D5E552A956124005C3066 /* libtlsuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E302A954627005C3066 /* libtlsuv.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -185,8 +212,8 @@
 		27272F9C2A8D6D2C000CCA22 /* queue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = queue.h; sourceTree = "<group>"; };
 		27272F9D2A8D6D2C000CCA22 /* thread-common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "thread-common.c"; sourceTree = "<group>"; };
 		27272F9E2A8D6D2C000CCA22 /* strscpy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = strscpy.h; sourceTree = "<group>"; };
-		2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncSocket.hh; sourceTree = "<group>"; };
-		2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncSocket.cc; sourceTree = "<group>"; };
+		2727303E2A8D6F35000CCA22 /* TCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPSocket.hh; sourceTree = "<group>"; };
+		2727303F2A8D6F35000CCA22 /* TCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TCPSocket.cc; sourceTree = "<group>"; };
 		272730442A8D8736000CCA22 /* libuv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libuv.a; sourceTree = "<group>"; };
 		272730472A8D8A73000CCA22 /* Scheduler.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Scheduler.cc; sourceTree = "<group>"; };
 		272730492A8D99B0000CCA22 /* UVInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UVInternal.hh; sourceTree = "<group>"; };
@@ -199,8 +226,8 @@
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* AsyncUV.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncUV.hh; sourceTree = "<group>"; };
-		279D5D452A902588005C3066 /* AsyncServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncServer.hh; sourceTree = "<group>"; };
-		279D5D462A902588005C3066 /* AsyncServer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncServer.cc; sourceTree = "<group>"; };
+		279D5D452A902588005C3066 /* TCPServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPServer.hh; sourceTree = "<group>"; };
+		279D5D462A902588005C3066 /* TCPServer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TCPServer.cc; sourceTree = "<group>"; };
 		279D5D4D2A9031EF005C3066 /* testserver */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = testserver; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D5D4F2A9031EF005C3066 /* testserver.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testserver.cc; sourceTree = "<group>"; };
 		279D5D542A903403005C3066 /* Task.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Task.hh; sourceTree = "<group>"; };
@@ -209,6 +236,97 @@
 		279D5D5C2A93BB5C005C3066 /* EventLoop.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = EventLoop.hh; sourceTree = "<group>"; };
 		279D5D5D2A951599005C3066 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		279D5D5E2A95163D005C3066 /* testserver.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = testserver.entitlements; sourceTree = "<group>"; };
+		279D5D5F2A952986005C3066 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Stream.hh; sourceTree = "<group>"; };
+		279D5D602A952986005C3066 /* Stream.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
+		279D5D632A952DD1005C3066 /* Pipe.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Pipe.hh; sourceTree = "<group>"; };
+		279D5D642A952DD1005C3066 /* Pipe.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Pipe.cc; sourceTree = "<group>"; };
+		279D5D722A954561005C3066 /* tls_link.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_link.h; sourceTree = "<group>"; };
+		279D5D732A954561005C3066 /* http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
+		279D5D742A954561005C3066 /* websocket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = websocket.h; sourceTree = "<group>"; };
+		279D5D752A954561005C3066 /* tlsuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tlsuv.h; sourceTree = "<group>"; };
+		279D5D762A954561005C3066 /* tcp_src.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tcp_src.h; sourceTree = "<group>"; };
+		279D5D772A954561005C3066 /* src_t.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src_t.h; sourceTree = "<group>"; };
+		279D5D782A954561005C3066 /* queue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = queue.h; sourceTree = "<group>"; };
+		279D5D792A954561005C3066 /* tls_engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_engine.h; sourceTree = "<group>"; };
+		279D5DB72A954561005C3066 /* common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = common.c; sourceTree = "<group>"; };
+		279D5DB82A954561005C3066 /* sample-cf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "sample-cf.c"; sourceTree = "<group>"; };
+		279D5DB92A954561005C3066 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		279D5DBA2A954561005C3066 /* http-ping.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "http-ping.c"; sourceTree = "<group>"; };
+		279D5DBB2A954561005C3066 /* um-curl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "um-curl.c"; sourceTree = "<group>"; };
+		279D5DBC2A954561005C3066 /* sample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sample.c; sourceTree = "<group>"; };
+		279D5DBD2A954561005C3066 /* ws-client.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "ws-client.c"; sourceTree = "<group>"; };
+		279D5DBE2A954561005C3066 /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		279D5DBF2A954561005C3066 /* repeat-fetch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "repeat-fetch.c"; sourceTree = "<group>"; };
+		279D5DC02A954561005C3066 /* engine_test.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = engine_test.c; sourceTree = "<group>"; };
+		279D5DC22A954561005C3066 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		279D5DC42A954561005C3066 /* uv_link_t.gyp */ = {isa = PBXFileReference; lastKnownFileType = text; path = uv_link_t.gyp; sourceTree = "<group>"; };
+		279D5DC72A954561005C3066 /* test-defaults.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "test-defaults.c"; sourceTree = "<group>"; };
+		279D5DC82A954561005C3066 /* test-uv-link-source-t.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "test-uv-link-source-t.c"; sourceTree = "<group>"; };
+		279D5DC92A954561005C3066 /* test-list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "test-list.h"; sourceTree = "<group>"; };
+		279D5DCA2A954561005C3066 /* test-common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "test-common.h"; sourceTree = "<group>"; };
+		279D5DCB2A954561005C3066 /* test-strerror.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "test-strerror.c"; sourceTree = "<group>"; };
+		279D5DCC2A954561005C3066 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		279D5DCD2A954561005C3066 /* test-close.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "test-close.c"; sourceTree = "<group>"; };
+		279D5DCE2A954561005C3066 /* test-uv-link-observer-t.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "test-uv-link-observer-t.c"; sourceTree = "<group>"; };
+		279D5DCF2A954561005C3066 /* binding.gyp */ = {isa = PBXFileReference; lastKnownFileType = text; path = binding.gyp; sourceTree = "<group>"; };
+		279D5DD22A954561005C3066 /* middle.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = middle.c; sourceTree = "<group>"; };
+		279D5DD32A954561005C3066 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		279D5DD42A954561005C3066 /* middle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = middle.h; sourceTree = "<group>"; };
+		279D5DD62A954561005C3066 /* uv_link_t.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = uv_link_t.h; sourceTree = "<group>"; };
+		279D5DD82A954561005C3066 /* api.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = api.md; sourceTree = "<group>"; };
+		279D5DD92A954561005C3066 /* implementation-guide.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "implementation-guide.md"; sourceTree = "<group>"; };
+		279D5DDA2A954561005C3066 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		279D5DDB2A954561005C3066 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		279D5DDC2A954561005C3066 /* package.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = package.json; sourceTree = "<group>"; };
+		279D5DDD2A954561005C3066 /* common.gypi */ = {isa = PBXFileReference; lastKnownFileType = text; path = common.gypi; sourceTree = "<group>"; };
+		279D5DDE2A954561005C3066 /* options.gypi */ = {isa = PBXFileReference; lastKnownFileType = text; path = options.gypi; sourceTree = "<group>"; };
+		279D5DDF2A954561005C3066 /* .travis.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .travis.yml; sourceTree = "<group>"; };
+		279D5DE12A954561005C3066 /* uv_link_observer_t.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = uv_link_observer_t.c; sourceTree = "<group>"; };
+		279D5DE22A954561005C3066 /* uv_link_source_t.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = uv_link_source_t.c; sourceTree = "<group>"; };
+		279D5DE32A954561005C3066 /* defaults.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = defaults.c; sourceTree = "<group>"; };
+		279D5DE42A954561005C3066 /* uv_link_t.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = uv_link_t.c; sourceTree = "<group>"; };
+		279D5DE52A954561005C3066 /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		279D5DE62A954561005C3066 /* uv_link.cmake */ = {isa = PBXFileReference; lastKnownFileType = text; path = uv_link.cmake; sourceTree = "<group>"; };
+		279D5DFE2A954561005C3066 /* http_req.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = http_req.c; sourceTree = "<group>"; };
+		279D5DFF2A954561005C3066 /* bio.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bio.h; sourceTree = "<group>"; };
+		279D5E002A954561005C3066 /* p11.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = p11.h; sourceTree = "<group>"; };
+		279D5E012A954561005C3066 /* um_debug.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = um_debug.h; sourceTree = "<group>"; };
+		279D5E032A954561005C3066 /* keys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = keys.h; sourceTree = "<group>"; };
+		279D5E042A954561005C3066 /* mbed_p11.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mbed_p11.h; sourceTree = "<group>"; };
+		279D5E052A954561005C3066 /* mbed_p11.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mbed_p11.c; sourceTree = "<group>"; };
+		279D5E062A954561005C3066 /* engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = engine.c; sourceTree = "<group>"; };
+		279D5E072A954561005C3066 /* keys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = keys.c; sourceTree = "<group>"; };
+		279D5E082A954561005C3066 /* p11_errors.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = p11_errors.h; sourceTree = "<group>"; };
+		279D5E092A954561005C3066 /* p11_rsa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = p11_rsa.c; sourceTree = "<group>"; };
+		279D5E0A2A954561005C3066 /* p11_ecdsa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = p11_ecdsa.c; sourceTree = "<group>"; };
+		279D5E0B2A954561005C3066 /* tls_engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tls_engine.c; sourceTree = "<group>"; };
+		279D5E0C2A954561005C3066 /* compression.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = compression.h; sourceTree = "<group>"; };
+		279D5E0D2A954561005C3066 /* tls_link.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tls_link.c; sourceTree = "<group>"; };
+		279D5E0E2A954561005C3066 /* win32_compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = win32_compat.h; sourceTree = "<group>"; };
+		279D5E0F2A954561005C3066 /* bio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bio.c; sourceTree = "<group>"; };
+		279D5E102A954561005C3066 /* websocket.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = websocket.c; sourceTree = "<group>"; };
+		279D5E112A954561005C3066 /* base64.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = base64.c; sourceTree = "<group>"; };
+		279D5E122A954561005C3066 /* http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = http.c; sourceTree = "<group>"; };
+		279D5E132A954561005C3066 /* portable_endian.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = portable_endian.h; sourceTree = "<group>"; };
+		279D5E142A954561005C3066 /* http_req.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = http_req.h; sourceTree = "<group>"; };
+		279D5E162A954561005C3066 /* pkcs11.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pkcs11.h; sourceTree = "<group>"; };
+		279D5E172A954561005C3066 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		279D5E182A954561005C3066 /* pkcs11t.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pkcs11t.h; sourceTree = "<group>"; };
+		279D5E192A954561005C3066 /* pkcs11f.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pkcs11f.h; sourceTree = "<group>"; };
+		279D5E1A2A954561005C3066 /* um_debug.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = um_debug.c; sourceTree = "<group>"; };
+		279D5E1C2A954561005C3066 /* keys.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = keys.h; sourceTree = "<group>"; };
+		279D5E1D2A954561005C3066 /* engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = engine.c; sourceTree = "<group>"; };
+		279D5E1E2A954561005C3066 /* keys.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = keys.c; sourceTree = "<group>"; };
+		279D5E1F2A954561005C3066 /* p11.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = p11.c; sourceTree = "<group>"; };
+		279D5E202A954561005C3066 /* tcp_src.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tcp_src.c; sourceTree = "<group>"; };
+		279D5E212A954561005C3066 /* compression.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = compression.c; sourceTree = "<group>"; };
+		279D5E222A954561005C3066 /* tlsuv.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tlsuv.c; sourceTree = "<group>"; };
+		279D5E302A954627005C3066 /* libtlsuv.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libtlsuv.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		279D5E442A9546CC005C3066 /* tlsuv.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = tlsuv.xcconfig; sourceTree = "<group>"; };
+		279D5E4B2A9555C1005C3066 /* libmbedx509.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedx509.a; path = mbedtls/build/library/libmbedx509.a; sourceTree = "<group>"; };
+		279D5E4C2A9555C1005C3066 /* libmbedcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedcrypto.a; path = mbedtls/build/library/libmbedcrypto.a; sourceTree = "<group>"; };
+		279D5E4D2A9555C1005C3066 /* libmbedtls.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedtls.a; path = mbedtls/build/library/libmbedtls.a; sourceTree = "<group>"; };
+		279D5E562A956CC3005C3066 /* uv_stream_wrapper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = uv_stream_wrapper.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -216,6 +334,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279D5E552A956124005C3066 /* libtlsuv.a in Frameworks */,
 				272730462A8D874B000CCA22 /* libuv.a in Frameworks */,
 				272728E72A8D6619000CCA22 /* libcoro.a in Frameworks */,
 			);
@@ -232,8 +351,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279D5E432A95469F005C3066 /* libtlsuv.a in Frameworks */,
 				279D5D552A90389F005C3066 /* libcoro.a in Frameworks */,
 				279D5D562A9038A7005C3066 /* libuv.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		279D5E2E2A954627005C3066 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				279D5E4F2A9555C1005C3066 /* libmbedcrypto.a in Frameworks */,
+				279D5E502A9555C1005C3066 /* libmbedtls.a in Frameworks */,
+				279D5E4E2A9555C1005C3066 /* libmbedx509.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +390,7 @@
 				272728C32A8D6505000CCA22 /* Tests */,
 				272728DB2A8D6604000CCA22 /* libcoro.a */,
 				279D5D4D2A9031EF005C3066 /* testserver */,
+				279D5E302A954627005C3066 /* libtlsuv.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -292,7 +423,9 @@
 		272728D22A8D654C000CCA22 /* vendor */ = {
 			isa = PBXGroup;
 			children = (
+				279D5E4A2A9555A8005C3066 /* mbedtls */,
 				272729012A8D6D2A000CCA22 /* libuv */,
+				279D5D672A954561005C3066 /* tlsuv */,
 				272728D32A8D6575000CCA22 /* catch2 */,
 			);
 			path = vendor;
@@ -322,6 +455,7 @@
 				272728EF2A8D66EA000CCA22 /* Project-Release.xcconfig */,
 				272728ED2A8D66EA000CCA22 /* StaticLib.xcconfig */,
 				272728F12A8D66EA000CCA22 /* Tests.xcconfig */,
+				279D5E442A9546CC005C3066 /* tlsuv.xcconfig */,
 				272728F22A8D66EA000CCA22 /* XcodeWarnings.xcconfig */,
 			);
 			path = xcconfigs;
@@ -512,10 +646,15 @@
 				272730512A8EC61D000CCA22 /* AsyncFile.cc */,
 				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
 				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
-				2727303E2A8D6F35000CCA22 /* AsyncSocket.hh */,
-				2727303F2A8D6F35000CCA22 /* AsyncSocket.cc */,
-				279D5D452A902588005C3066 /* AsyncServer.hh */,
-				279D5D462A902588005C3066 /* AsyncServer.cc */,
+				279D5D5F2A952986005C3066 /* Stream.hh */,
+				279D5E562A956CC3005C3066 /* uv_stream_wrapper.hh */,
+				279D5D602A952986005C3066 /* Stream.cc */,
+				279D5D632A952DD1005C3066 /* Pipe.hh */,
+				279D5D642A952DD1005C3066 /* Pipe.cc */,
+				2727303E2A8D6F35000CCA22 /* TCPSocket.hh */,
+				2727303F2A8D6F35000CCA22 /* TCPSocket.cc */,
+				279D5D452A902588005C3066 /* TCPServer.hh */,
+				279D5D462A902588005C3066 /* TCPServer.cc */,
 			);
 			path = uv;
 			sourceTree = "<group>";
@@ -540,6 +679,232 @@
 			path = support;
 			sourceTree = "<group>";
 		};
+		279D5D672A954561005C3066 /* tlsuv */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D702A954561005C3066 /* include */,
+				279D5DB62A954561005C3066 /* sample */,
+				279D5DC12A954561005C3066 /* deps */,
+				279D5DFD2A954561005C3066 /* src */,
+			);
+			path = tlsuv;
+			sourceTree = "<group>";
+		};
+		279D5D702A954561005C3066 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D712A954561005C3066 /* tlsuv */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		279D5D712A954561005C3066 /* tlsuv */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D732A954561005C3066 /* http.h */,
+				279D5D782A954561005C3066 /* queue.h */,
+				279D5D772A954561005C3066 /* src_t.h */,
+				279D5D762A954561005C3066 /* tcp_src.h */,
+				279D5D792A954561005C3066 /* tls_engine.h */,
+				279D5D722A954561005C3066 /* tls_link.h */,
+				279D5D752A954561005C3066 /* tlsuv.h */,
+				279D5D742A954561005C3066 /* websocket.h */,
+			);
+			path = tlsuv;
+			sourceTree = "<group>";
+		};
+		279D5DB62A954561005C3066 /* sample */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DB72A954561005C3066 /* common.c */,
+				279D5DB82A954561005C3066 /* sample-cf.c */,
+				279D5DB92A954561005C3066 /* CMakeLists.txt */,
+				279D5DBA2A954561005C3066 /* http-ping.c */,
+				279D5DBB2A954561005C3066 /* um-curl.c */,
+				279D5DBC2A954561005C3066 /* sample.c */,
+				279D5DBD2A954561005C3066 /* ws-client.c */,
+				279D5DBE2A954561005C3066 /* common.h */,
+				279D5DBF2A954561005C3066 /* repeat-fetch.c */,
+				279D5DC02A954561005C3066 /* engine_test.c */,
+			);
+			path = sample;
+			sourceTree = "<group>";
+		};
+		279D5DC12A954561005C3066 /* deps */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DC22A954561005C3066 /* CMakeLists.txt */,
+				279D5DC32A954561005C3066 /* uv_link_t */,
+				279D5DE62A954561005C3066 /* uv_link.cmake */,
+			);
+			path = deps;
+			sourceTree = "<group>";
+		};
+		279D5DC32A954561005C3066 /* uv_link_t */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DDB2A954561005C3066 /* .gitignore */,
+				279D5DCF2A954561005C3066 /* binding.gyp */,
+				279D5DC42A954561005C3066 /* uv_link_t.gyp */,
+				279D5DDD2A954561005C3066 /* common.gypi */,
+				279D5DDE2A954561005C3066 /* options.gypi */,
+				279D5DDC2A954561005C3066 /* package.json */,
+				279D5DDA2A954561005C3066 /* README.md */,
+				279D5DDF2A954561005C3066 /* .travis.yml */,
+				279D5DD72A954561005C3066 /* docs */,
+				279D5DD02A954561005C3066 /* example */,
+				279D5DD52A954561005C3066 /* include */,
+				279D5DE02A954561005C3066 /* src */,
+				279D5DC52A954561005C3066 /* test */,
+			);
+			path = uv_link_t;
+			sourceTree = "<group>";
+		};
+		279D5DC52A954561005C3066 /* test */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DC62A954561005C3066 /* src */,
+			);
+			path = test;
+			sourceTree = "<group>";
+		};
+		279D5DC62A954561005C3066 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DC72A954561005C3066 /* test-defaults.c */,
+				279D5DC82A954561005C3066 /* test-uv-link-source-t.c */,
+				279D5DC92A954561005C3066 /* test-list.h */,
+				279D5DCA2A954561005C3066 /* test-common.h */,
+				279D5DCB2A954561005C3066 /* test-strerror.c */,
+				279D5DCC2A954561005C3066 /* main.c */,
+				279D5DCD2A954561005C3066 /* test-close.c */,
+				279D5DCE2A954561005C3066 /* test-uv-link-observer-t.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		279D5DD02A954561005C3066 /* example */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DD12A954561005C3066 /* src */,
+			);
+			path = example;
+			sourceTree = "<group>";
+		};
+		279D5DD12A954561005C3066 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DD22A954561005C3066 /* middle.c */,
+				279D5DD32A954561005C3066 /* main.c */,
+				279D5DD42A954561005C3066 /* middle.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		279D5DD52A954561005C3066 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DD62A954561005C3066 /* uv_link_t.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		279D5DD72A954561005C3066 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DD82A954561005C3066 /* api.md */,
+				279D5DD92A954561005C3066 /* implementation-guide.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
+		279D5DE02A954561005C3066 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				279D5DE12A954561005C3066 /* uv_link_observer_t.c */,
+				279D5DE22A954561005C3066 /* uv_link_source_t.c */,
+				279D5DE32A954561005C3066 /* defaults.c */,
+				279D5DE42A954561005C3066 /* uv_link_t.c */,
+				279D5DE52A954561005C3066 /* common.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		279D5DFD2A954561005C3066 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				279D5E112A954561005C3066 /* base64.c */,
+				279D5E0F2A954561005C3066 /* bio.c */,
+				279D5E212A954561005C3066 /* compression.c */,
+				279D5DFE2A954561005C3066 /* http_req.c */,
+				279D5E122A954561005C3066 /* http.c */,
+				279D5E1F2A954561005C3066 /* p11.c */,
+				279D5E202A954561005C3066 /* tcp_src.c */,
+				279D5E0B2A954561005C3066 /* tls_engine.c */,
+				279D5E0D2A954561005C3066 /* tls_link.c */,
+				279D5E222A954561005C3066 /* tlsuv.c */,
+				279D5E1A2A954561005C3066 /* um_debug.c */,
+				279D5E102A954561005C3066 /* websocket.c */,
+				279D5DFF2A954561005C3066 /* bio.h */,
+				279D5E0C2A954561005C3066 /* compression.h */,
+				279D5E142A954561005C3066 /* http_req.h */,
+				279D5E002A954561005C3066 /* p11.h */,
+				279D5E132A954561005C3066 /* portable_endian.h */,
+				279D5E012A954561005C3066 /* um_debug.h */,
+				279D5E0E2A954561005C3066 /* win32_compat.h */,
+				279D5E022A954561005C3066 /* mbedtls */,
+				279D5E1B2A954561005C3066 /* openssl */,
+				279D5E152A954561005C3066 /* pkcs11 */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		279D5E022A954561005C3066 /* mbedtls */ = {
+			isa = PBXGroup;
+			children = (
+				279D5E062A954561005C3066 /* engine.c */,
+				279D5E072A954561005C3066 /* keys.c */,
+				279D5E052A954561005C3066 /* mbed_p11.c */,
+				279D5E0A2A954561005C3066 /* p11_ecdsa.c */,
+				279D5E092A954561005C3066 /* p11_rsa.c */,
+				279D5E032A954561005C3066 /* keys.h */,
+				279D5E042A954561005C3066 /* mbed_p11.h */,
+				279D5E082A954561005C3066 /* p11_errors.h */,
+			);
+			path = mbedtls;
+			sourceTree = "<group>";
+		};
+		279D5E152A954561005C3066 /* pkcs11 */ = {
+			isa = PBXGroup;
+			children = (
+				279D5E162A954561005C3066 /* pkcs11.h */,
+				279D5E172A954561005C3066 /* README.md */,
+				279D5E182A954561005C3066 /* pkcs11t.h */,
+				279D5E192A954561005C3066 /* pkcs11f.h */,
+			);
+			path = pkcs11;
+			sourceTree = "<group>";
+		};
+		279D5E1B2A954561005C3066 /* openssl */ = {
+			isa = PBXGroup;
+			children = (
+				279D5E1C2A954561005C3066 /* keys.h */,
+				279D5E1D2A954561005C3066 /* engine.c */,
+				279D5E1E2A954561005C3066 /* keys.c */,
+			);
+			path = openssl;
+			sourceTree = "<group>";
+		};
+		279D5E4A2A9555A8005C3066 /* mbedtls */ = {
+			isa = PBXGroup;
+			children = (
+				279D5E4C2A9555C1005C3066 /* libmbedcrypto.a */,
+				279D5E4D2A9555C1005C3066 /* libmbedtls.a */,
+				279D5E4B2A9555C1005C3066 /* libmbedx509.a */,
+			);
+			name = mbedtls;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -549,9 +914,18 @@
 			files = (
 				272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */,
 				279D5D5B2A9146FE005C3066 /* Backtrace.hh in Headers */,
-				279D5D472A902588005C3066 /* AsyncServer.hh in Headers */,
-				272730402A8D6F35000CCA22 /* AsyncSocket.hh in Headers */,
+				279D5D652A952DD1005C3066 /* Pipe.hh in Headers */,
+				279D5D472A902588005C3066 /* TCPServer.hh in Headers */,
+				272730402A8D6F35000CCA22 /* TCPSocket.hh in Headers */,
 				279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */,
+				279D5D612A952986005C3066 /* Stream.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		279D5E2C2A954627005C3066 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -609,6 +983,23 @@
 			productReference = 279D5D4D2A9031EF005C3066 /* testserver */;
 			productType = "com.apple.product-type.tool";
 		};
+		279D5E2F2A954627005C3066 /* tlsuv */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 279D5E312A954627005C3066 /* Build configuration list for PBXNativeTarget "tlsuv" */;
+			buildPhases = (
+				279D5E2C2A954627005C3066 /* Headers */,
+				279D5E2D2A954627005C3066 /* Sources */,
+				279D5E2E2A954627005C3066 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = tlsuv;
+			productName = tlsuv;
+			productReference = 279D5E302A954627005C3066 /* libtlsuv.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -625,6 +1016,9 @@
 						CreatedOnToolsVersion = 15.0;
 					};
 					279D5D4C2A9031EF005C3066 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					279D5E2F2A954627005C3066 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -645,6 +1039,7 @@
 				272728DA2A8D6604000CCA22 /* coro */,
 				272728C22A8D6505000CCA22 /* Tests */,
 				279D5D4C2A9031EF005C3066 /* testserver */,
+				279D5E2F2A954627005C3066 /* tlsuv */,
 			);
 		};
 /* End PBXProject section */
@@ -663,14 +1058,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272730412A8D6F35000CCA22 /* AsyncSocket.cc in Sources */,
+				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
 				272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
 				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
 				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,
 				279D5D5A2A9146FE005C3066 /* Backtrace.cc in Sources */,
-				279D5D482A902588005C3066 /* AsyncServer.cc in Sources */,
+				279D5D482A902588005C3066 /* TCPServer.cc in Sources */,
+				279D5D622A952986005C3066 /* Stream.cc in Sources */,
+				279D5D662A952DD1005C3066 /* Pipe.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -679,6 +1076,31 @@
 			buildActionMask = 2147483647;
 			files = (
 				279D5D502A9031EF005C3066 /* testserver.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		279D5E2D2A954627005C3066 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				279D5E382A954670005C3066 /* tlsuv.c in Sources */,
+				279D5E472A954A37005C3066 /* p11_rsa.c in Sources */,
+				279D5E532A95608F005C3066 /* defaults.c in Sources */,
+				279D5E422A954670005C3066 /* tls_engine.c in Sources */,
+				279D5E3D2A954670005C3066 /* bio.c in Sources */,
+				279D5E452A954A37005C3066 /* engine.c in Sources */,
+				279D5E512A95608F005C3066 /* uv_link_source_t.c in Sources */,
+				279D5E392A954670005C3066 /* tcp_src.c in Sources */,
+				279D5E522A95608F005C3066 /* uv_link_t.c in Sources */,
+				279D5E412A954670005C3066 /* tls_link.c in Sources */,
+				279D5E482A954A37005C3066 /* mbed_p11.c in Sources */,
+				279D5E3C2A954670005C3066 /* compression.c in Sources */,
+				279D5E3E2A954670005C3066 /* base64.c in Sources */,
+				279D5E3A2A954670005C3066 /* um_debug.c in Sources */,
+				279D5E492A954A37005C3066 /* keys.c in Sources */,
+				279D5E462A954A37005C3066 /* p11_ecdsa.c in Sources */,
+				279D5E402A954670005C3066 /* p11.c in Sources */,
+				279D5E542A95608F005C3066 /* uv_link_observer_t.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -773,6 +1195,28 @@
 			};
 			name = Release;
 		};
+		279D5E322A954627005C3066 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D5E442A9546CC005C3066 /* tlsuv.xcconfig */;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/mbedtls/build/library",
+				);
+			};
+			name = Debug;
+		};
+		279D5E332A954627005C3066 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D5E442A9546CC005C3066 /* tlsuv.xcconfig */;
+			buildSettings = {
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor/mbedtls/build/library",
+				);
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -808,6 +1252,15 @@
 			buildConfigurations = (
 				279D5D522A9031EF005C3066 /* Debug */,
 				279D5D532A9031EF005C3066 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		279D5E312A954627005C3066 /* Build configuration list for PBXNativeTarget "tlsuv" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				279D5E322A954627005C3066 /* Debug */,
+				279D5E332A954627005C3066 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

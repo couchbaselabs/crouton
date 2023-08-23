@@ -44,35 +44,46 @@ namespace snej::coro::uv {
         template <typename U>
         void resume(U&& result) {
             _result = std::forward<U>(result);
-            fail(0, nullptr);
+            ready();
         }
 
         void fail(int err, const char* what) {
             _error = err;
             _what = what;
-            assert(_suspension);
-            _suspension->wakeUp();
-            _suspension = nullptr;
+            ready();
         }
 
-        bool await_ready()      {return false;}
+        bool await_ready() {
+            return _ready;
+        }
 
         std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
+            assert(!_ready);
             assert(!_suspension);
             _suspension = Scheduler::current().suspend(coro);
             return Scheduler::current().next();
         }
 
         T await_resume()  {
+            assert(_ready);
             check(_error, _what);
             return std::move(_result);
         }
 
     private:
+        void ready() {
+            _ready = true;
+            if (_suspension) {
+                _suspension->wakeUp();
+                _suspension = nullptr;
+            }
+        }
+
         Suspension* _suspension = nullptr;
-        int _error = 0;
+        int         _error = 0;
         const char* _what = nullptr;
-        T _result = {};
+        T           _result = {};
+        bool        _ready = false;
     };
 
 

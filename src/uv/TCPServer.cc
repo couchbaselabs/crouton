@@ -1,5 +1,5 @@
 //
-// AsyncServer.cc
+// TCPServer.cc
 //
 // 
 //
@@ -16,8 +16,8 @@
 // limitations under the License.
 //
 
-#include "AsyncServer.hh"
-#include "AsyncSocket.hh"
+#include "TCPServer.hh"
+#include "TCPSocket.hh"
 #include "UVInternal.hh"
 #include <unistd.h>
 

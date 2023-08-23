@@ -149,10 +149,10 @@ TEST_CASE("DNS lookup", "[uv]") {
 }
 
 
-static Future<string> readSocket() {
+static Future<string> readSocket(const char* hostname, bool tls) {
     TCPSocket socket;
     cerr << "Connecting...\n";
-    AWAIT socket.connect("mooseyard.com", 80);
+    AWAIT socket.connect(hostname, (tls ? 443 : 80), tls);
 
     cerr << "Writing...\n";
     AWAIT socket.write("GET / HTTP/1.1\r\nHost: mooseyard.com\r\nConnection: close\r\n\r\n");
@@ -164,9 +164,19 @@ static Future<string> readSocket() {
 
 
 TEST_CASE("Read a socket", "[uv]") {
-    Future<string> response = readSocket();
+    Future<string> response = readSocket("mooseyard.com", false);
     string contents = response.waitForValue();
     cerr << "HTTP response:\n" << contents << endl;
     CHECK(contents.starts_with("HTTP/1.1 "));
-    CHECK(contents.size() < 1000);
+    CHECK(contents.size() < 1000); // it will be a brief 301 response
+}
+
+
+TEST_CASE("Read a TLS socket", "[uv]") {
+    Future<string> response = readSocket("mooseyard.com", true);
+    string contents = response.waitForValue();
+    cerr << "HTTPS response:\n" << contents << endl;
+    CHECK(contents.starts_with("HTTP/1.1 "));
+    CHECK(contents.ends_with("</HTML>\n"));
+    CHECK(contents.size() == 2010); // the full 200 response
 }

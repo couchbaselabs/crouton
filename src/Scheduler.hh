@@ -158,6 +158,8 @@ namespace snej::coro {
 
         void run();
 
+        void runUntil(std::function<bool()> fn);
+
         void onEventLoop(std::function<void()>);
 
     private:
@@ -167,6 +169,7 @@ namespace snej::coro {
 
         EventLoop* newEventLoop();
 
+        handle eventLoopHandle();
         Task eventLoopTask();
 
         bool isReady(handle h) const {
