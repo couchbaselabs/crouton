@@ -10,11 +10,11 @@
 
 #include "StaticLib.xcconfig"
 
-HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/src vendor/tlsuv/deps/uv_link_t
-SYSTEM_HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/include vendor/tlsuv/deps/uv_link_t/include vendor/mbedtls/include
+HEADER_SEARCH_PATHS  = $(inherited)  vendor/tlsuv/src  vendor/tlsuv/deps/uv_link_t
+SYSTEM_HEADER_SEARCH_PATHS  = $(inherited)  vendor/tlsuv/include vendor/tlsuv/deps/uv_link_t/include  vendor/mbedtls/include  vendor/llhttp/include
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited)  USE_MBEDTLS
 
-WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-shorten-64-to-32  -Wno-unused-variable  -Wno-missing-prototypes -Wno-strict-prototypes -Wno-newline-eof -Wno-format-nonliteral -Wno-unused-function -Wno-implicit-int-conversion
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-shorten-64-to-32  -Wno-unused-variable  -Wno-missing-prototypes  -Wno-strict-prototypes -Wno-newline-eof  -Wno-format-nonliteral  -Wno-unused-function -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough
 
 CLANG_ENABLE_MODULES = NO
