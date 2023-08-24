@@ -113,6 +113,12 @@ namespace snej::coro {
     template <typename T>
     class Future : public CoroutineHandle<FutureImpl<T>> {
     public:
+        /// Creates an already-ready Future
+        Future(T&& value)
+        :_state(std::make_shared<FutureState<T>>()) {
+            _state->setValue(std::move(value));
+        }
+
         bool hasValue() const           {return _state->hasValue();}
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
@@ -128,7 +134,7 @@ namespace snej::coro {
         friend class FutureProvider<T>;
         friend class FutureImpl<T>;
 
-        Future(std::shared_ptr<FutureState<T>> state)   :_state(std::move(state)) { }
+        explicit Future(std::shared_ptr<FutureState<T>> state)   :_state(std::move(state)) { }
 
         std::shared_ptr<FutureState<T>>  _state;
     };

@@ -85,10 +85,11 @@ namespace snej::coro::uv {
 
         void opened(std::unique_ptr<stream_wrapper> s);
 
+        std::unique_ptr<stream_wrapper> _stream;  // Handle for stream operations
+
     private:
-        struct BufWithCapacity : public ReadBuf {
-            size_t capacity = 0;
-        };
+        using BufferRef = std::unique_ptr<Buffer>;
+
 
         Stream(Stream const&) = delete;
         Stream& operator=(Stream const&) = delete;
@@ -98,7 +99,12 @@ namespace snej::coro::uv {
         [[nodiscard]] Future<std::unique_ptr<Buffer>> readBuf();
         [[nodiscard]] Future<void> _read();
 
-        std::unique_ptr<stream_wrapper> _stream;  // Handle for stream operations (actually the same)
+        BufferRef _allocCallback(size_t);
+        void _readCallback(BufferRef,int);
+
+        std::vector<BufferRef> _input, _spare;
+        std::optional<FutureProvider<BufferRef>> _futureBuf;
+        int _readError = 0;
         std::unique_ptr<Buffer> _inputBuf;       // The last data read from the stream
         bool            _readBusy = false;  // Detects re-entrant calls
         bool            _writeBusy = false; // Detects re-entrant calls

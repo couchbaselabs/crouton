@@ -18,9 +18,7 @@ namespace snej::coro::uv {
         TCPSocket();
 
         /// Connects to an address/port. The address may be a hostname or dotted-quad IPv4 address.
-        [[nodiscard]] Future<void> connect(std::string const& address,
-                                           uint16_t port,
-                                           bool withTLS);
+        [[nodiscard]] Future<void> connect(std::string const& address, uint16_t port, bool withTLS);
 
         /// Sets the TCP nodelay option.
         void setNoDelay(bool);
@@ -31,10 +29,6 @@ namespace snej::coro::uv {
     private:
         friend class TCPServer;
         
-        void acceptFrom(uv_tcp_s* server);
-
-        uv_tcp_s*       _tcpHandle;         // Handle for TCP operations
-        tlsuv_stream_s* _tlsHandle;
+        virtual void acceptFrom(uv_tcp_s* server);
     };
-
 }

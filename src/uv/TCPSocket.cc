@@ -41,7 +41,7 @@ namespace snej::coro::uv {
     using namespace std;
 
 
-    static void initUVTLS() {
+    static void initTlsuv() {
         static once_flag sOnce;
         std::call_once(sOnce, [] {
             tlsuv_set_debug(4, [](int level, const char *file, unsigned int line, const char *msg) {
@@ -52,10 +52,28 @@ namespace snej::coro::uv {
         });
     }
 
-    /** Wrapper around a tlsuv_stream_t. */
+
+    /** Wrapper around a uv_tcp_t handle. */
+    struct tcp_stream_wrapper : public uv_stream_wrapper {
+
+        explicit tcp_stream_wrapper(uv_tcp_t *socket)    :uv_stream_wrapper((uv_stream_t*)socket) { }
+
+        uv_tcp_t* tcpHandle() {return (uv_tcp_t*)_stream;}
+
+        virtual int setNoDelay(bool enable) {
+            return uv_tcp_nodelay(tcpHandle(), enable);
+        }
+
+        virtual int keepAlive(unsigned intervalSecs) {
+            return uv_tcp_keepalive(tcpHandle(), (intervalSecs > 0), intervalSecs);
+        }
+    };
+
+
+    /** Wrapper around a tlsuv_stream_t handle. */
     struct tlsuv_stream_wrapper final : public stream_wrapper {
 
-        explicit tlsuv_stream_wrapper(tlsuv_stream_t *stream) 
+        explicit tlsuv_stream_wrapper(tlsuv_stream_t *stream)
         :_stream(stream)
         {
             _stream->data = this;
@@ -72,22 +90,26 @@ namespace snej::coro::uv {
             }
         }
 
-        int read_start(ReadCallback cb) override {
-            int err = stream_wrapper::read_start(cb);
-            if (err == 0 && _readCallback) {
-                auto alloc = [](uv_handle_t* fakeH, size_t, uv_buf_t* uvbuf) {
-                    auto h = (tlsuv_stream_t*)fakeH;
-                    auto stream = (tlsuv_stream_wrapper*)h->data;
-                    stream->alloc(uvbuf);
-                };
-                auto read = [](uv_stream_t* fakeH, ssize_t nread, const uv_buf_t* uvbuf) {
-                    auto h = (tlsuv_stream_t*)fakeH;
-                    auto stream = (tlsuv_stream_wrapper*)h->data;
-                    stream->read(nread, uvbuf);
-                };
-                err = tlsuv_stream_read(_stream, alloc, read);
-            }
-            return err;
+        virtual int setNoDelay(bool enable) override {
+            return tlsuv_stream_nodelay(_stream, enable);
+        }
+
+        virtual int keepAlive(unsigned intervalSecs) override {
+            return tlsuv_stream_keepalive(_stream, (intervalSecs > 0), intervalSecs);
+        }
+
+        int read_start() override {
+            auto alloc = [](uv_handle_t* fakeH, size_t suggested, uv_buf_t* uvbuf) {
+                auto h = (tlsuv_stream_t*)fakeH;
+                auto stream = (tlsuv_stream_wrapper*)h->data;
+                stream->alloc(suggested, uvbuf);
+            };
+            auto read = [](uv_stream_t* fakeH, ssize_t nread, const uv_buf_t* uvbuf) {
+                auto h = (tlsuv_stream_t*)fakeH;
+                auto stream = (tlsuv_stream_wrapper*)h->data;
+                stream->read(nread, uvbuf);
+            };
+            return tlsuv_stream_read(_stream, alloc, read);
         }
 
         int write(uv_write_t *req, const uv_buf_t bufs[], unsigned nbufs, uv_write_cb cb) override {
@@ -110,39 +132,33 @@ namespace snej::coro::uv {
     };
 
 
-
-    TCPSocket::TCPSocket()
-    :_tcpHandle(new uv_tcp_s) // will be deleted by close's call to closeHandle
-    {
-        uv_tcp_init(curLoop(), _tcpHandle);
-    }
+    TCPSocket::TCPSocket() = default;
 
 
     void TCPSocket::acceptFrom(uv_tcp_s* server) {
-        check(uv_accept((uv_stream_t*)server, (uv_stream_t*)_tcpHandle),
+        auto tcpHandle = new uv_tcp_t;
+        uv_tcp_init(curLoop(), tcpHandle);
+        check(uv_accept((uv_stream_t*)server, (uv_stream_t*)tcpHandle),
               "accepting client connection");
-        opened(make_unique<uv_stream_wrapper>(_tcpHandle));
+        opened(make_unique<tcp_stream_wrapper>(tcpHandle));
     }
 
 
     Future<void> TCPSocket::connect(std::string const& address, uint16_t port, bool withTLS) {
         assert(!isOpen());
-
+        std::unique_ptr<stream_wrapper> stream;
+        connect_request req;
+        int err;
         if (withTLS) {
-            initUVTLS();
-            closeHandle(_tcpHandle);
-            tlsuv_stream_t *tlsStream = new tlsuv_stream_t;
-            tlsuv_stream_init(curLoop(), tlsStream, NULL);
-
-            connect_request req;
-            check(tlsuv_stream_connect(&req, tlsStream, address.c_str(), port,
-                                       req.callbackWithStatus),
-                  "opening TLS connection");
-            check( AWAIT req, "opening TLS connection" );
-
-            opened(make_unique<tlsuv_stream_wrapper>(tlsStream));
+            initTlsuv();
+            tlsuv_stream_t *tlsHandle = new tlsuv_stream_t;
+            tlsuv_stream_init(curLoop(), tlsHandle, NULL);
+            stream = make_unique<tlsuv_stream_wrapper>(tlsHandle);
+            err = tlsuv_stream_connect(&req, tlsHandle, address.c_str(), port,
+                                       req.callbackWithStatus);
 
         } else {
+            // Resolve the address/hostname:
             sockaddr addr;
             int status = uv_ip4_addr(address.c_str(), port, (sockaddr_in*)&addr);
             if (status < 0) {
@@ -154,23 +170,26 @@ namespace snej::coro::uv {
                     throw std::runtime_error("no primary address?!");
             }
 
-            connect_request req;
-            check(uv_tcp_connect(&req, _tcpHandle, &addr, req.callbackWithStatus),
-                  "opening connection");
-            check( AWAIT req, "opening connection" );
-
-            opened(make_unique<uv_stream_wrapper>(req.handle));
+            auto tcpHandle = new uv_tcp_t;
+            uv_tcp_init(curLoop(), tcpHandle);
+            stream = make_unique<tcp_stream_wrapper>(tcpHandle);
+            err = uv_tcp_connect(&req, tcpHandle, &addr, 
+                                 req.callbackWithStatus);
         }
+
+        check(err, "opening TLS connection");
+        check( AWAIT req, "opening connection" );
+        opened(std::move(stream));
         RETURN;
     }
 
 
     void TCPSocket::setNoDelay(bool enable) {
-        uv_tcp_nodelay(_tcpHandle, enable);
+        _stream->setNoDelay(enable);
     }
 
     void TCPSocket::keepAlive(unsigned intervalSecs) {
-        uv_tcp_keepalive(_tcpHandle, (intervalSecs > 0), intervalSecs);
+        _stream->keepAlive(intervalSecs);
     }
 
 }

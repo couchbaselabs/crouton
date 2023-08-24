@@ -35,6 +35,12 @@ namespace snej::coro::uv {
     void Stream::opened(std::unique_ptr<stream_wrapper> s) {
         assert(!_stream); 
         _stream = std::move(s);
+        _stream->_allocCallback = [this](size_t suggested) {
+            return this->_allocCallback(suggested);
+        };
+        _stream->_readCallback = [this](BufferRef buf, int err) {
+            this->_readCallback(std::move(buf), err);
+        };
     }
 
 
@@ -193,7 +199,7 @@ namespace snej::coro::uv {
         assert(isOpen());
         assert(_readBusy);
         if (_inputBuf && _inputBuf->available() == 0)
-            _stream->recycleBuffer(std::move(_inputBuf));
+            _spare.emplace_back(std::move(_inputBuf));
 
         if (!_inputBuf) {
             // Reload the input buffer from the socket:
@@ -206,20 +212,57 @@ namespace snej::coro::uv {
     /// uv_buf_t. Caller must free it.
     Future<BufferRef> Stream::readBuf() {
         assert(isOpen());
+        assert(!_futureBuf);
+        if (!_input.empty()) {
+            Future<BufferRef> result(std::move(_input[0]));
+            _input.erase(_input.begin());
+            return result;
+        } else if (auto err = _readError) {
+            _readError = 0;
+            if (err == UV_EOF || err == UV_EINVAL)
+                return BufferRef();
+            else
+                throw UVError("reading from the network", err);
+        } else {
+            check(_stream->read_start(), "reading from the network");
+            _futureBuf.emplace();
+            return *_futureBuf;
+        }
+    }
 
-        Blocker<int> blocker;
-        BufferRef result;
 
-        check(_stream->read_start([&](BufferRef buf, int err) {
-            result = std::move(buf);
-            blocker.resume(err);
-            _stream->read_stop();
-        }), "reading from the network");
+    BufferRef Stream::_allocCallback(size_t) {
+        if (_spare.empty()) {
+            return std::make_unique<Buffer>();
+        } else {
+            auto buf = std::move(_spare.back());
+            _spare.pop_back();
+            return buf;
+        }
+    }
 
-        int err = AWAIT blocker;
-        if (err && err != UV_EOF && err != UV_EINVAL)
-            check(err, "reading from the network");
-        RETURN result;
+    void Stream::_readCallback(BufferRef buf, int err) {
+        if (_futureBuf) {
+            if (err == 0) {
+                _futureBuf->setValue(std::move(buf));
+            } else if (err == UV_EOF || err == UV_EINVAL) {
+                _futureBuf->setValue(nullptr);
+            } else {
+                try {
+                    check(err, "reading from the network");
+                } catch (...) {
+                    _futureBuf->setException(std::current_exception());
+                }
+            }
+            _futureBuf = nullopt;
+        } else {
+            if (err) {
+                _readError = err;
+            } else {
+                _input.emplace_back(std::move(buf));
+            }
+        }
+        _stream->read_stop();
     }
 
 

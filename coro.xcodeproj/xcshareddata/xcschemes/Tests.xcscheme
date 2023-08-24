@@ -63,11 +63,11 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;Read a socket&quot;"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;Read a TLS socket&quot;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>

@@ -70,9 +70,9 @@ TEST_CASE("Generator coroutine", "[coroutines]") {
 
 static Future<void> waitFor(chrono::milliseconds ms) {
     FutureProvider<void> f;
-    Timer::after(ms.count() / 1000.0, [f] {
+    Timer::after(ms.count() / 1000.0, [ff(std::move(f))] {
         cerr << "\tTimer fired\n";
-        f.setValue();
+        ff.setValue();
     });
     return f;
 }
