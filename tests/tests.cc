@@ -7,6 +7,7 @@
 #include "AsyncUV.hh"
 #include "Future.hh"
 #include "Generator.hh"
+#include "URL.hh"
 #include <iostream>
 #include <sys/socket.h>
 
@@ -111,6 +112,25 @@ TEST_CASE("Future coroutine") {
 }
 
 
+TEST_CASE("URLs", "[uv]") {
+    {
+        URL url("http://mooseyard.com:8080/~jens?foo=bar");
+        CHECK(url.scheme == "http");
+        CHECK(url.hostname == "mooseyard.com");
+        CHECK(url.port == 8080);
+        CHECK(url.path == "/~jens");
+        CHECK(url.query == "foo=bar");
+    }
+    {
+        URL url("http://mooseyard.com");
+        CHECK(url.scheme == "http");
+        CHECK(url.hostname == "mooseyard.com");
+        CHECK(url.port == 0);
+        CHECK(url.path == "");
+    }
+}
+
+
 static Future<string> readFile(string const& path) {
     string contents;
     FileStream f;
@@ -179,4 +199,21 @@ TEST_CASE("Read a TLS socket", "[uv]") {
     CHECK(contents.starts_with("HTTP/1.1 "));
     CHECK(contents.ends_with("</HTML>\n"));
     CHECK(contents.size() == 2010); // the full 200 response
+}
+
+
+TEST_CASE("HTTP GET", "[uv]") {
+    auto test = []() -> Future<void> {
+        HTTPClient client("http://mooseyard.com");
+        HTTPRequest req(client, "GET", "/");
+        HTTPResponse resp = AWAIT req.response();
+        cout << "Headers:\n";
+        auto headers = resp.headers();
+        while (auto header = AWAIT headers)
+            cout << '\t' << header->first << " = " << header->second << endl;
+        cout << "BODY:\n";
+        string body = AWAIT resp.body();
+        cout << body << endl;
+    };
+    test().waitForValue();
 }

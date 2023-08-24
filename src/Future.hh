@@ -45,7 +45,7 @@ namespace snej::coro {
 
         void setValue(T&& value) {
             std::unique_lock<std::mutex> lock(_mutex);
-            _value = std::move(value);
+            _value.emplace(std::move(value));
             _gotValue();
         }
 

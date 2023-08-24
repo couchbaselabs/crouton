@@ -109,11 +109,11 @@ namespace snej::coro {
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
         explicit YielderTo() :YielderTo(std::noop_coroutine()) { }
 
-        bool await_ready() { return false; }
+        bool await_ready() noexcept { return false; }
 
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<>) {return _consumer;}
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept {return _consumer;}
 
-        void await_resume() {}
+        void await_resume() noexcept {}
 
     private:
         std::coroutine_handle<> _consumer; // The coroutine that's awaiting my result, or null if none.

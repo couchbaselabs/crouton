@@ -128,6 +128,8 @@ namespace snej::coro {
         // `void return_value(XXX value) { ... }`
         void return_void() { }
 
+        YielderTo final_suspend() noexcept { return YielderTo{_consumer}; }
+
     private:
         template <class U> friend class Generator;
 

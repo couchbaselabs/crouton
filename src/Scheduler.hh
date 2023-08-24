@@ -93,7 +93,7 @@ namespace snej::coro {
                 _ready.erase(i);
         }
 
-        /// Returns the coroutine that should be resumed. If none is ready, blocks.
+        /// Returns the coroutine that should be resumed. If none is ready, exits coroutine-land.
         handle next() {
             return nextOr(std::noop_coroutine());
         }

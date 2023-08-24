@@ -79,8 +79,7 @@ namespace snej::coro {
 
 
     void FutureImpl<void>::waitForValue() {
-        while (!_provider.hasValue())
-            handle().resume();
+        Scheduler::current().runUntil([=]{ return _provider.hasValue(); });
         return _provider.value();
     }
 

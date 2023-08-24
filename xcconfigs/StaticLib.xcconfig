@@ -10,4 +10,4 @@ CODE_SIGN_STYLE          = Automatic
 EXECUTABLE_PREFIX        = lib
 SKIP_INSTALL             = YES
 
-SYSTEM_HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/include vendor/tlsuv/deps/uv_link_t/include
+SYSTEM_HEADER_SEARCH_PATHS  = $(inherited) vendor/tlsuv/include vendor/tlsuv/deps/uv_link_t/include  vendor/llhttp/include
