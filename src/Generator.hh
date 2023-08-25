@@ -96,13 +96,17 @@ namespace snej::coro {
         std::optional<T> next() {
             clear();
             auto h = this->handle();
-            while(!h.done())
-                h.resume();   // Resume coroutine fn, unless it already completed.
+            if(h.done())
+                return std::nullopt;
+            while (!_ready)
+                h.resume();
             return yielded_value();
         }
 
         // Returns the value yielded by the coroutine function after it's run.
         std::optional<T> yielded_value() {
+            assert(_ready);
+            _ready = false;
             this->rethrow();
             return std::move(_yielded_value);
         }
@@ -120,6 +124,7 @@ namespace snej::coro {
             _yielded_value = std::forward<From>(value);
             auto resumer = _consumer;
             _consumer = std::noop_coroutine();
+            _ready = true;
             return YielderTo{resumer};
         }
 
@@ -128,7 +133,11 @@ namespace snej::coro {
         // `void return_value(XXX value) { ... }`
         void return_void() { }
 
-        YielderTo final_suspend() noexcept { return YielderTo{_consumer}; }
+        YielderTo final_suspend() noexcept {
+            _yielded_value = std::nullopt;
+            _ready = true;
+            return YielderTo{_consumer};
+        }
 
     private:
         template <class U> friend class Generator;
@@ -138,6 +147,7 @@ namespace snej::coro {
 
         std::optional<T>        _yielded_value;                    // Latest value yielded
         std::coroutine_handle<> _consumer = std::noop_coroutine(); // Coroutine awaiting my value
+        bool _ready = false;
     };
 
 }

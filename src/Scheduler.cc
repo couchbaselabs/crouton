@@ -86,17 +86,18 @@ namespace snej::coro {
 
     void Scheduler::runUntil(std::function<bool()> fn) {
         if (!fn()) {
-            assert(!_eventLoopTask);
-            _eventLoopTask = eventLoopTask().handle();
+            if (!_eventLoopTask)
+                _eventLoopTask = eventLoopTask().handle();
             while (!fn() && !_eventLoopTask.done())
                 _eventLoopTask.resume();
-            _eventLoopTask = nullptr;
+            if (_eventLoopTask.done())
+                _eventLoopTask = nullptr;
         }
     }
 
     void Scheduler::_wakeUp() {
         assert(_eventLoop);
-        std::cerr << "\twake up!\n";
+        if (kLogScheduler) {std::cerr << "\twake up!\n";}
         if (isCurrent()) {
             if (_eventLoop->isRunning())
                 _eventLoop->stop();

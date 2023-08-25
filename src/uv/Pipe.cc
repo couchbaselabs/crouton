@@ -18,7 +18,7 @@
 
 #include "Pipe.hh"
 #include "UVInternal.hh"
-#include "uv_stream_wrapper.hh"
+#include "stream_wrapper.hh"
 
 namespace snej::coro::uv {
     using namespace std;

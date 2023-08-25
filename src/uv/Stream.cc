@@ -19,7 +19,7 @@
 #include "Stream.hh"
 #include "Defer.hh"
 #include "UVInternal.hh"
-#include "uv_stream_wrapper.hh"
+#include "stream_wrapper.hh"
 #include <unistd.h>
 #include <iostream>
 

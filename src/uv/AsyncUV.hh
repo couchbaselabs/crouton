@@ -12,3 +12,4 @@
 #include "TCPServer.hh"
 #include "URL.hh"
 #include "HTTPClient.hh"
+#include "WebSocket.hh"

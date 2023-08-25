@@ -22,6 +22,8 @@ namespace snej::coro {
     class Scheduler;
     class Task;
 
+    static bool kLogScheduler = false;
+
     /// Represents a coroutine handle that's been suspended by calling Scheduler::suspend().
     class Suspension {
     public:
@@ -65,10 +67,28 @@ namespace snej::coro {
             return _ready.empty() && !_woke;
         }
 
+        bool empty() const {
+            return _ready.empty() && _suspended.empty();
+        }
+
+        bool assertEmpty() const {
+            bool e = true;
+            for (auto &r : _ready)
+                if (r != _eventLoopTask) {
+                    if (kLogScheduler) {std::cerr << "\tready: " << r << std::endl;}
+                    e = false;
+                }
+            for (auto &s : _suspended) {
+                if (kLogScheduler) {std::cerr << "\tsuspended: " << s.second._handle << std::endl;}
+                e = false;
+            }
+            return e;
+        }
+
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
         /// be returned from next().
         void schedule(handle h) {
-            std::cerr << "Scheduler::schedule " << h << "\n";
+            if (kLogScheduler) {std::cerr << "Scheduler::schedule " << h << "\n";}
             assert(isCurrent());
             assert(!isWaiting(h));
             if (!isReady(h))
@@ -82,7 +102,7 @@ namespace snej::coro {
                 schedule(h);
                 return nxt;
             } else {
-                std::cerr << "Scheduler::yield " << h << " -- continue running\n";
+                if (kLogScheduler) {std::cerr << "Scheduler::yield " << h << " -- continue running\n";}
                 return h;
             }
         }
@@ -107,7 +127,7 @@ namespace snej::coro {
             } else {
                 handle h = _ready.front();
                 _ready.pop_front();
-                std::cerr << "Scheduler::resume " << h << std::endl;
+                if (kLogScheduler) {std::cerr << "Scheduler::resume " << h << std::endl;}
                 return h;
             }
         }
@@ -115,7 +135,7 @@ namespace snej::coro {
         /// Returns the coroutine that should be resumed,
         /// or else the no-op coroutine to return to the outer caller.
         handle finished(handle h) {
-            std::cerr << "Scheduler::finished " << h << "\n";
+            if (kLogScheduler) {std::cerr << "Scheduler::finished " << h << "\n";}
             assert(isCurrent());
             assert(h.done());
             assert(!isReady(h));
@@ -128,7 +148,7 @@ namespace snej::coro {
         /// To make it runnable again, call the returned Suspension's `wakeUp` method
         /// from any thread.
         Suspension* suspend(handle h) {
-            std::cerr << "Scheduler::suspend " << h << "\n";
+            if (kLogScheduler) {std::cerr << "Scheduler::suspend " << h << "\n";}
             assert(isCurrent());
             assert(!isReady(h));
             auto [i, added] = _suspended.try_emplace(h, h, this);
@@ -197,7 +217,7 @@ namespace snej::coro {
                 // Some waiting coroutine is now ready:
                 for (auto i = _suspended.begin(); i != _suspended.end();) {
                     if (i->second._wakeMe.test()) {
-                        std::cerr << "Scheduler::scheduleWaker(" << i->first << ")\n";
+                        if (kLogScheduler) {std::cerr << "Scheduler::scheduleWaker(" << i->first << ")\n";}
                         _ready.push_back(i->first);
                         i = _suspended.erase(i);
                     } else {

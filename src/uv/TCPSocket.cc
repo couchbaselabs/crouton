@@ -20,7 +20,7 @@
 #include "AddrInfo.hh"
 #include "Defer.hh"
 #include "UVInternal.hh"
-#include "uv_stream_wrapper.hh"
+#include "stream_wrapper.hh"
 #include <mutex>
 #include <unistd.h>
 #include <iostream>
@@ -28,7 +28,6 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
-#pragma clang diagnostic ignored "-Wnewline-eof"
 #endif
 
 #include "tlsuv.h"
@@ -44,7 +43,8 @@ namespace snej::coro::uv {
     static void initTlsuv() {
         static once_flag sOnce;
         std::call_once(sOnce, [] {
-            tlsuv_set_debug(4, [](int level, const char *file, unsigned int line, const char *msg) {
+            tlsuv_set_debug(3, // INFO
+                            [](int level, const char *file, unsigned int line, const char *msg) {
                 if (level <= 1) // fatal
                     throw std::runtime_error("TLSUV: "s + msg);
                 std::cerr << "TLSUV: " << msg << std::endl;

@@ -45,7 +45,7 @@ namespace snej::coro::uv {
     }
 
 
-    Future<bool> AddrInfo::lookup(string hostName, uint16_t port) {
+    Future<void> AddrInfo::lookup(string hostName, uint16_t port) {
         NotReentrant nr(_busy);
         uv_freeaddrinfo(_info);
         _info = nullptr;
@@ -70,7 +70,6 @@ namespace snej::coro::uv {
         uv::check( AWAIT req, "looking up hostname" );
 
         _info = req.info;
-        RETURN true;
     }
 
 

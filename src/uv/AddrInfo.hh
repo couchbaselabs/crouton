@@ -22,7 +22,7 @@ namespace snej::coro::uv {
 
         /// Asynchronous address lookup.
         /// \note You can call this a second time after the last lookup has finished.
-        [[nodiscard]] Future<bool> lookup(std::string hostname, uint16_t port =0);
+        Future<void> lookup(std::string hostname, uint16_t port =0);
 
         /// Returns the primary address, either IPv4 or IPv6.
         struct ::sockaddr const* primaryAddress() const;

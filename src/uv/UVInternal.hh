@@ -38,56 +38,6 @@ namespace snej::coro::uv {
 
 
 
-    /** An Awaitable object that suspends the caller until its resume() method is called. */
-    template <typename T>
-    struct Blocker {
-        template <typename U>
-        void resume(U&& result) {
-            _result = std::forward<U>(result);
-            ready();
-        }
-
-        void fail(int err, const char* what) {
-            _error = err;
-            _what = what;
-            ready();
-        }
-
-        bool await_ready() {
-            return _ready;
-        }
-
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
-            assert(!_ready);
-            assert(!_suspension);
-            _suspension = Scheduler::current().suspend(coro);
-            return Scheduler::current().next();
-        }
-
-        T await_resume()  {
-            assert(_ready);
-            check(_error, _what);
-            return std::move(_result);
-        }
-
-    private:
-        void ready() {
-            _ready = true;
-            if (_suspension) {
-                _suspension->wakeUp();
-                _suspension = nullptr;
-            }
-        }
-
-        Suspension* _suspension = nullptr;
-        int         _error = 0;
-        const char* _what = nullptr;
-        T           _result = {};
-        bool        _ready = false;
-    };
-
-
-
     /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
     template <class UV_REQUEST_T>
     class Request : public UV_REQUEST_T {
@@ -96,42 +46,57 @@ namespace snej::coro::uv {
         /// Pass this as the callback to a UV call on this request.
         static void callback(UV_REQUEST_T *req) {
             auto self = static_cast<Request*>(req);
-            self->completed();
+            self->completed(0);
         }
 
         // Coroutine awaiter methods:
-        bool await_ready()      {return false;}
+        bool await_ready()      {return _status.has_value();}
         std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
             _suspension = Scheduler::current().suspend(coro);
             return Scheduler::current().next();
         }
-        int await_resume()  {return _status;}
+        [[nodiscard]] int await_resume()      {return _status.value();}
 
     protected:
-        void completed() {
-            _called = true;
-            assert(_suspension);
-            _suspension->wakeUp();
+        void completed(int status) {
+            if (status < 0)
+                std::cerr << "ERROR " << status << " in callback\n";
+            _status = status;
+            if (_suspension)
+                _suspension->wakeUp();
         }
-        bool        _called = false;
-        int         _status = -1;
+        std::optional<int> _status;
 
     private:
         Suspension* _suspension = nullptr;
     };
 
 
+    
     template <class UV_REQUEST_T>
     class RequestWithStatus : public Request<UV_REQUEST_T> {
     public:
+        /// Pass this as the callback to a UV call on this request.
         static void callbackWithStatus(UV_REQUEST_T *req, int status) {
-            auto self = static_cast<RequestWithStatus*>(req);
-            self->_status = status;
-            self->completed();
+            static_cast<RequestWithStatus*>(req)->completed(status);
         }
+        static void callback(UV_REQUEST_T *req) = delete;
     };
 
 
     using connect_request = RequestWithStatus<uv_connect_s>;
     using write_request   = RequestWithStatus<uv_write_s>;
+
+
+    /// Creates a std::exception_ptr from an exception object.
+    /// (Unfortunately it has to throw and catch it to do so.)
+    template <typename X>
+    std::exception_ptr makeExceptionPtr(X const& exc) {
+        try {
+            throw exc;
+        } catch (...) {
+            return std::current_exception();
+        }
+        //abort(); // unreachable
+    }
 }

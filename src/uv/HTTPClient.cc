@@ -22,7 +22,6 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
-#pragma clang diagnostic ignored "-Wnewline-eof"
 #endif
 
 #include "http.h"
@@ -96,7 +95,10 @@ namespace snej::coro::uv {
             auto request = (HTTPRequest*)req->data;
             auto bf = request->_bodyFuture;
             request->_bodyFuture = FutureProvider<void>();
-            bf.setValue();
+            if (len >= 0)
+                bf.setValue();
+            else
+                bf.setException(makeExceptionPtr(UVError("writing to HTTP request", int(len))));
         };
         check(tlsuv_http_req_data(_req, body.data(), body.size(), callback),
               "writing to an HTTP request");
@@ -114,31 +116,33 @@ namespace snej::coro::uv {
         }
     }
 
-    void HTTPRequest::callback(tlsuv_http_resp_t* response) {
-        _responseFuture.setValue(HTTPResponse(response, _req->state != completed));
-    }
-
     Future<HTTPResponse> HTTPRequest::response() {
         return _responseFuture;
+    }
+
+    void HTTPRequest::callback(tlsuv_http_resp_t* response) {
+        _req = nullptr; // will be freed by tlsuv after response is complete
+        _responseFuture.setValue(HTTPResponse(response));
     }
 
 
 #pragma mark - HTTP RESPONSE:
 
 
-    HTTPResponse::HTTPResponse(tlsuv_http_resp_s* res, bool hasBody)
-    :status(res->code)
+    HTTPResponse::HTTPResponse(tlsuv_http_resp_s* res)
+    :status(HTTPStatus{res->code})
     ,statusMessage(res->status)
     ,_headers(res->headers.lh_first)
     {
         _res = res;
         _res->req->data = this;
         _res->body_cb = [](tlsuv_http_req_t *req, const char *body, ssize_t len) {
-            auto response = (HTTPResponse*)req->data;
-            response->bodyCallback(body, len);
+            if (auto response = (HTTPResponse*)req->data)
+                response->bodyCallback(body, len);
         };
     }
 
+    // HTTPResponse is the payload of a Future so it has to be movable, which complicates things
     HTTPResponse::HTTPResponse(HTTPResponse&& other)
     :status(other.status)
     ,statusMessage(std::move(other.statusMessage))
@@ -158,8 +162,10 @@ namespace snej::coro::uv {
 
     HTTPResponse::~HTTPResponse() {
         if (_res) {
-            if (_res->req->data == this)
+            if (_res->req->data == this) {
                 _res->req->data = nullptr;
+                _res->body_cb = nullptr;
+            }
         } else if (_headers) {
             free_hdr_list((um_header_list*)&_headers);
         }
@@ -187,25 +193,45 @@ namespace snej::coro::uv {
         }
     }
 
-    Future<string> HTTPResponse::body() {
+    Future<string> HTTPResponse::readBody() {
+        if (_bodyFuture.hasValue()) {
+            // Entire body was already read:
+            auto result = _bodyFuture.future();
+            _bodyFuture = FutureProvider<string>();
+            return result;
+        } else if (_partialBody.empty() && _res) {
+            // Wait for data to arrive:
+            _readPartialBody = true;
+            return _bodyFuture;
+        } else {
+            // Return data that's arrived since last time:
+            return std::move(_partialBody);
+        }
+    }
+
+    Future<string> HTTPResponse::entireBody() {
+        _readPartialBody = false;
         if (!_res && !_bodyFuture.hasValue())
             _bodyFuture.setValue("");
         return _bodyFuture;
     }
 
     void HTTPResponse::bodyCallback(const char *body, ssize_t len) {
+        // Note that I have no control over when or how often this is called.
+        // It's going to receive data whether or not readBody() or entireBody() were called.
         if (len > 0) {
             _partialBody.append(body, len);
-        } else if (len == UV_EOF) {
-            detach();
-            _bodyFuture.setValue(std::move(_partialBody));
-        } else {
-            detach();
-            try {
-                throw UVError("reading HTTP response", int(len));
-            } catch (...) {
-                _bodyFuture.setException(std::current_exception());
+            if (_readPartialBody) {
+                _readPartialBody = false;
+                _bodyFuture.setValue(std::move(_partialBody));
+                _bodyFuture = FutureProvider<string>(); // prepare for more
             }
+        } else if (len == UV_EOF) {
+            detach();   // tlsuv frees _res after this callback
+            _bodyFuture.setValue(std::move(_partialBody));
+        } else if (len < 0) {
+            detach();
+            _bodyFuture.setException(makeExceptionPtr(UVError("reading HTTP response", int(len))));
         }
     }
 

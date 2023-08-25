@@ -22,7 +22,6 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
-#pragma clang diagnostic ignored "-Wnewline-eof"
 #endif
 
 #include "http.h"

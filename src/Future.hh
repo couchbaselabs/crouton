@@ -67,7 +67,7 @@ namespace snej::coro {
     class FutureProvider {
     public:
         /// Constructs a Future that doesn't have a value yet.
-        FutureProvider()                        :_state(std::make_shared<FutureState<T>>()) { }
+        FutureProvider()                        {reset();}
 
         /// Creates a Future that can be returned to callers.
         Future<T> future()                      {return Future<T>(_state);}
@@ -85,8 +85,10 @@ namespace snej::coro {
 
         /// Gets the future's value, or throws its exception.
         /// It's illegal to call this before a value is set.
-        T&& value() const                        {return std::move(_state->value());}
+        T&& value() const                       {return std::move(_state->value());}
 
+        /// Clears the provider, detaching it from its current Future, so it can create another.
+        void reset()                            {_state = std::make_shared<FutureState<T>>();}
     private:
         std::shared_ptr<FutureState<T>> _state;
     };
@@ -94,13 +96,14 @@ namespace snej::coro {
     template <>
     class FutureProvider<void> {
     public:
-        FutureProvider()                        :_state(std::make_shared<FutureState<void>>()) { }
+        FutureProvider()                        {reset();}
         Future<void> future();
         operator Future<void>();
         bool hasValue() const                   {return _state->hasValue();}
         void setValue() const                   {_state->setValue();}
         void setException(std::exception_ptr x) {_state->setException(x);}
         void value() const                      {return _state->value();}
+        void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:
         std::shared_ptr<FutureState<void>> _state;
     };
@@ -123,11 +126,11 @@ namespace snej::coro {
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
         /// Requires that this Future be returned from a coroutine.
-        T&& waitForValue()             {return std::move(this->handle().promise().waitForValue());}
+        [[nodiscard]] T&& waitForValue() {return std::move(this->handle().promise().waitForValue());}
 
         // These methods make Future awaitable:
         bool await_ready()              {return _state->hasValue();}
-        T&& await_resume()              {return std::move(_state->value());}
+        [[nodiscard]] T&& await_resume(){return std::move(_state->value());}
         auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
 
     private:

@@ -36,7 +36,7 @@ namespace snej::coro::uv {
 
     class fs_request : public Request<uv_fs_s> {
     public:
-        ~fs_request()       {if (_called) uv_fs_req_cleanup(this);}
+        ~fs_request()       {if (await_ready()) uv_fs_req_cleanup(this);}
         int await_resume()  {return int(result);}
     private:
     };

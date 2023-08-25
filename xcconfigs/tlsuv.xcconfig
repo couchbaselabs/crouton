@@ -15,6 +15,10 @@ SYSTEM_HEADER_SEARCH_PATHS  = $(inherited)  vendor/tlsuv/include vendor/tlsuv/de
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited)  USE_MBEDTLS
 
-WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-shorten-64-to-32  -Wno-unused-variable  -Wno-missing-prototypes  -Wno-strict-prototypes -Wno-newline-eof  -Wno-format-nonliteral  -Wno-unused-function -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unused-variable  -Wno-missing-prototypes  -Wno-format-nonliteral  -Wno-unused-function -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough
 
+// Leaving modules enabled produces weird errors in Xcode, like
+//  "definition of 'msg' must be imported from module 'Darwin.POSIX.sys.msg' before it is required"
+// Apparently the `struct msg` declared in bio.c gets mixed up with a struct of the same name
+// in <sys/msg.h>.
 CLANG_ENABLE_MODULES = NO

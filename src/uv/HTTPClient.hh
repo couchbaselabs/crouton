@@ -7,6 +7,7 @@
 #pragma once
 #include "UVBase.hh"
 #include "Generator.hh"
+#include <string>
 #include <string_view>
 
 struct tlsuv_http_s;
@@ -15,13 +16,26 @@ struct tlsuv_http_resp_s;
 struct tlsuv_http_hdr_s;
 
 namespace snej::coro::uv {
-    class HTTPRequest;
     class HTTPResponse;
 
+    enum class HTTPStatus : int {
+        Unknown = 0,
+        Connected = 101,
+        OK = 200,
+        MovedPermanently = 301,
+        NotFound = 404,
+        ServerError = 500,
+    };
 
+
+    /** An HTTP connection to a server, from which multiple requests can be made.
+        This object must remain valid as long as any HTTPRequest created from it exists. */
     class HTTPClient {
     public:
+        /// Constructs a client that connects to the given host and port with HTTP or HTTPS.
+        /// The URL's path, if any, becomes a prefix to that of all HTTPRequests.
         explicit HTTPClient(std::string const& urlStr);
+
         ~HTTPClient()       {close();}
 
         void cancelAll();
@@ -37,53 +51,77 @@ namespace snej::coro::uv {
 
 
 
+    /** An HTTP request made on an HTTPClient connection. */
     class HTTPRequest {
     public:
+        /// Creates an HTTP request to the HTTPClient's server.
         explicit HTTPRequest(HTTPClient&, const char* method, const char* path);
         ~HTTPRequest();
+
+        /// Stops a request.
         void cancel();
 
+        /// Sets the value of a request header.
         void setHeader(const char* name, const char* value);
-        Future<void> writeToBody(std::string_view);
-        void endBody(); // "Only needed if `Transfer-Encoding` header was set to `chunked`"
 
+        /// Writes data to the request body.
+        Future<void> writeToBody(std::string_view);
+
+        /// Signals that the body is complete.
+        /// Only needed if `Transfer-Encoding` header was set to `chunked`.
+        void endBody();
+
+        /// Asynchronously returns the response.
         Future<HTTPResponse> response();
 
     private:
         void callback(tlsuv_http_resp_s*);
 
-        tlsuv_http_s*       _client;
-        tlsuv_http_req_s*   _req;
-        FutureProvider<void> _bodyFuture;
-        FutureProvider<HTTPResponse> _responseFuture;
+        tlsuv_http_s*                _client;           // The client handle
+        tlsuv_http_req_s*            _req;              // The request handle
+        FutureProvider<void>         _bodyFuture;       // Resolves when body chunk written
+        FutureProvider<HTTPResponse> _responseFuture;   // The response, when it arrives
     };
 
 
-
+    /** The response to an HTTPRequest. */
     class HTTPResponse {
     public:
-        int status;
+        /// The HTTP status code.
+        HTTPStatus status;
+
+        /// The HTTP status message.
         std::string statusMessage;
 
+        /// Returns the value of an HTTP response header. (Case-insensitive.)
         std::string_view getHeader(const char* name);
+
+        /// Returns a Generator that yields all the response headers as {name,value} pairs.
         Generator<std::pair<std::string_view, std::string_view>> headers();
 
-        Future<std::string> body();
+        /// Reads from the response body and returns some more data.
+        /// On EOF returns an empty string.
+        Future<std::string> readBody();
+
+        /// Reads and returns the entire body.
+        /// If readBody() has already been called, this will return the remainder.
+        Future<std::string> entireBody();
 
         HTTPResponse(HTTPResponse&&);
         ~HTTPResponse();
 
     private:
         friend class HTTPRequest;
-        explicit HTTPResponse(tlsuv_http_resp_s*, bool hasBody);
+        explicit HTTPResponse(tlsuv_http_resp_s*);
         HTTPResponse(HTTPResponse const&) =delete;
         void bodyCallback(const char *body, ssize_t len);
         void detach();
 
-        tlsuv_http_resp_s* _res = nullptr;
-        tlsuv_http_hdr_s* _headers = nullptr;
-        FutureProvider<std::string> _bodyFuture;
-        std::string _partialBody;
+        tlsuv_http_resp_s*          _res = nullptr;     // The response handle
+        tlsuv_http_hdr_s*           _headers = nullptr; // Really a um_header_list
+        FutureProvider<std::string> _bodyFuture;        // Will receive entire or partial body
+        std::string                 _partialBody;       // Body data accumulated by callback
+        bool                        _readPartialBody = false; // caller called readBody()
     };
 
 }
