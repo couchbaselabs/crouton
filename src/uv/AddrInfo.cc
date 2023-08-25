@@ -28,7 +28,7 @@ namespace snej::coro::uv {
 #pragma mark - DNS LOOKUP:
 
 
-    class getaddrinfo_request : public uv::RequestWithStatus<uv_getaddrinfo_s> {
+    class getaddrinfo_request : public uv::Request<uv_getaddrinfo_s> {
     public:
         static void callback(uv_getaddrinfo_s *req, int status, struct addrinfo *res) {
             auto self = static_cast<getaddrinfo_request*>(req);

@@ -47,7 +47,7 @@ namespace snej::coro::uv {
     Future<void> Stream::shutdown() {
         assert(isOpen());
 
-        RequestWithStatus<uv_shutdown_t> req;
+        Request<uv_shutdown_t> req;
         check( _stream->shutdown(&req, req.callbackWithStatus), "closing connection");
         check( AWAIT req, "closing connection" );
         RETURN;

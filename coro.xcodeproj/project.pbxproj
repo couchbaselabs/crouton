@@ -249,6 +249,7 @@
 		272A852C2A97F9760083D947 /* ListReporter.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ListReporter.cc; sourceTree = "<group>"; };
 		272A852E2A982DE50083D947 /* WebSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WebSocket.hh; sourceTree = "<group>"; };
 		272A852F2A982DE50083D947 /* WebSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocket.cc; sourceTree = "<group>"; };
+		272A85332A99451B0083D947 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* AsyncUV.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncUV.hh; sourceTree = "<group>"; };
@@ -399,6 +400,7 @@
 		272728BA2A8D6505000CCA22 = {
 			isa = PBXGroup;
 			children = (
+				272A85332A99451B0083D947 /* README.md */,
 				272728CD2A8D651F000CCA22 /* src */,
 				272728C52A8D6505000CCA22 /* tests */,
 				279D5D4E2A9031EF005C3066 /* testserver */,
