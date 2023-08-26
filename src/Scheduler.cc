@@ -8,6 +8,7 @@
 #include "Backtrace.hh"
 #include "Coroutine.hh"
 #include "EventLoop.hh"
+#include "Task.hh"
 #include <charconv>
 #include <iostream>
 

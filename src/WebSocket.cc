@@ -71,6 +71,12 @@ namespace crouton {
         check(AWAIT req, "writing to WebSocket");
     }
 
+    Future<void> WebSocket::send(std::string msg) {
+        // Use co_await to ensure `msg` stays in scope until the write completes.
+        AWAIT send(msg.data(), msg.size());
+        RETURN;
+    }
+
     Future<std::string> WebSocket::receive() {
         auto result = _nextIncoming.future();
         if (_nextIncoming.hasValue()) {

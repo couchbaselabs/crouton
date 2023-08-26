@@ -33,13 +33,13 @@ static Task connectionTask(std::shared_ptr<TCPSocket> client) {
 }
 
 
-static Future<int> run() {
-    TCPServer server(34567);
+static Task run() {
+    static TCPServer server(34567);
     cout << "Listening on port 34567\n";
     server.listen([](std::shared_ptr<TCPSocket> client) {
         connectionTask(std::move(client));
     });
-    RETURN 0;
+    RETURN;
 }
 
 

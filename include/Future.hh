@@ -26,10 +26,10 @@ namespace crouton {
         void _gotValue();
         void _checkValue();
 
-        mutable std::mutex  _mutex;
-        Suspension*         _suspension = nullptr;
-        std::exception_ptr  _exception;
-        bool                _hasValue = false;
+        mutable std::mutex  _mutex;                 // For thread-safety
+        Suspension*         _suspension = nullptr;  // coro blocked awaiting my Future
+        std::exception_ptr  _exception;             // The exception, if any
+        bool                _hasValue = false;      // True when a value or exception is set
     };
 
     template <typename T>
@@ -169,7 +169,7 @@ namespace crouton {
 #pragma mark - FUTURE IMPL:
 
 
-    // Implementation of a coroutine that returns a Future<T>.
+    // Implementation (promise_type) of a coroutine that returns a Future<T>.
     template <typename T>
     class FutureImpl : public CoroutineImpl<Future<T>,FutureImpl<T>> {
     public:

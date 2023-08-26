@@ -33,6 +33,10 @@ namespace crouton {
         or if the value is an exception it logs an error and returns 1. */
     int UVMain(int argc, const char * argv[], Future<int> (*fn)());
 
+    /** Main process function that runs an event loop.
+        It calls `fn` to create the Task, then runs the event loop forever or until stopped. */
+    int UVMain(int argc, const char * argv[], Task (*fn)());
+
     /// Process arguments, as captured by UVMain.
     extern std::vector<std::string_view> UVArgs;
 

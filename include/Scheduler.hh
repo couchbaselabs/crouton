@@ -83,6 +83,27 @@ namespace crouton {
             return e;
         }
 
+        //---- Event loop:
+
+        /// Returns the associated event loop. If there is none, it creates one.
+        EventLoop& eventLoop();
+
+        /// Associates an existing EventLoop instance with this Scheduler/thread.
+        void useEventLoop(EventLoop*);
+
+        /// Runs the EventLoop indefinitely, until something calls stop on it.
+        void run();
+
+        /// Runs the event loop until the function returns true.
+        /// The function is checked before each iteration of the loop.
+        void runUntil(std::function<bool()> fn);
+
+        /// Schedules the function to be run at the next iteration of the event loop.
+        /// @note  This method is thread-safe.
+        void onEventLoop(std::function<void()>);
+
+        //---- Coroutine management; mostly called from coroutine implementations
+
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
         /// be returned from next().
         void schedule(handle h) {
@@ -131,7 +152,7 @@ namespace crouton {
         }
 
         /// Returns the coroutine that should be resumed,
-        /// or else the no-op coroutine to return to the outer caller.
+        /// or else the no-op coroutine that returns to the outer caller.
         handle finished(handle h) {
             if (kLogScheduler) {std::cerr << "Scheduler::finished " << h << "\n";}
             assert(isCurrent());
@@ -165,25 +186,6 @@ namespace crouton {
             }
         }
 
-        //---- libuv additions:
-
-        /// Returns the associated event loop. If there is none, it creates one.
-        EventLoop& eventLoop();
-
-        /// Associates an existing EventLoop instance with this Scheduler/thread.
-        void useEventLoop(EventLoop*);
-
-        /// Runs the EventLoop indefinitely, until something calls stop on it.
-        void run();
-
-        /// Runs the event loop until the function returns true.
-        /// The function is checked before each iteration of the loop.
-        void runUntil(std::function<bool()> fn);
-
-        /// Schedules the function to be run at the next iteration of the event loop.
-        /// @note  This method is thread-safe.
-        void onEventLoop(std::function<void()>);
-
     private:
         friend class Suspension;
         
@@ -213,7 +215,7 @@ namespace crouton {
                 _wakeUp();
         }
 
-        // Finds any waiting coroutines that want to wake up, removes them from `_waiting`
+        // Finds any waiting coroutines that want to wake up, removes them from `_suspended`
         // and adds them to `_ready`.
         void scheduleWakers() {
             while (_woke.exchange(false) == true) {
@@ -237,10 +239,10 @@ namespace crouton {
         std::deque<handle>  _ready;         // Coroutines that are ready to run
         SuspensionMap       _suspended;     // Suspended/sleeping coroutines
         std::atomic<bool>   _woke = false;  // True if a suspended is waking
-        EventLoop*          _eventLoop;
-        bool                _ownsEventLoop = false;
-        handle              _eventLoopTask = nullptr;
-        bool                _inEventLoopTask = false;
+        EventLoop*          _eventLoop;     // My event loop
+        bool                _ownsEventLoop = false;     // True if I created _eventLoop
+        handle              _eventLoopTask = nullptr;   // EventLoop's coroutine handle
+        bool                _inEventLoopTask = false;   // True while in eventLoopTask()
     };
 
 

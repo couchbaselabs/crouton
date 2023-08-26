@@ -185,4 +185,23 @@ namespace crouton {
             return 1;
         }
     }
+
+    int UVMain(int argc, const char * argv[], Task(*fn)()) {
+        auto args = uv_setup_args(argc, (char**)argv);
+        UVArgs.resize(argc);
+        for (int i = 0; i < argc; ++i)
+            UVArgs[i] = args[i];
+
+        try {
+            Task task = fn();
+            Scheduler::current().run();
+            return 0;
+        } catch (std::exception const& x) {
+            cerr << "*** Unexpected exception: " << x.what() << endl;
+            return 1;
+        } catch (...) {
+            cerr << "*** Unexpected exception" << endl;
+            return 1;
+        }
+    }
 }

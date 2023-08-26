@@ -10,8 +10,6 @@
 using namespace std;
 using namespace crouton;
 
-#define CRLF  "\r\n"
-
 
 static optional<string> firstArg() {
     optional<string> arg;
