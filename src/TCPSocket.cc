@@ -1,0 +1,179 @@
+//
+// TCPSocket.cc
+// Crouton
+// Copyright 2023-Present Couchbase, Inc.
+//
+
+#include "TCPSocket.hh"
+#include "AddrInfo.hh"
+#include "Defer.hh"
+#include "UVInternal.hh"
+#include "stream_wrapper.hh"
+#include <mutex>
+#include <unistd.h>
+#include <iostream>
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
+#include "tlsuv.h"
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+namespace crouton {
+    using namespace std;
+
+
+    static void initTlsuv() {
+        static once_flag sOnce;
+        std::call_once(sOnce, [] {
+            tlsuv_set_debug(3, // INFO
+                            [](int level, const char *file, unsigned int line, const char *msg) {
+                if (level <= 1) // fatal
+                    throw std::runtime_error("TLSUV: "s + msg);
+                std::cerr << "TLSUV: " << msg << std::endl;
+            });
+        });
+    }
+
+
+    /** Wrapper around a uv_tcp_t handle. */
+    struct tcp_stream_wrapper : public uv_stream_wrapper {
+
+        explicit tcp_stream_wrapper(uv_tcp_t *socket)    :uv_stream_wrapper((uv_stream_t*)socket) { }
+
+        uv_tcp_t* tcpHandle() {return (uv_tcp_t*)_stream;}
+
+        virtual int setNoDelay(bool enable) {
+            return uv_tcp_nodelay(tcpHandle(), enable);
+        }
+
+        virtual int keepAlive(unsigned intervalSecs) {
+            return uv_tcp_keepalive(tcpHandle(), (intervalSecs > 0), intervalSecs);
+        }
+    };
+
+
+    /** Wrapper around a tlsuv_stream_t handle. */
+    struct tlsuv_stream_wrapper final : public stream_wrapper {
+
+        explicit tlsuv_stream_wrapper(tlsuv_stream_t *stream)
+        :_stream(stream)
+        {
+            _stream->data = this;
+        }
+
+        ~tlsuv_stream_wrapper() {
+            if (_stream) {
+                _stream->data = nullptr;
+                tlsuv_stream_close(_stream, [](uv_handle_t* h) noexcept {
+                    tlsuv_stream_free((tlsuv_stream_t*)h);
+                    delete (tlsuv_stream_t*)h;
+                });
+                _stream = nullptr;
+            }
+        }
+
+        virtual int setNoDelay(bool enable) override {
+            return tlsuv_stream_nodelay(_stream, enable);
+        }
+
+        virtual int keepAlive(unsigned intervalSecs) override {
+            return tlsuv_stream_keepalive(_stream, (intervalSecs > 0), intervalSecs);
+        }
+
+        int read_start() override {
+            auto alloc = [](uv_handle_t* fakeH, size_t suggested, uv_buf_t* uvbuf) {
+                auto h = (tlsuv_stream_t*)fakeH;
+                auto stream = (tlsuv_stream_wrapper*)h->data;
+                stream->alloc(suggested, uvbuf);
+            };
+            auto read = [](uv_stream_t* fakeH, ssize_t nread, const uv_buf_t* uvbuf) {
+                auto h = (tlsuv_stream_t*)fakeH;
+                auto stream = (tlsuv_stream_wrapper*)h->data;
+                stream->read(nread, uvbuf);
+            };
+            return tlsuv_stream_read(_stream, alloc, read);
+        }
+
+        int write(uv_write_t *req, const uv_buf_t bufs[], unsigned nbufs, uv_write_cb cb) override {
+            assert(nbufs == 1); //FIXME
+            return tlsuv_stream_write(req, _stream, (uv_buf_t*)&bufs[0], cb);
+        }
+
+        int try_write(const uv_buf_t bufs[], unsigned nbufs) override {
+            return 0; //FIXME
+        }
+
+        bool is_readable() override {return true;} //FIXME
+        bool is_writable() override {return true;} //FIXME
+
+        int shutdown(uv_shutdown_t* req, uv_shutdown_cb cb) override {
+            return 0; //FIXME
+        }
+
+        tlsuv_stream_t* _stream;
+    };
+
+
+    TCPSocket::TCPSocket() = default;
+
+
+    void TCPSocket::acceptFrom(uv_tcp_s* server) {
+        auto tcpHandle = new uv_tcp_t;
+        uv_tcp_init(curLoop(), tcpHandle);
+        check(uv_accept((uv_stream_t*)server, (uv_stream_t*)tcpHandle),
+              "accepting client connection");
+        opened(make_unique<tcp_stream_wrapper>(tcpHandle));
+    }
+
+
+    Future<void> TCPSocket::connect(std::string const& address, uint16_t port, bool withTLS) {
+        assert(!isOpen());
+        std::unique_ptr<stream_wrapper> stream;
+        connect_request req;
+        int err;
+        if (withTLS) {
+            initTlsuv();
+            tlsuv_stream_t *tlsHandle = new tlsuv_stream_t;
+            tlsuv_stream_init(curLoop(), tlsHandle, NULL);
+            stream = make_unique<tlsuv_stream_wrapper>(tlsHandle);
+            err = tlsuv_stream_connect(&req, tlsHandle, address.c_str(), port,
+                                       req.callbackWithStatus);
+
+        } else {
+            // Resolve the address/hostname:
+            sockaddr addr;
+            int status = uv_ip4_addr(address.c_str(), port, (sockaddr_in*)&addr);
+            if (status < 0) {
+                AddrInfo ai = AWAIT AddrInfo::lookup(address, port);
+                addr = ai.primaryAddress();
+            }
+
+            auto tcpHandle = new uv_tcp_t;
+            uv_tcp_init(curLoop(), tcpHandle);
+            stream = make_unique<tcp_stream_wrapper>(tcpHandle);
+            err = uv_tcp_connect(&req, tcpHandle, &addr, 
+                                 req.callbackWithStatus);
+        }
+
+        check(err, "opening TLS connection");
+        check( AWAIT req, "opening connection" );
+        opened(std::move(stream));
+        RETURN;
+    }
+
+
+    void TCPSocket::setNoDelay(bool enable) {
+        _stream->setNoDelay(enable);
+    }
+
+    void TCPSocket::keepAlive(unsigned intervalSecs) {
+        _stream->keepAlive(intervalSecs);
+    }
+
+}

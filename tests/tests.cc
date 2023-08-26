@@ -1,21 +1,17 @@
 //
-//  tests.cc
-//
-//  Created by Jens Alfke on 8/16/23.
+// tests.cc
+// Crouton
+// Copyright 2023-Present Couchbase, Inc.
 //
 
-#include "AsyncUV.hh"
-#include "Future.hh"
-#include "Generator.hh"
-#include "URL.hh"
+#include "Crouton.hh"
 #include <iostream>
-#include <sys/socket.h>
+#include <sys/socket.h> // for AF_INET
 
 #include "catch_amalgamated.hpp"
 
 using namespace std;
-using namespace snej::coro;
-using namespace snej::coro::uv;
+using namespace crouton;
 
 
 // An example Generator of Fibonacci numbers.
@@ -136,8 +132,7 @@ TEST_CASE("URLs", "[uv]") {
 
 static Future<string> readFile(string const& path) {
     string contents;
-    FileStream f;
-    AWAIT f.open(path);
+    FileStream f = AWAIT FileStream::open(path);
     char buffer[100];
     while (true) {
         int64_t len = AWAIT f.read(sizeof(buffer), &buffer[0]);
@@ -163,12 +158,10 @@ TEST_CASE("Read a file", "[uv]") {
 
 
 TEST_CASE("DNS lookup", "[uv]") {
-    AddrInfo addr;
-    addr.lookup("mooseyard.com").waitForValue();
+    AddrInfo addr = AddrInfo::lookup("mooseyard.com").waitForValue();
     cerr << "Addr = " << addr.primaryAddressString() << endl;
     auto ip4addr = addr.primaryAddress(4);
-    REQUIRE(ip4addr);
-    CHECK(ip4addr->sa_family == AF_INET);
+    CHECK(ip4addr.sa_family == AF_INET);
     CHECK(addr.primaryAddressString() == "69.163.161.182");
     REQUIRE(Scheduler::current().assertEmpty());
 }

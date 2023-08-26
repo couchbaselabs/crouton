@@ -1,0 +1,18 @@
+//
+//  Executable.xcconfig
+//  crouton
+//
+//  Created by Jens Alfke on 8/25/23.
+//
+
+LIBRARY_SEARCH_PATHS = $(inherited)  $(PROJECT_DIR)/libs
+
+CODE_SIGN_ENTITLEMENTS = testserver/testserver.entitlements
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = Z62S7RW88Y
+ENABLE_HARDENED_RUNTIME[sdk=macosx*] = YES
+PROVISIONING_PROFILE_SPECIFIER =
+
+LD_GENERATE_MAP_FILE = YES
+LD_MAP_FILE_PATH = $(CONFIGURATION_BUILD_DIR)/$(PRODUCT_NAME)-LinkMap-$(CURRENT_ARCH).txt

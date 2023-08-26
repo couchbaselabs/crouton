@@ -1,21 +1,20 @@
 //
-//  main.cpp
-//  testserver
-//
-//  Created by Jens Alfke on 8/18/23.
+// testserver.cc
+// Crouton
+// Copyright 2023-Present Couchbase, Inc.
 //
 
-#include "AsyncUV.hh"
+#include "Crouton.hh"
 #include "Task.hh"
 #include <iostream>
 
 using namespace std;
-using namespace snej::coro;
+using namespace crouton;
 
 #define CRLF  "\r\n"
 
 
-static Task connectionTask(std::shared_ptr<uv::TCPSocket> client) {
+static Task connectionTask(std::shared_ptr<TCPSocket> client) {
     cout << "Accepted connection!\n";
     string request;
     request = AWAIT client->readUntil(CRLF CRLF);
@@ -34,12 +33,16 @@ static Task connectionTask(std::shared_ptr<uv::TCPSocket> client) {
 }
 
 
-int main(int argc, const char * argv[]) {
-    uv::TCPServer server(34567);
-    return uv::UVMain(argc, argv, [&]{
-        cout << "Listening on port 34567\n";
-        server.listen([](std::shared_ptr<uv::TCPSocket> client) {
-            connectionTask(std::move(client));
-        });
+static Future<int> run() {
+    TCPServer server(34567);
+    cout << "Listening on port 34567\n";
+    server.listen([](std::shared_ptr<TCPSocket> client) {
+        connectionTask(std::move(client));
     });
+    RETURN 0;
+}
+
+
+int main(int argc, const char * argv[]) {
+    return UVMain(argc, argv, run);
 }
