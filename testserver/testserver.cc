@@ -25,7 +25,7 @@ static Task connectionTask(std::shared_ptr<TCPSocket> client) {
                         "Hello, world!" CRLF);
 
     cout << "Sent response.\n";
-    AWAIT client->shutdown();
+    AWAIT client->closeWrite();
 
     cout << "Shutdown stream.\n";
     client->close();

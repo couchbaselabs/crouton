@@ -36,6 +36,7 @@ namespace crouton {
         /// @warning The data buffer must remain valid until the call finishes.
         [[nodiscard]] Future<void> send(const void* data, size_t len);
         [[nodiscard]] Future<void> send(std::string_view str) {return send(str.data(), str.size());}
+        [[nodiscard]] Future<void> send(const char* str) {return send(std::string_view(str));}
 
         /// Sends a binary message, asynchronously. The data is copied immediately.
         [[nodiscard]] Future<void> send(std::string);

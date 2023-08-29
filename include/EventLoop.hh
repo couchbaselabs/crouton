@@ -8,6 +8,8 @@
 #include <functional>
 
 namespace crouton {
+    template <typename T> class Future;
+
 
     /** Abstract event loop class, used by Scheduler.
         The concrete implementation is UVEventLoop. */

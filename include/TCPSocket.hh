@@ -17,7 +17,13 @@ namespace crouton {
     public:
         TCPSocket();
 
-        /// Connects to an address/port. The address may be a hostname or dotted-quad IPv4 address.
+        /// Specifies the address and port to connect to, and whether to use TLS.
+        void bind(std::string const& address, uint16_t port, bool withTLS);
+
+        /// Opens the socket to the bound address. Resolves once opened.
+        [[nodiscard]] virtual Future<void> open() override;
+
+        /// Equivalent to bind + open.
         [[nodiscard]] Future<void> connect(std::string const& address, uint16_t port, bool withTLS);
 
         /// Sets the TCP nodelay option.
@@ -28,7 +34,15 @@ namespace crouton {
 
     private:
         friend class TCPServer;
-        
+
+        struct binding {
+            std::string address;
+            uint16_t port;
+            bool withTLS;
+        };
+
         virtual void acceptFrom(uv_tcp_s* server);
+
+        std::unique_ptr<binding> _binding;
     };
 }

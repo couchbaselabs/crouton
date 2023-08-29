@@ -13,6 +13,18 @@
 #include <iostream>//TEMP
 
 
+// `is_type_complete_v<T>` evaluates to true iff T is a complete (fully-defined) type.
+// By Raymond Chen: https://devblogs.microsoft.com/oldnewthing/20190710-00/?p=102678
+template<typename, typename = void>
+    constexpr bool is_type_complete_v = false;
+template<typename T>
+    constexpr bool is_type_complete_v<T, std::void_t<decltype(sizeof(T))>> = true;
+
+// `NonReference` is a concept that applies to any value that's not a reference.
+template <typename T>
+    concept NonReference = !std::is_reference_v<T>;
+
+
 // Synonyms for coroutine primitives. Optional, but they're more visible in the code.
 #define AWAIT  co_await
 #define YIELD  co_yield
@@ -21,6 +33,8 @@
 namespace crouton {
     template <class INSTANCE, class SELF>
     class CoroutineImpl;
+
+    using coro_handle = std::coroutine_handle<>;
 
 
     /** Base class for a coroutine handle, the public object returned by a coroutine function. */
@@ -105,19 +119,19 @@ namespace crouton {
     public:
         /// Arranges for `consumer` to be returned from `await_suspend`, making it the next
         /// coroutine to run after the `co_yield`.
-        explicit YielderTo(std::coroutine_handle<> consumer) : _consumer(consumer) {}
+        explicit YielderTo(coro_handle consumer) : _consumer(consumer) {}
 
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
         explicit YielderTo() :YielderTo(std::noop_coroutine()) { }
 
         bool await_ready() noexcept { return false; }
 
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<>) noexcept {return _consumer;}
+        coro_handle await_suspend(coro_handle) noexcept {return _consumer;}
 
         void await_resume() noexcept {}
 
     private:
-        std::coroutine_handle<> _consumer; // The coroutine that's awaiting my result, or null if none.
+        coro_handle _consumer; // The coroutine that's awaiting my result, or null if none.
     };
 
 
@@ -144,9 +158,9 @@ namespace crouton {
 
 
     /** Returns a description of a coroutine, ideally the name of its function. */
-    std::string CoroutineName(std::coroutine_handle<>);
+    std::string CoroutineName(coro_handle);
 
     /** Writes `CoroutineName(h)` to `out` */
-    std::ostream& operator<< (std::ostream& out, std::coroutine_handle<> h);
+    std::ostream& operator<< (std::ostream& out, coro_handle h);
 
 }

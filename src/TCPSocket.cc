@@ -28,6 +28,9 @@ namespace crouton {
     using namespace std;
 
 
+#pragma mark - STREAM WRAPPERS:
+
+
     static void initTlsuv() {
         static once_flag sOnce;
         std::call_once(sOnce, [] {
@@ -43,29 +46,17 @@ namespace crouton {
 
     /** Wrapper around a uv_tcp_t handle. */
     struct tcp_stream_wrapper : public uv_stream_wrapper {
-
-        explicit tcp_stream_wrapper(uv_tcp_t *socket)    :uv_stream_wrapper((uv_stream_t*)socket) { }
-
-        uv_tcp_t* tcpHandle() {return (uv_tcp_t*)_stream;}
-
-        virtual int setNoDelay(bool enable) {
-            return uv_tcp_nodelay(tcpHandle(), enable);
-        }
-
-        virtual int keepAlive(unsigned intervalSecs) {
-            return uv_tcp_keepalive(tcpHandle(), (intervalSecs > 0), intervalSecs);
-        }
+        explicit tcp_stream_wrapper(uv_tcp_t *socket)   :uv_stream_wrapper((uv_stream_t*)socket) { }
+        uv_tcp_t* tcpHandle()                           {return (uv_tcp_t*)_stream;}
+        virtual int setNoDelay(bool e)                  {return uv_tcp_nodelay(tcpHandle(), e);}
+        virtual int keepAlive(unsigned i)       {return uv_tcp_keepalive(tcpHandle(), (i > 0), i);}
     };
 
 
     /** Wrapper around a tlsuv_stream_t handle. */
     struct tlsuv_stream_wrapper final : public stream_wrapper {
 
-        explicit tlsuv_stream_wrapper(tlsuv_stream_t *stream)
-        :_stream(stream)
-        {
-            _stream->data = this;
-        }
+        explicit tlsuv_stream_wrapper(tlsuv_stream_t *s)    :_stream(s) {_stream->data = this;}
 
         ~tlsuv_stream_wrapper() {
             if (_stream) {
@@ -106,18 +97,21 @@ namespace crouton {
         }
 
         int try_write(const uv_buf_t bufs[], unsigned nbufs) override {
-            return 0; //FIXME
+            return UV_ENOTSUP; //FIXME
         }
 
         bool is_readable() override {return true;} //FIXME
         bool is_writable() override {return true;} //FIXME
 
         int shutdown(uv_shutdown_t* req, uv_shutdown_cb cb) override {
-            return 0; //FIXME
+            return UV_ENOTSUP; //FIXME
         }
 
         tlsuv_stream_t* _stream;
     };
+
+
+#pragma mark - TCP SOCKET:
 
 
     TCPSocket::TCPSocket() = default;
@@ -133,24 +127,38 @@ namespace crouton {
 
 
     Future<void> TCPSocket::connect(std::string const& address, uint16_t port, bool withTLS) {
+        bind(address, port, withTLS);
+        return open();
+    }
+
+
+    void TCPSocket::bind(std::string const& address, uint16_t port, bool withTLS) {
         assert(!isOpen());
+        assert(!_binding);
+        _binding.reset(new binding{address, port, withTLS});
+    }
+
+
+    Future<void> TCPSocket::open() {
+        assert(!isOpen());
+        assert(_binding);
         std::unique_ptr<stream_wrapper> stream;
         connect_request req;
         int err;
-        if (withTLS) {
+        if (_binding->withTLS) {
             initTlsuv();
             tlsuv_stream_t *tlsHandle = new tlsuv_stream_t;
             tlsuv_stream_init(curLoop(), tlsHandle, NULL);
             stream = make_unique<tlsuv_stream_wrapper>(tlsHandle);
-            err = tlsuv_stream_connect(&req, tlsHandle, address.c_str(), port,
+            err = tlsuv_stream_connect(&req, tlsHandle, _binding->address.c_str(), _binding->port,
                                        req.callbackWithStatus);
 
         } else {
             // Resolve the address/hostname:
             sockaddr addr;
-            int status = uv_ip4_addr(address.c_str(), port, (sockaddr_in*)&addr);
+            int status = uv_ip4_addr(_binding->address.c_str(), _binding->port, (sockaddr_in*)&addr);
             if (status < 0) {
-                AddrInfo ai = AWAIT AddrInfo::lookup(address, port);
+                AddrInfo ai = AWAIT AddrInfo::lookup(_binding->address, _binding->port);
                 addr = ai.primaryAddress();
             }
 
@@ -160,9 +168,11 @@ namespace crouton {
             err = uv_tcp_connect(&req, tcpHandle, &addr, 
                                  req.callbackWithStatus);
         }
+        _binding = nullptr;
 
-        check(err, "opening TLS connection");
+        check(err, "opening connection");
         check( AWAIT req, "opening connection" );
+
         opened(std::move(stream));
         RETURN;
     }

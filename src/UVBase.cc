@@ -83,6 +83,14 @@ namespace crouton {
     }
 
 
+    Future<void> Timer::sleep(double delaySecs) {
+        FutureProvider<void> provider;
+        Timer::after(delaySecs, [provider]{provider.setValue();});
+        return provider;
+    }
+
+
+
     uv_loop_s* curLoop() {
         return ((UVEventLoop&)Scheduler::current().eventLoop()).uvLoop();
     }
@@ -125,17 +133,12 @@ namespace crouton {
         uv_timer_stop(_handle);
     }
 
-    void Timer::after(double delaySecs, std::function<void()> fn) {
+    /*static*/ void Timer::after(double delaySecs, std::function<void()> fn) {
         auto t = new Timer(std::move(fn));
         t->_deleteMe = true;
         t->start(delaySecs);
     }
 
-
-
-    void OnEventLoop(std::function<void()> fn) {
-        Scheduler::current().onEventLoop(std::move(fn));
-    }
 
 
     struct QueuedWork : public uv_work_t {

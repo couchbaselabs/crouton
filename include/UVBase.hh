@@ -50,6 +50,8 @@ namespace crouton {
         void stop() override;
         void perform(std::function<void()>) override;
 
+        [[nodiscard]] Future<void> sleep(double delaySecs);
+
         uv_loop_s* uvLoop() {return _loop.get();}
     private:
         void _run(int mode);
@@ -79,6 +81,9 @@ namespace crouton {
         /// Static method, that calls the given function after the given delay.
         static void after(double delaySecs, std::function<void()> fn);
 
+        /// Returns a Future that completes after the given delay.
+        [[nodiscard]] static Future<void> sleep(double delaySecs);
+
     private:
         void _start(double delaySecs, double repeatSecs);
 
@@ -86,11 +91,6 @@ namespace crouton {
         uv_timer_s*             _handle = nullptr;
         bool                    _deleteMe = false;
     };
-
-
-    /// Calls the given function on the next iteration of this thread's libuv event loop.
-    void OnEventLoop(Scheduler&, std::function<void()>);
-    void OnEventLoop(std::function<void()> fn);
 
 
     /// Calls the given function on a background thread managed by libuv.
@@ -109,14 +109,18 @@ namespace crouton {
     }
 
 
-    /** Low-level struct pointing to the destination of a read. Binary compatible with uv_buf_t. */
-    struct ReadBuf {
+    /** Low-level struct pointing to mutable data.
+        Usually serves as the destination of a read.
+        Binary compatible with uv_buf_t. */
+    struct MutableBuf {
         void*   base = nullptr;
         size_t  len = 0;
     };
 
-    /** Low-level struct pointing to the source of a write. Binary compatible with uv_buf_t. */
-    struct WriteBuf {
+    /** Low-level struct pointing to immutable data.
+        Usually serves as the source of a write.
+        Binary compatible with uv_buf_t. */
+    struct ConstBuf {
         const void* base = nullptr;
         size_t      len = 0;
     };

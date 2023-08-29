@@ -26,32 +26,31 @@ namespace crouton {
     using BufferRef = std::unique_ptr<Buffer>;
 
 
-    /** Abstract base class of low-level wrappers around libuv and tlsuv streams. */
+    /** Abstract base class of low-level wrappers around libuv and tlsuv streams.
+        Public methods are mostly named after their libuv C counterparts. */
     struct stream_wrapper {
         virtual ~stream_wrapper() = default;
+
+        virtual int setNoDelay(bool enable) {return UV_ENOTSUP;}
+        virtual int keepAlive(unsigned intervalSecs) {return UV_ENOTSUP;}
 
         using AllocCallback = std::function<BufferRef(size_t suggestedSize)>;
         using ReadCallback = std::function<void(BufferRef, int err)>;
 
         AllocCallback _allocCallback;
-        ReadCallback _readCallback;
+        ReadCallback  _readCallback;
 
-        virtual int read_start() {
-            return 0;
-        }
-
-        virtual int read_stop() {
-            return UV_ENOTSUP;
-        }
-
-        virtual int write(uv_write_t *req, const uv_buf_t bufs[], unsigned nbufs, uv_write_cb cb) =0;
-        virtual int try_write(const uv_buf_t bufs[], unsigned nbufs) =0;
         virtual bool is_readable() =0;
         virtual bool is_writable() =0;
-        virtual int shutdown(uv_shutdown_t*, uv_shutdown_cb) =0;
 
-        virtual int setNoDelay(bool enable) {return UV_ENOTSUP;}
-        virtual int keepAlive(unsigned intervalSecs) {return UV_ENOTSUP;}
+        virtual int read_start() {return 0;}
+        virtual int read_stop() {return UV_ENOTSUP;}
+
+        virtual int write(uv_write_t *req, const uv_buf_t bufs[], unsigned nbufs,
+                          uv_write_cb cb) =0;
+        virtual int try_write(const uv_buf_t bufs[], unsigned nbufs) =0;
+
+        virtual int shutdown(uv_shutdown_t*, uv_shutdown_cb) =0;
 
     protected:
         void alloc(size_t suggested, uv_buf_t* uvbuf) {
@@ -75,7 +74,7 @@ namespace crouton {
     };
 
 
-    /** Wrapper around a uv_stream_t. */
+    /** Wrapper around a uv_stream_t. Used by Pipe. */
     struct uv_stream_wrapper : public stream_wrapper {
 
         explicit uv_stream_wrapper(uv_stream_t *stream) :_stream(stream) {_stream->data = this;}

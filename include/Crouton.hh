@@ -5,6 +5,7 @@
 //
 
 #pragma once
+#include "Actor.hh"
 #include "EventLoop.hh"
 #include "Future.hh"
 #include "Generator.hh"

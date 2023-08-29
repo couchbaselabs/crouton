@@ -41,7 +41,7 @@ namespace crouton {
     }
 
 
-    Future<size_t> FileStream::preadv(const ReadBuf bufs[], size_t nbufs, int64_t offset) {
+    Future<size_t> FileStream::preadv(const MutableBuf bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
         assert(isOpen());
         fs_request req;
@@ -55,7 +55,7 @@ namespace crouton {
     }
 
     
-    Future<void> FileStream::pwritev(const WriteBuf bufs[], size_t nbufs, int64_t offset) {
+    Future<void> FileStream::pwritev(const ConstBuf bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
         assert(isOpen());
         fs_request req;

@@ -70,8 +70,7 @@ namespace crouton {
         FutureProvider()                        {reset();}
 
         /// Creates a Future that can be returned to callers.
-        Future<T> future()                      {return Future<T>(_state);}
-        operator Future<T>()                    {return future();}
+        Future<T> future()                      {return Future<T>(*this);}
 
         /// True if there is a value.
         bool hasValue() const                   {return _state->hasValue();}
@@ -90,6 +89,7 @@ namespace crouton {
         /// Clears the provider, detaching it from its current Future, so it can create another.
         void reset()                            {_state = std::make_shared<FutureState<T>>();}
     private:
+        friend class Future<T>;
         std::shared_ptr<FutureState<T>> _state;
     };
 
@@ -116,6 +116,8 @@ namespace crouton {
     template <typename T>
     class Future : public CoroutineHandle<FutureImpl<T>> {
     public:
+        Future(FutureProvider<T> &provider)   :_state(provider._state) { }
+
         /// Creates an already-ready Future
         Future(T&& value)
         :_state(std::make_shared<FutureState<T>>()) {
@@ -139,8 +141,6 @@ namespace crouton {
         friend class FutureProvider<T>;
         friend class FutureImpl<T>;
 
-        explicit Future(std::shared_ptr<FutureState<T>> state)   :_state(std::move(state)) { }
-
         std::shared_ptr<FutureState<T>>  _state;
     };
 
@@ -156,7 +156,7 @@ namespace crouton {
         void await_resume()             {_state->value();}
         auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
 
-    private:
+    protected:
         friend class FutureProvider<void>;
         friend class FutureImpl<void>;
 
@@ -187,7 +187,7 @@ namespace crouton {
 
         Future<T> get_return_object() {
             auto f = _provider.future();
-            f.setHandle(handle());
+            f.setHandle(this->handle());
             return f;
         }
 
@@ -199,8 +199,7 @@ namespace crouton {
         void return_value(T&& value)            {_provider.setValue(std::move(value));}
         Finisher final_suspend() noexcept       {return {};}
 
-    private:
-        handle_type handle()                    {return handle_type::from_promise(*this);}
+    protected:
         FutureProvider<T> _provider;
     };
 

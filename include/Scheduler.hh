@@ -102,6 +102,17 @@ namespace crouton {
         /// @note  This method is thread-safe.
         void onEventLoop(std::function<void()>);
 
+        /// Runs the lambda/function as soon as possible: either immediately if this Scheduler is
+        /// current, else on its next event loop iteration.
+        template <std::invocable FN> 
+        void asap(FN fn) {
+            if (isCurrent()) {
+                fn();
+            } else {
+                onEventLoop(fn);
+            }
+        }
+
         //---- Coroutine management; mostly called from coroutine implementations
 
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
@@ -261,6 +272,7 @@ namespace crouton {
         std::coroutine_handle<> _handle;
     };
 
+    
 
     /** General purpose Awaitable to return from `final_suspend`.
         It lets the Scheduler decide which coroutine should run next. */

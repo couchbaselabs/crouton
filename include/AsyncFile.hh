@@ -34,24 +34,24 @@ namespace crouton {
         bool isOpen() const                                        {return _fd >= 0;}
 
         /// Reads from the file. The destination buffer must remain valid until this completes.
-        [[nodiscard]] Future<size_t> read(size_t len, void* dst)   {return read(ReadBuf{dst, len});}
-        [[nodiscard]] Future<size_t> read(ReadBuf buf)             {return preadv(&buf, 1, -1);}
+        [[nodiscard]] Future<size_t> read(size_t len, void* dst)   {return read(MutableBuf{dst, len});}
+        [[nodiscard]] Future<size_t> read(MutableBuf buf)             {return preadv(&buf, 1, -1);}
 
         /// Reads from the file at the given offset.
-        [[nodiscard]] Future<size_t> pread(ReadBuf buf, uint64_t o) {return preadv(&buf, 1, o);}
+        [[nodiscard]] Future<size_t> pread(MutableBuf buf, uint64_t o) {return preadv(&buf, 1, o);}
 
         /// Reads from the file, at the given offset, into multiple buffers.
-        [[nodiscard]] Future<size_t> preadv(const ReadBuf bufs[], size_t nbufs, int64_t offset);
+        [[nodiscard]] Future<size_t> preadv(const MutableBuf bufs[], size_t nbufs, int64_t offset);
 
         /// Writes to the file. 
-        [[nodiscard]] Future<void> write(size_t n, const void* s)   {return write(WriteBuf{s, n});}
-        [[nodiscard]] Future<void> write(WriteBuf buf)              {return pwritev(&buf, 1, -1);}
+        [[nodiscard]] Future<void> write(size_t n, const void* s)   {return write(ConstBuf{s, n});}
+        [[nodiscard]] Future<void> write(ConstBuf buf)              {return pwritev(&buf, 1, -1);}
 
         /// Writes to the file at the given offset.
-        [[nodiscard]] Future<void> pwrite(WriteBuf buf, uint64_t o) {return pwritev(&buf, 1, o);}
+        [[nodiscard]] Future<void> pwrite(ConstBuf buf, uint64_t o) {return pwritev(&buf, 1, o);}
 
         /// Reads from the file, at the given offset, from multiple buffers.
-        [[nodiscard]] Future<void> pwritev(const WriteBuf bufs[], size_t nbufs, int64_t offset);
+        [[nodiscard]] Future<void> pwritev(const ConstBuf bufs[], size_t nbufs, int64_t offset);
 
         /// Closes the file, if it's open. Idempotent.
         /// @note This method is synchronous.

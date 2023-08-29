@@ -15,53 +15,41 @@ namespace crouton {
     using namespace std;
 
 
-    Stream::~Stream() {
-        close();
+#pragma mark - ISTREAM:
+
+
+    Future<ConstBuf> IStream::readNoCopy(size_t maxLen) {
+        NotReentrant nr(_readBusy);
+        return _readNoCopy(maxLen);
     }
 
 
-    void Stream::opened(std::unique_ptr<stream_wrapper> s) {
-        assert(!_stream); 
-        _stream = std::move(s);
-        _stream->_allocCallback = [this](size_t suggested) {
-            return this->_allocCallback(suggested);
-        };
-        _stream->_readCallback = [this](BufferRef buf, int err) {
-            this->_readCallback(std::move(buf), err);
-        };
+    void IStream::unRead(size_t len) {
+        NotReentrant nr(_readBusy);
+        _unRead(len);
     }
 
 
-    Future<void> Stream::shutdown() {
-        assert(isOpen());
-
-        Request<uv_shutdown_t> req;
-        check( _stream->shutdown(&req, req.callbackWithStatus), "closing connection");
-        check( AWAIT req, "closing connection" );
-        RETURN;
+    Future<int64_t> IStream::read(size_t maxLen, void* dst) {
+        NotReentrant nr(_readBusy);
+        return _read(maxLen, dst);
     }
 
 
-    void Stream::close() {
-        assert(!_readBusy && !_writeBusy);
-        _inputBuf.reset();
-        _stream.reset();
+    Future<int64_t> IStream::_read(size_t maxLen, void* dst) {
+        size_t bytesRead = 0;
+        while (bytesRead < maxLen) {
+            ConstBuf bytes = AWAIT _readNoCopy(maxLen - bytesRead);
+            if (bytes.len == 0)
+                break;
+            ::memcpy((char*)dst + bytesRead, bytes.base, bytes.len);
+            bytesRead += bytes.len;
+        }
+        RETURN bytesRead;
     }
 
 
-#pragma mark - READING:
-
-
-    size_t Stream::bytesAvailable() const {
-        return _inputBuf ? _inputBuf->available() : 0;
-    }
-
-
-    bool Stream::isReadable() const {
-        return _stream && (bytesAvailable() > 0 || _stream->is_readable());
-    }
-
-    Future<void> Stream::readExactly(size_t len, void* dst) {
+    Future<void> IStream::readExactly(size_t len, void* dst) {
         int64_t bytesRead = AWAIT read(len, dst);
         if (bytesRead < len)
             check(int(UV_EOF), "reading from the network");
@@ -69,58 +57,7 @@ namespace crouton {
     }
 
 
-    Future<string> Stream::readUntil(std::string end, size_t maxLen) {
-        NotReentrant nr(_readBusy);
-        string data;
-        for(;;) {
-            size_t available = bytesAvailable();
-            if (available == 0) {
-                // Read from the socket:
-                AWAIT _read();
-                available = bytesAvailable();
-                if (available == 0)
-                    check(int(UV_EOF), "reading");  // Failure: Reached EOF
-            }
-            auto newBytes = _inputBuf->data + _inputBuf->used;
-
-            // Check for a match that's split between the old and new data:
-            if (!data.empty()) {
-                auto dataLen = data.size();
-                data.append(newBytes, min(end.size() - 1, available));
-                size_t startingAt = dataLen - std::min(end.size(), dataLen);
-                if (auto found = data.find(end, startingAt); found != string::npos) {
-                    found += end.size();
-                    found = std::min(found, maxLen);
-                    data.resize(found);
-                    _inputBuf->used += found - dataLen;
-                    break;
-                } else {
-                    data.resize(dataLen);
-                }
-            }
-
-            // Check for a match in the new data:
-            if (auto found = string_view(newBytes, available).find(end); found != string::npos) {
-                found += end.size();
-                found = std::min(found, maxLen - data.size());
-                data.append(newBytes, found);
-                _inputBuf->used += found;
-                break;
-            }
-
-            // Otherwise append all the input data and read more:
-            size_t addLen = std::min(available, maxLen - data.size());
-            data.append(newBytes, addLen);
-            _inputBuf->used += addLen;
-            if (data.size() == maxLen)
-                break;
-            assert(_inputBuf->used == _inputBuf->length);
-        }
-        RETURN data;
-    }
-
-
-    Future<string> Stream::read(size_t maxLen) {
+    Future<string> IStream::readString(size_t maxLen) {
         NotReentrant nr(_readBusy);
         static constexpr size_t kGrowSize = 32768;
         string data;
@@ -140,35 +77,135 @@ namespace crouton {
     }
 
 
-    Future<int64_t> Stream::read(size_t maxLen, void* dst) {
+    Future<string> IStream::readUntil(std::string end, size_t maxLen) {
+        assert(!end.empty());
+        assert(maxLen >= end.size());
         NotReentrant nr(_readBusy);
-        return _read(maxLen, dst);
-    }
+        string data;
+        while (data.size() < maxLen) {
+            auto dataLen = data.size();
+            ConstBuf peek = AWAIT _readNoCopy(maxLen - dataLen);
 
-    Future<int64_t> Stream::_read(size_t maxLen, void* dst) {
-        size_t bytesRead = 0;
-        while (bytesRead < maxLen) {
-            WriteBuf bytes = AWAIT _readNoCopy(maxLen - bytesRead);
-            if (bytes.len == 0)
+            // Check for a match that's split between the old and new data:
+            if (!data.empty()) {
+                data.append((char*)peek.base, min(end.size() - 1, peek.len));
+                size_t startingAt = dataLen - std::min(end.size(), dataLen);
+                if (auto found = data.find(end, startingAt); found != string::npos) {
+                    // Found it:
+                    found += end.size();
+                    found = std::min(found, maxLen);
+                    data.resize(found);
+                    _unRead(peek.len - (found - dataLen));
+                    break;
+                } else {
+                    data.resize(dataLen);
+                }
+            }
+
+            // Check for a match in the new data:
+            if (auto found = string_view((char*)peek.base, peek.len).find(end); found != string::npos) {
+                found += end.size();
+                found = std::min(found, maxLen - data.size());
+                data.append((char*)peek.base, found);
+                _unRead(peek.len - found);
                 break;
-            ::memcpy((char*)dst + bytesRead, bytes.base, bytes.len);
-            bytesRead += bytes.len;
+            }
+
+            // Otherwise append all the input data and read more:
+            size_t addLen = std::min(peek.len, maxLen - data.size());
+            data.append((char*)peek.base, addLen);
+            _unRead(peek.len - addLen);
         }
-        RETURN bytesRead;
+        RETURN data;
     }
 
 
-    Future<WriteBuf> Stream::readNoCopy(size_t maxLen) {
-        NotReentrant nr(_readBusy);
-        return _readNoCopy(maxLen);
+    Future<void> IStream::write(ConstBuf buf) {
+        NotReentrant nr(_writeBusy);
+        return _write(buf);
     }
 
 
-    Future<WriteBuf> Stream::_readNoCopy(size_t maxLen) {
+    Future<void> IStream::write(std::string str) {
+        // Use co_await to ensure `str` stays in scope until the write completes.
+        AWAIT write(str.size(), str.data());
+        RETURN;
+    }
+
+
+    Future<void> IStream::write(const ConstBuf buffers[], size_t nBuffers) {
+        NotReentrant nr(_writeBusy);
+        for (size_t i = 0; i < nBuffers; ++i) {
+            AWAIT _write(buffers[i]);
+        }
+    }
+
+
+    Future<void> IStream::write(std::initializer_list<ConstBuf> buffers) {
+        return write(buffers.begin(), buffers.size());
+    }
+
+
+#pragma mark - STREAM:
+
+
+    Stream::~Stream() {
+        close();
+    }
+
+
+    void Stream::opened(std::unique_ptr<stream_wrapper> s) {
+        assert(!_stream); 
+        _stream = std::move(s);
+        _stream->_allocCallback = [this](size_t suggested) {
+            return this->_allocCallback(suggested);
+        };
+        _stream->_readCallback = [this](BufferRef buf, int err) {
+            this->_readCallback(std::move(buf), err);
+        };
+    }
+
+
+    Future<void> Stream::closeWrite() {
         assert(isOpen());
+
+        Request<uv_shutdown_t> req;
+        check( _stream->shutdown(&req, req.callbackWithStatus), "closing connection");
+        check( AWAIT req, "closing connection" );
+        RETURN;
+    }
+
+
+    void Stream::_close() {
+        assert(!_readBusy && !_writeBusy);
+        _inputBuf.reset();
+        _stream.reset();
+    }
+
+    Future<void> Stream::close() {
+        _close();
+        return FutureProvider<void>{};
+    }
+
+
+#pragma mark - READING:
+
+
+    size_t Stream::bytesAvailable() const {
+        return _inputBuf ? _inputBuf->available() : 0;
+    }
+
+
+    bool Stream::isReadable() const {
+        return _stream && (bytesAvailable() > 0 || _stream->is_readable());
+    }
+
+    Future<ConstBuf> Stream::_readNoCopy(size_t maxLen) {
+        assert(isOpen());
+        NotReentrant nr(_readBusy);
         size_t available = bytesAvailable();
         if (available == 0) {
-            AWAIT _read();
+            AWAIT fillInputBuf();
             available = bytesAvailable();
             if (available == 0)
                 RETURN {};  // Reached EOF
@@ -176,14 +213,20 @@ namespace crouton {
 
         // Advance _inputBuf->used and return the pointer:
         size_t n = std::min(maxLen, available);
-        WriteBuf result{.base = _inputBuf->data + _inputBuf->used, .len = n};
+        ConstBuf result{.base = _inputBuf->data + _inputBuf->used, .len = n};
         _inputBuf->used += n;
         RETURN result;
     }
 
+    void Stream::_unRead(size_t len) {
+        NotReentrant nr(_readBusy);
+        assert(len <= _inputBuf->used);
+        _inputBuf->used -= len;
+    }
+
 
     /// Low-level read method that ensures there is data to read in `_inputBuf`.
-    Future<void> Stream::_read() {
+    Future<void> Stream::fillInputBuf() {
         assert(isOpen());
         assert(_readBusy);
         if (_inputBuf && _inputBuf->available() == 0)
@@ -261,22 +304,7 @@ namespace crouton {
         return _stream && _stream->is_writable();
     }
 
-    Future<void> Stream::write(std::string str) {
-        // Use co_await to ensure `str` stays in scope until the write completes.
-        AWAIT write(str.size(), str.data());
-        RETURN;
-    }
-
-    Future<void> Stream::write(std::initializer_list<WriteBuf> buffers) {
-        return write(buffers.begin(), buffers.size());
-    }
-
-    Future<void> Stream::write(size_t len, const void* src) {
-        WriteBuf buf{src, len};
-        return write(&buf, 1);
-    }
-
-    Future<void> Stream::write(const WriteBuf buffers[], size_t nBuffers) {
+    Future<void> Stream::write(const ConstBuf buffers[], size_t nBuffers) {
         NotReentrant nr(_writeBusy);
         assert(isOpen());
         write_request req;
@@ -289,7 +317,12 @@ namespace crouton {
     }
 
 
-    size_t Stream::tryWrite(WriteBuf buf) {
+    Future<void> Stream::_write(ConstBuf buf) {
+        return write(&buf, 1);
+    }
+
+
+    size_t Stream::tryWrite(ConstBuf buf) {
         int result = _stream->try_write((uv_buf_t*)&buf, 1);
         if (result == UV_EAGAIN)
             return 0;
