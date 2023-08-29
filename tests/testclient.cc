@@ -79,7 +79,8 @@ static Future<int> run() {
 
     if (includeHeaders || verbose) {
         auto headers = resp.headers();
-        while (auto header = AWAIT headers) {
+        optional<pair<string_view,string_view>> header;
+        while ((header = (AWAIT headers))) {
             cout << header->first << " = " << header->second << endl;
         }
         cout << endl;

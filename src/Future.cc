@@ -25,7 +25,7 @@ namespace crouton {
         return _hasValue;
     }
 
-    std::coroutine_handle<> FutureStateBase::suspend(std::coroutine_handle<> coro) {
+    coro_handle FutureStateBase::suspend(coro_handle coro) {
         std::unique_lock<std::mutex> lock(_mutex);
         if (_hasValue)
             return coro;
@@ -79,7 +79,7 @@ namespace crouton {
 
 
     void FutureImpl<void>::waitForValue() {
-        Scheduler::current().runUntil([=]{ return _provider.hasValue(); });
+        Scheduler::current().runUntil([this]{ return _provider.hasValue(); });
         return _provider.value();
     }
 

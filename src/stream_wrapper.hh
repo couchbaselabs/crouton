@@ -72,9 +72,12 @@ namespace crouton {
         }
 
         void read(ssize_t nread, const uv_buf_t* uvbuf) {
+            assert(nread != 0);
             if (nread > 0) {
+                assert(nread <= Buffer::kCapacity);
                 assert(uvbuf->base == _readingBuf->data);
                 _readingBuf->length = uint32_t(nread);
+                _readingBuf->used = 0;
                 nread = 0;
             }
             _readCallback(std::move(_readingBuf), int(nread));

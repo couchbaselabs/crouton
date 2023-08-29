@@ -17,10 +17,12 @@
 //
 
 #pragma once
+#include "Coroutine.hh"
 #include "UVBase.hh"
 #include "Scheduler.hh"
 #include "uv.h"
 #include <concepts>
+#include <optional>
 #include <stdexcept>
 
 namespace crouton {
@@ -81,7 +83,7 @@ namespace crouton {
 
         // Coroutine awaiter methods:
         bool await_ready()      {return _status.has_value();}
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> coro) noexcept {
+        coro_handle await_suspend(coro_handle coro) noexcept {
             _suspension = Scheduler::current().suspend(coro);
             return Scheduler::current().next();
         }

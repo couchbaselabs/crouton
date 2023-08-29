@@ -19,6 +19,7 @@
 #pragma once
 #include "UVBase.hh"
 #include <functional>
+#include <memory>
 
 struct uv_tcp_s;
 

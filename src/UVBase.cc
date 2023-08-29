@@ -20,6 +20,7 @@
 #include "UVInternal.hh"
 #include "Task.hh"
 #include "uv.h"
+#include <cmath>
 
 namespace crouton {
     using namespace std;
@@ -110,7 +111,7 @@ namespace crouton {
 
 
     static uint64_t ms(double secs){
-        return uint64_t(round(max(secs, 0.0) * 1000.0));
+        return uint64_t(::round(max(secs, 0.0) * 1000.0));
     }
 
 

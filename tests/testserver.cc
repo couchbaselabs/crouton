@@ -19,6 +19,7 @@
 #include "Crouton.hh"
 #include "Task.hh"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 using namespace crouton;

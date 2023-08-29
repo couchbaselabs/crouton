@@ -51,7 +51,7 @@ namespace crouton {
         // Invoked during the `co_await` call to ask if the current coroutine should keep going.
         bool await_ready()                          {return false;}
 
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> suspending) {
+        coro_handle await_suspend(coro_handle suspending) {
             auto &impl = this->impl();
             impl.clear();                       // Clear state; no value yet
             impl.returnControlTo(suspending);   // Remember to return to current coroutine
@@ -133,7 +133,7 @@ namespace crouton {
         YielderTo yield_value(From&& value) {
             _yielded_value = std::forward<From>(value);
             auto resumer = _consumer;
-            _consumer = std::noop_coroutine();
+            _consumer = CORO_NS::noop_coroutine();
             _ready = true;
             return YielderTo{resumer};
         }
@@ -153,10 +153,10 @@ namespace crouton {
         template <class U> friend class Generator;
 
         /// Tells me which coroutine should resume after I co_yield the next value.
-        void returnControlTo(std::coroutine_handle<> consumer) {_consumer = consumer;}
+        void returnControlTo(coro_handle consumer) {_consumer = consumer;}
 
         std::optional<T>        _yielded_value;                    // Latest value yielded
-        std::coroutine_handle<> _consumer = std::noop_coroutine(); // Coroutine awaiting my value
+        coro_handle _consumer = CORO_NS::noop_coroutine(); // Coroutine awaiting my value
         bool                    _ready = false;                    // True when a value is available
     };
 

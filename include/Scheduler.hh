@@ -18,8 +18,8 @@
 
 #pragma once
 #include "Coroutine.hh"
+#include <algorithm>
 #include <atomic>
-#include <coroutine>
 #include <deque>
 #include <functional>
 #include <mutex>
@@ -47,14 +47,14 @@ namespace crouton {
         void wakeUp();
 
         // internal only, do not call
-        Suspension(std::coroutine_handle<> h, Scheduler *s) :_handle(h), _scheduler(s) { }
+        Suspension(coro_handle h, Scheduler *s) :_handle(h), _scheduler(s) { }
 
     private:
         friend class Scheduler;
 
-        std::coroutine_handle<> _handle;                    // The coroutine (not really needed)
-        Scheduler*              _scheduler;                 // Scheduler that owns coroutine
-        std::atomic_flag        _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine is awake
+        coro_handle         _handle;                    // The coroutine (not really needed)
+        Scheduler*          _scheduler;                 // Scheduler that owns coroutine
+        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine is awake
     };
 
 
@@ -62,8 +62,6 @@ namespace crouton {
         @warning The API is *not* thread-safe, except as noted. */
     class Scheduler {
     public:
-        using handle = std::coroutine_handle<>;
-
         /// Returns the Scheduler instance for the current thread. (Thread-safe, obviously.)
         static Scheduler& current() {
             if (!sCurSched)
@@ -129,7 +127,7 @@ namespace crouton {
 
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
         /// be returned from next().
-        void schedule(handle h) {
+        void schedule(coro_handle h) {
             if (kLogScheduler) {std::cerr << "Scheduler::schedule " << h << "\n";}
             assert(isCurrent());
             assert(!isWaiting(h));
@@ -139,8 +137,8 @@ namespace crouton {
 
         /// Allows a running coroutine `h` to give another ready coroutine some time.
         /// Returns the coroutine that should run next, possibly `h` if no others are ready.
-        handle yield(handle h) {
-            if (handle nxt = nextOr(nullptr)) {
+        coro_handle yield(coro_handle h) {
+            if (coro_handle nxt = nextOr(nullptr)) {
                 schedule(h);
                 return nxt;
             } else {
@@ -149,25 +147,25 @@ namespace crouton {
             }
         }
 
-        void resumed(handle h) {
+        void resumed(coro_handle h) {
             assert(isCurrent());
             if (auto i = std::find(_ready.begin(), _ready.end(), h); i != _ready.end())
                 _ready.erase(i);
         }
 
         /// Returns the coroutine that should be resumed. If none is ready, exits coroutine-land.
-        handle next() {
-            return nextOr(std::noop_coroutine());
+        coro_handle next() {
+            return nextOr(CORO_NS::noop_coroutine());
         }
 
         /// Returns the coroutine that should be resumed, or else `dflt`.
-        handle nextOr(handle dflt) {
+        coro_handle nextOr(coro_handle dflt) {
             assert(isCurrent());
             scheduleWakers();
             if (_ready.empty()) {
                 return dflt;
             } else {
-                handle h = _ready.front();
+                coro_handle h = _ready.front();
                 _ready.pop_front();
                 if (kLogScheduler) {std::cerr << "Scheduler::resume " << h << std::endl;}
                 return h;
@@ -176,24 +174,24 @@ namespace crouton {
 
         /// Returns the coroutine that should be resumed,
         /// or else the no-op coroutine that returns to the outer caller.
-        handle finished(handle h) {
+        coro_handle finished(coro_handle h) {
             if (kLogScheduler) {std::cerr << "Scheduler::finished " << h << "\n";}
             assert(isCurrent());
             assert(h.done());
             assert(!isReady(h));
             assert(!isWaiting(h));
             // Always continue on to the caller of `h`, otherwise things get confused.
-            return std::noop_coroutine();
+            return CORO_NS::noop_coroutine();
         }
 
         /// Adds a coroutine handle to the suspension set.
         /// To make it runnable again, call the returned Suspension's `wakeUp` method
         /// from any thread.
-        Suspension* suspend(handle h) {
+        Suspension* suspend(coro_handle h) {
             if (kLogScheduler) {std::cerr << "Scheduler::suspend " << h << "\n";}
             assert(isCurrent());
             assert(!isReady(h));
-            auto [i, added] = _suspended.try_emplace(h, h, this);
+            auto [i, added] = _suspended.try_emplace(h.address(), h, this);
             return &i->second;
         }
 
@@ -201,7 +199,7 @@ namespace crouton {
         /// Resumes the next ready coroutine and returns true.
         /// If no coroutines are ready, returns false.
         bool resume() {
-            if (handle h = nextOr(nullptr)) {
+            if (coro_handle h = nextOr(nullptr)) {
                 h.resume();
                 return true;
             } else {
@@ -217,15 +215,22 @@ namespace crouton {
         /// Creates an EventLoop. (The implementation creates a UVEventLoop.)
         EventLoop* newEventLoop();
 
-        handle eventLoopHandle();
+        coro_handle eventLoopHandle();
         Task eventLoopTask();
 
-        bool isReady(handle h) const {
+        bool isReady(coro_handle h) const {
+#if 1
+            for (auto &x : _ready)
+                if (x == h)
+                    return true;
+            return false;
+#else // Xcode 14.2 doesn't support this yet:
             return std::ranges::any_of(_ready, [=](auto x) {return x == h;});
+#endif
         }
 
-        bool isWaiting(handle h) const {
-            return _suspended.find(h) != _suspended.end();
+        bool isWaiting(coro_handle h) const {
+            return _suspended.find(h.address()) != _suspended.end();
         }
 
         void _wakeUp();
@@ -246,7 +251,7 @@ namespace crouton {
                 for (auto i = _suspended.begin(); i != _suspended.end();) {
                     if (i->second._wakeMe.test()) {
                         if (kLogScheduler) {std::cerr << "Scheduler::scheduleWaker(" << i->first << ")\n";}
-                        _ready.push_back(i->first);
+                        _ready.push_back(i->second._handle);
                         i = _suspended.erase(i);
                     } else {
                         ++i;
@@ -255,16 +260,16 @@ namespace crouton {
             }
         }
 
-        using SuspensionMap = std::unordered_map<handle,Suspension>;
+        using SuspensionMap = std::unordered_map<const void*,Suspension>;
 
         static inline __thread Scheduler* sCurSched; // Current thread's instance
 
-        std::deque<handle>  _ready;         // Coroutines that are ready to run
+        std::deque<coro_handle>  _ready;         // Coroutines that are ready to run
         SuspensionMap       _suspended;     // Suspended/sleeping coroutines
         std::atomic<bool>   _woke = false;  // True if a suspended is waking
         EventLoop*          _eventLoop;     // My event loop
         bool                _ownsEventLoop = false;     // True if I created _eventLoop
-        handle              _eventLoopTask = nullptr;   // EventLoop's coroutine handle
+        coro_handle              _eventLoopTask = nullptr;   // EventLoop's coroutine handle
         bool                _inEventLoopTask = false;   // True while in eventLoopTask()
     };
 
@@ -272,24 +277,24 @@ namespace crouton {
 
     /** General purpose Awaitable to return from `yield_value`.
         It does nothing, just allows the Scheduler to schedule another runnable task if any. */
-    struct Yielder : public std::suspend_always {
-        explicit Yielder(std::coroutine_handle<> myHandle) :_handle(myHandle) { }
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
+    struct Yielder : public CORO_NS::suspend_always {
+        explicit Yielder(coro_handle myHandle) :_handle(myHandle) { }
+        coro_handle await_suspend(coro_handle h) noexcept {
             return Scheduler::current().yield(h);
         }
         void await_resume() const noexcept {
             Scheduler::current().resumed(_handle);
         }
     private:
-        std::coroutine_handle<> _handle;
+        coro_handle _handle;
     };
 
     
 
     /** General purpose Awaitable to return from `final_suspend`.
         It lets the Scheduler decide which coroutine should run next. */
-    struct Finisher : public std::suspend_always {
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
+    struct Finisher : public CORO_NS::suspend_always {
+        coro_handle await_suspend(coro_handle h) noexcept {
             return Scheduler::current().finished(h);
         }
     };

@@ -20,6 +20,7 @@
 #include "Defer.hh"
 #include "UVInternal.hh"
 #include "stream_wrapper.hh"
+#include <cstring>
 #include <unistd.h>
 #include <iostream>
 

@@ -107,7 +107,7 @@ namespace crouton {
             std::cerr << "Created ActorMethodImpl " << (void*)this << " on const Actor " << (void*)&actor << std::endl;
         }
 
-        struct suspendInitial : public std::suspend_always {
+        struct suspendInitial : public CORO_NS::suspend_always {
             ActorMethodImpl* _impl;
             bool await_ready() const noexcept {
                 return _impl->_actor.startNew(_impl->handle());
@@ -139,7 +139,7 @@ namespace crouton {
 template <typename T, typename ACTOR, typename... ArgTypes>
     requires(is_type_complete_v<ACTOR> &&
              std::derived_from<ACTOR, crouton::Actor>)
-struct std::coroutine_traits<crouton::Future<T>, ACTOR&, ArgTypes...> {
+struct CORO_NS::coroutine_traits<crouton::Future<T>, ACTOR&, ArgTypes...> {
     using promise_type = crouton::ActorMethodImpl<T>;
 };
 
@@ -147,6 +147,6 @@ struct std::coroutine_traits<crouton::Future<T>, ACTOR&, ArgTypes...> {
 template <typename T, typename ACTOR, typename... ArgTypes>
     requires(is_type_complete_v<ACTOR> &&
              std::derived_from<ACTOR, crouton::Actor>)
-struct std::coroutine_traits<crouton::Future<T>, ACTOR const&, ArgTypes...> {
+struct CORO_NS::coroutine_traits<crouton::Future<T>, ACTOR const&, ArgTypes...> {
     using promise_type = crouton::ActorMethodImpl<T>;
 };

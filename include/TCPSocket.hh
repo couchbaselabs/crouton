@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Stream.hh"
+#include <memory>
 
 struct uv_tcp_s;
 struct tlsuv_stream_s;

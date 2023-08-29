@@ -18,6 +18,7 @@
 
 #include "HTTPClient.hh"
 #include "UVInternal.hh"
+#include <strings.h>
 
 #ifdef __clang__
 #pragma clang diagnostic push

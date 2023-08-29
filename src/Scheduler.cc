@@ -26,7 +26,7 @@
 
 namespace crouton {
 
-    std::string CoroutineName(std::coroutine_handle<> h) {
+    std::string CoroutineName(coro_handle h) {
         if (h.address() == nullptr)
             return "(null)";
 #ifdef __clang__
@@ -50,7 +50,7 @@ namespace crouton {
 #endif
     }
 
-    std::ostream& operator<< (std::ostream& out, std::coroutine_handle<> h) {
+    std::ostream& operator<< (std::ostream& out, coro_handle h) {
         return out << "coro<" << CoroutineName(h) << ">";
     }
 

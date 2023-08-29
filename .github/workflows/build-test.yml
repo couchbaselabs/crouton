@@ -1,0 +1,34 @@
+name: Build+Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build and test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3.5.3
+        with:
+          submodules: recursive
+      - name: Install GCC
+        if: runner.os == 'Linux'
+        uses: Dup4/actions-setup-gcc@v1
+        with:
+          version: latest
+      - name: build debug
+        run: make debug
+        shell: bash
+      - name: build release
+        run: make release
+        shell: bash

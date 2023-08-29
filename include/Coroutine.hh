@@ -17,12 +17,26 @@
 //
 
 #pragma once
-#include <coroutine>
 #include <exception>
 #include <cassert>
 #include <iosfwd>
 #include <stdexcept>
 #include <iostream>//TEMP
+
+#if defined(__has_include)
+#   if __has_include(<coroutine>)
+#      include <coroutine>
+#      define CORO_NS std
+#   elif __has_include(<experimental/coroutine>)
+#      include <experimental/coroutine>
+#      define CORO_NS std::experimental
+#   else
+#      error No coroutine header
+#   endif
+#else
+#   include <coroutine>
+#   define CORO_NS std
+#endif
 
 
 // `is_type_complete_v<T>` evaluates to true iff T is a complete (fully-defined) type.
@@ -46,7 +60,7 @@ namespace crouton {
     template <class INSTANCE, class SELF>
     class CoroutineImpl;
 
-    using coro_handle = std::coroutine_handle<>;
+    using coro_handle = CORO_NS::coroutine_handle<>;
 
 
     /** Base class for a coroutine handle, the public object returned by a coroutine function. */
@@ -61,7 +75,7 @@ namespace crouton {
         IMPL& impl()                                {return _handle.promise();}
 
     protected:
-        using handle_type = std::coroutine_handle<IMPL>;
+        using handle_type = CORO_NS::coroutine_handle<IMPL>;
 
         CoroutineHandle() = default;
         explicit CoroutineHandle(handle_type h)     :_handle(h) {}
@@ -79,7 +93,7 @@ namespace crouton {
     template <class INSTANCE, class SELF>
     class CoroutineImpl {
     public:
-        using handle_type = std::coroutine_handle<SELF>;
+        using handle_type = CORO_NS::coroutine_handle<SELF>;
 
         CoroutineImpl() = default;
 
@@ -91,7 +105,7 @@ namespace crouton {
         //INSTANCE get_return_object()            {return INSTANCE(handle());}
 
         // Determines whether the coroutine starts suspended when created, or runs immediately.
-        std::suspend_always initial_suspend()   {
+        CORO_NS::suspend_always initial_suspend()   {
             //std::cerr << "New " << typeid(SELF).name() << " " << handle() << std::endl;
             return {};
         }
@@ -103,7 +117,7 @@ namespace crouton {
         // "You must not return a value that causes the terminated coroutine to try to continue
         // running! The only useful thing you might do in this method other than returning straight
         // to the  caller is to transfer control to a different suspended coroutine."
-        std::suspend_always final_suspend() noexcept { return {}; }
+        CORO_NS::suspend_always final_suspend() noexcept { return {}; }
 
         // Other important methods for subclasses:
         // XXX yield_value(YYY value) { ... }
@@ -125,7 +139,7 @@ namespace crouton {
 
     /** General purpose awaiter that manages control flow during `co_yield`.
         It arranges for a specific 'consumer' coroutine, given in the constructor,
-        to be resumed by the `co_yield` call. It can be `std::noop_coroutine()` to instead resume
+        to be resumed by the `co_yield` call. It can be `CORO_NS::noop_coroutine()` to instead resume
         the outer non-coro code that called `resume`. */
     class YielderTo {
     public:
@@ -134,7 +148,7 @@ namespace crouton {
         explicit YielderTo(coro_handle consumer) : _consumer(consumer) {}
 
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
-        explicit YielderTo() :YielderTo(std::noop_coroutine()) { }
+        explicit YielderTo() :YielderTo(CORO_NS::noop_coroutine()) { }
 
         bool await_ready() noexcept { return false; }
 

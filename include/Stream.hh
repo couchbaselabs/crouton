@@ -19,6 +19,8 @@
 #pragma once
 #include "Future.hh"
 #include "UVBase.hh"
+#include <memory>
+#include <optional>
 #include <string>
 
 namespace crouton {

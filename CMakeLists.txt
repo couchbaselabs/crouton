@@ -11,6 +11,12 @@ project( Crouton
 )
 
 
+set(CMAKE_CXX_STANDARD          20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD            11)
+set(CMAKE_C_STANDARD_REQUIRED   ON)
+
+
 #### CMAKE SUBPROJECTS
 
 
@@ -36,40 +42,7 @@ add_subdirectory(vendor/mbedtls)
 find_package(ZLIB REQUIRED)
 
 
-#### CROUTON CONFIG
-
-
-set(CMAKE_CXX_STANDARD          20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_STANDARD            11)
-set(CMAKE_C_STANDARD_REQUIRED   ON)
-
-if (MSVC)
-    # MSVC:
-    add_compile_options(/W4) # TODO: Add /WX
-else()
-    # Clang & GCC:
-    add_compile_options(
-        -Werror
-        -Wall
-        -Wpedantic
-        -Wno-unknown-pragmas
-        -Wno-unknown-warning-option
-    )
-    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-        # GCC-specific:
-        add_compile_options(
-            -Wno-psabi          # suppress annoying GCC ABI warning
-            -Wno-sign-compare   # apparently comes with `pedantic` in GCC
-            -D_FORTIFY_SOURCE=2 # static+dynamic buffer-overflow checks
-        )
-    else()
-        # Clang-specific:
-        add_compile_options(
-             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
-        )
-    endif()
-endif()
+#### TLSUV
 
 
 include_directories(
@@ -82,8 +55,6 @@ include_directories( SYSTEM
     vendor/tlsuv/deps/uv_link_t/include
 )
 
-
-#### TLSUV
 
 # I cannot figure out how to build tlsuv with CMake, specifically how to tell it where
 # llhttp is, so I'll just build it myself.
@@ -129,14 +100,47 @@ target_include_directories( TLSuv SYSTEM PUBLIC
     vendor/tlsuv/src/
 )
 
-target_link_libraries(TLSuv
-    PRIVATE llhttp_static ZLIB::ZLIB
+target_link_libraries(TLSuv PRIVATE
+    uv_a
+    llhttp_static
+    ZLIB::ZLIB
 )
 
 # use mbedtls:
 target_compile_definitions(TLSuv PRIVATE USE_MBEDTLS)
 target_include_directories(TLSuv PUBLIC vendor/mbedtls/include)
 target_link_libraries(TLSuv PRIVATE mbedtls)
+
+
+#### CROUTON CONFIG
+
+
+if (MSVC)
+    # MSVC:
+    add_compile_options(/W4) # TODO: Add /WX
+else()
+    # Clang & GCC:
+    add_compile_options(
+        -Werror
+        -Wall
+        -Wpedantic
+        -Wno-unknown-pragmas
+        -Wno-unknown-warning-option
+    )
+    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+        # GCC-specific:
+        add_compile_options(
+            -Wno-psabi          # suppress annoying GCC ABI warning
+            -Wno-sign-compare   # apparently comes with `pedantic` in GCC
+            -D_FORTIFY_SOURCE=2 # static+dynamic buffer-overflow checks
+        )
+    else()
+        # Clang-specific:
+        add_compile_options(
+             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
+        )
+    endif()
+endif()
 
 
 #### CROUTON LIBRARY
@@ -167,7 +171,6 @@ add_library( LibCrouton STATIC
 set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
 
 target_link_libraries( LibCrouton INTERFACE
-    uv_a
     TLSuv
 )
 

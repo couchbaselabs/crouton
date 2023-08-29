@@ -29,6 +29,7 @@ namespace crouton {
     class Task : public CoroutineHandle<TaskImpl> {
     public:
         ~Task()     {setHandle(nullptr);}   // don't let parent destructor destroy the coroutine
+        Task(Task&&) = default;
     protected:
         friend class Scheduler;
     private:
@@ -42,7 +43,7 @@ namespace crouton {
     public:
         ~TaskImpl() = default;
         Task get_return_object()                {return Task(handle());}
-        std::suspend_never initial_suspend() {
+        CORO_NS::suspend_never initial_suspend() {
             //std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
             return {};
         }

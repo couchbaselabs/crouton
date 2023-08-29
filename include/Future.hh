@@ -21,6 +21,8 @@
 #include "Scheduler.hh"
 #include <exception>
 #include <cassert>
+#include <memory>
+#include <optional>
 
 namespace crouton {
     template <typename T> class Future;
@@ -31,7 +33,7 @@ namespace crouton {
     class FutureStateBase {
     public:
         bool hasValue() const;
-        std::coroutine_handle<> suspend(std::coroutine_handle<> coro);
+        coro_handle suspend(coro_handle coro);
         void setException(std::exception_ptr x);
 
     protected:
@@ -147,7 +149,7 @@ namespace crouton {
         // These methods make Future awaitable:
         bool await_ready()              {return _state->hasValue();}
         [[nodiscard]] T&& await_resume(){return std::move(_state->value());}
-        auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
+        auto await_suspend(coro_handle coro) noexcept {return _state->suspend(coro);}
 
     private:
         friend class FutureProvider<T>;
@@ -166,7 +168,7 @@ namespace crouton {
         // These methods make Future awaitable:
         bool await_ready()              {return _state->hasValue();}
         void await_resume()             {_state->value();}
-        auto await_suspend(std::coroutine_handle<> coro) noexcept {return _state->suspend(coro);}
+        auto await_suspend(coro_handle coro) noexcept {return _state->suspend(coro);}
 
     protected:
         friend class FutureProvider<void>;
@@ -203,7 +205,7 @@ namespace crouton {
             return f;
         }
 
-        std::suspend_never initial_suspend() {
+        CORO_NS::suspend_never initial_suspend() {
             //std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
             return {};
         }
@@ -224,7 +226,7 @@ namespace crouton {
         FutureImpl() = default;
         void waitForValue();
         Future<void> get_return_object();
-        std::suspend_never initial_suspend()    {
+        CORO_NS::suspend_never initial_suspend()    {
             //std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
             return {};
         }

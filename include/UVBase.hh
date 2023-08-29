@@ -20,7 +20,10 @@
 #include "Future.hh"
 #include "EventLoop.hh"
 #include <functional>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <vector>
 
 struct uv_loop_s;
 struct uv_timer_s;

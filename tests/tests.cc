@@ -38,7 +38,8 @@ static Generator<int64_t> fibonacci(int64_t limit) {
 // A filter that passes only even numbers. Also takes int64 and produces int
 static Generator<int64_t> onlyEven(Generator<int64_t> source) {
     // In a coroutine, you co_await a Generator instead of calling next():
-    while (optional<int64_t> value = AWAIT source) {
+    optional<int64_t> value;
+    while ((value = AWAIT source)) {
         if (*value % 2 == 0)
             YIELD *value;
     }
@@ -130,7 +131,8 @@ public:
         auto fib = fibonacci(INT_MAX);
         for (int i = 0; i < n; i++) {
             AWAIT Timer::sleep(0.1);//TEMP
-            if (auto f = AWAIT fib)
+            optional<int64_t> f;
+            if ((f = AWAIT fib))
                 sum += f.value();
             else
                 break;
