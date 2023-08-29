@@ -61,10 +61,10 @@ static Future<string> readFile(string const& path) {
 
 
 TEST_CASE("Read a file", "[uv]") {
-    Future<string> cf = readFile("/Users/snej/Brewfile");
+    Future<string> cf = readFile("README.md");
     string contents = cf.waitForValue();
-    cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
-    CHECK(contents.size() == 715);
+    //cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
+    CHECK(contents.size() > 500);
     REQUIRE(Scheduler::current().assertEmpty());
 }
 

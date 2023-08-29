@@ -64,7 +64,7 @@ namespace crouton {
         friend class GeneratorImpl<T>;
         using super = CoroutineHandle<GeneratorImpl<T>>;
 
-        explicit Generator(super::handle_type handle)  :super(handle) {}
+        explicit Generator(typename super::handle_type handle)  :super(handle) {}
     };
 
 

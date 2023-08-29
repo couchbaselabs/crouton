@@ -186,7 +186,7 @@ namespace crouton {
     class FutureImpl : public CoroutineImpl<Future<T>,FutureImpl<T>> {
     public:
         using super = CoroutineImpl<Future<T>,FutureImpl<T>>;
-        using handle_type = super::handle_type;
+        using handle_type = typename super::handle_type;
 
         FutureImpl() = default;
 

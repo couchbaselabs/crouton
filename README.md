@@ -64,7 +64,7 @@ cout << endl;
 
 #### on macOS:
 
-- Install Xcode 15 or later, or at least the command-line tools.
+- Install Xcode 14 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
 #### on Linux

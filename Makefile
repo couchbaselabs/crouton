@@ -16,7 +16,7 @@ debug:
 	cd build_cmake/debug && cmake --build .
 
 test: debug
-	cd build_cmake/debug && ./CroutonTests #-r list
+	build_cmake/debug/CroutonTests #-r list
 
 release:
 	mkdir -p build_cmake/release/
