@@ -7,7 +7,7 @@
 
 OTHER_LDFLAGS = $(OTHER_LDFLAGS) -lmbedcrypto -lmbedtls -lmbedx509 -luv
 
-CODE_SIGN_ENTITLEMENTS = testserver/testserver.entitlements
+CODE_SIGN_ENTITLEMENTS = tests/testserver.entitlements
 CODE_SIGN_IDENTITY = Apple Development
 CODE_SIGN_STYLE = Automatic
 DEVELOPMENT_TEAM = Z62S7RW88Y

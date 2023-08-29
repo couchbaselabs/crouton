@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		2711C1842A99656E00361566 /* libcrouton.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcrouton.a */; };
-		2711C18D2A9965B600361566 /* testclient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2711C18C2A9965B600361566 /* testclient.cc */; };
 		2711C1962A997A2500361566 /* libtlsuv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D5E302A954627005C3066 /* libtlsuv.a */; };
 		272728C72A8D6505000CCA22 /* tests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272728C62A8D6505000CCA22 /* tests.cc */; };
 		272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 272728D42A8D6575000CCA22 /* catch_amalgamated.cpp */; };
@@ -37,7 +36,6 @@
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
 		279D5D472A902588005C3066 /* TCPServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* TCPServer.hh */; };
 		279D5D482A902588005C3066 /* TCPServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D462A902588005C3066 /* TCPServer.cc */; };
-		279D5D502A9031EF005C3066 /* testserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D4F2A9031EF005C3066 /* testserver.cc */; };
 		279D5D552A90389F005C3066 /* libcrouton.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcrouton.a */; };
 		279D5D612A952986005C3066 /* Stream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D5F2A952986005C3066 /* Stream.hh */; };
 		279D5D622A952986005C3066 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D602A952986005C3066 /* Stream.cc */; };
@@ -64,6 +62,8 @@
 		27F49CCF2A9D011B00BFB24C /* test_io.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F49CCE2A9D011B00BFB24C /* test_io.cc */; };
 		27F49CD62A9E4E8E00BFB24C /* Backtrace.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */; };
 		27F49CD72A9E4E8E00BFB24C /* Backtrace.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */; };
+		27F49CDB2A9E6DB600BFB24C /* testserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D4F2A9031EF005C3066 /* testserver.cc */; };
+		27F49CDD2A9E6E0500BFB24C /* testclient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2711C18C2A9965B600361566 /* testclient.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -445,7 +445,6 @@
 				2711C17D2A995F6000361566 /* include */,
 				272728CD2A8D651F000CCA22 /* src */,
 				272728C52A8D6505000CCA22 /* tests */,
-				279D5D4E2A9031EF005C3066 /* testserver */,
 				272728D22A8D654C000CCA22 /* vendor */,
 				272728EC2A8D66C3000CCA22 /* xcconfigs */,
 				272728C42A8D6505000CCA22 /* Products */,
@@ -471,6 +470,10 @@
 				27F49CD02A9D3AC600BFB24C /* tests.hh */,
 				272728C62A8D6505000CCA22 /* tests.cc */,
 				27F49CCE2A9D011B00BFB24C /* test_io.cc */,
+				279D5D5E2A95163D005C3066 /* testserver.entitlements */,
+				279D5D4F2A9031EF005C3066 /* testserver.cc */,
+				2711C18C2A9965B600361566 /* testclient.cc */,
+				279D5D5D2A951599005C3066 /* Info.plist */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -734,17 +737,6 @@
 				272A851D2A96DA630083D947 /* llhttp.c */,
 			);
 			path = src;
-			sourceTree = "<group>";
-		};
-		279D5D4E2A9031EF005C3066 /* testserver */ = {
-			isa = PBXGroup;
-			children = (
-				279D5D5E2A95163D005C3066 /* testserver.entitlements */,
-				279D5D4F2A9031EF005C3066 /* testserver.cc */,
-				2711C18C2A9965B600361566 /* testclient.cc */,
-				279D5D5D2A951599005C3066 /* Info.plist */,
-			);
-			path = testserver;
 			sourceTree = "<group>";
 		};
 		279D5D572A9146DA005C3066 /* support */ = {
@@ -1139,7 +1131,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2711C18D2A9965B600361566 /* testclient.cc in Sources */,
+				27F49CDD2A9E6E0500BFB24C /* testclient.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1178,7 +1170,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279D5D502A9031EF005C3066 /* testserver.cc in Sources */,
+				27F49CDB2A9E6DB600BFB24C /* testserver.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

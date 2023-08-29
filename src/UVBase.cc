@@ -1,7 +1,19 @@
 //
 // UVBase.cc
-// Crouton
-// Copyright 2023-Present Couchbase, Inc.
+//
+// Copyright 2023-Present Couchbase, Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "UVBase.hh"
@@ -43,11 +55,11 @@ namespace crouton {
 
     void UVEventLoop::_run(int mode)  {
         NotReentrant nr(_running);
-        std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
+        //std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
         auto ns = uv_hrtime();
         uv_run(_loop.get(), uv_run_mode(mode));
         ns = uv_hrtime() - ns;
-        std::cerr << "... end event loop (" << (ns / 1000000) << "ms) <<\n";
+        //std::cerr << "... end event loop (" << (ns / 1000000) << "ms) <<\n";
     }
 
     void UVEventLoop::run()  {

@@ -29,7 +29,7 @@ Crouton is a C++20 coroutine runtime library that provides some general purpose 
     
 ## Status
 
-This is very new code! It builds with Clang/Xcode on macOS and passes some basic tests.
+This is very new code! So far, it builds with Clang on macOS and passes some basic tests.
 
 ## Example
 
@@ -54,6 +54,9 @@ cout << endl;
 
 ## Building It
 
+> **Important:** Make sure you checked out the submodules! 
+> `git submodule update --init --recursive`
+
 ### Prerequisites:
 
 - CMake
@@ -64,7 +67,7 @@ cout << endl;
 - Install Xcode 15 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
-#### on Linux (Debian/Ubuntu)
+#### on Linux
 
     sudo apt-get install g++ cmake cmake-data`
 

@@ -178,7 +178,7 @@ target_link_libraries( LibCrouton INTERFACE
 if (NOT CROUTON_IOS)
 
     add_executable( testclient
-        testserver/testclient.cc
+        tests/testclient.cc
     )
 
     target_link_libraries( testclient
@@ -186,7 +186,7 @@ if (NOT CROUTON_IOS)
     )
 
     add_executable( testserver
-        testserver/testserver.cc
+        tests/testserver.cc
     )
 
     target_link_libraries( testserver
