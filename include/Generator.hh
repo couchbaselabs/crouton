@@ -33,7 +33,7 @@ namespace crouton {
         A Generator can also be iterated synchronously via its begin/end methods,
         or with a `for(:)` loop.*/
     template <typename T>
-    class Generator : public CoroutineHandle<GeneratorImpl<T>> {
+    class Generator : public Coroutine<GeneratorImpl<T>> {
     public:
         /// Blocks until the Generator next yields a value, then returns it.
         /// Returns `nullopt` when the Generator is complete (its coroutine has exited.)
@@ -62,7 +62,7 @@ namespace crouton {
 
     private:
         friend class GeneratorImpl<T>;
-        using super = CoroutineHandle<GeneratorImpl<T>>;
+        using super = Coroutine<GeneratorImpl<T>>;
 
         explicit Generator(typename super::handle_type handle)  :super(handle) {}
     };
@@ -91,9 +91,9 @@ namespace crouton {
 
     
     template <typename T>
-    class GeneratorImpl : public CoroutineImpl<Generator<T>, GeneratorImpl<T>> {
+    class GeneratorImpl : public CoroutineImpl<GeneratorImpl<T>> {
     public:
-        using super = CoroutineImpl<Generator<T>, GeneratorImpl<T>>;
+        using super = CoroutineImpl<GeneratorImpl<T>>;
 
         GeneratorImpl() = default;
 

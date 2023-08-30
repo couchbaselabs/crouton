@@ -57,40 +57,45 @@ template <typename T>
 #define RETURN co_return
 
 namespace crouton {
-    template <class INSTANCE, class SELF>
-    class CoroutineImpl;
+    template <class SELF> class CoroutineImpl;
 
     using coro_handle = CORO_NS::coroutine_handle<>;
 
 
-    /** Base class for a coroutine handle, the public object returned by a coroutine function. */
+    /** Base class for the public object returned by a coroutine function.
+        Most of the implementation is usually in the associated CoroutineImpl subclass (IMPL). */
     template <class IMPL>
-    class CoroutineHandle {
+    class Coroutine {
     public:
         // movable, but not copyable.
-        CoroutineHandle(CoroutineHandle&& c)        :_handle(c._handle) {c._handle = {};}
-        ~CoroutineHandle()                          {if (_handle) _handle.destroy();}
+        Coroutine(Coroutine&& c)        :_handle(c._handle) {c._handle = {};}
+        ~Coroutine()                          {if (_handle) _handle.destroy();}
 
         using promise_type = IMPL;                  // The name `promise_type` is magic here
+
+        /// Returns my Impl object.
         IMPL& impl()                                {return _handle.promise();}
 
     protected:
         using handle_type = CORO_NS::coroutine_handle<IMPL>;
 
-        CoroutineHandle() = default;
-        explicit CoroutineHandle(handle_type h)     :_handle(h) {}
+        Coroutine() = default;
+        explicit Coroutine(handle_type h)     :_handle(h) {}
         handle_type handle()                        {return _handle;}
         void setHandle(handle_type h)               {_handle = h;}
     private:
-        friend class CoroutineImpl<CoroutineHandle<IMPL>,IMPL>;
-        
+        friend class CoroutineImpl<IMPL>;
+        Coroutine(Coroutine const&) = delete;
+        Coroutine& operator=(Coroutine const&) = delete;
+
         handle_type _handle;    // The internal coroutine handle
     };
 
 
 
-    /** Base class for a coroutine implementation or "promise_type". */
-    template <class INSTANCE, class SELF>
+    /** Base class for a coroutine implementation or "promise_type".
+        `SELF` must be the subclass you're defining (i.e. this uses the CRTP.) */
+    template <class SELF>
     class CoroutineImpl {
     public:
         using handle_type = CORO_NS::coroutine_handle<SELF>;
@@ -122,7 +127,7 @@ namespace crouton {
         // void return_void() { ... }
 
     protected:
-        CoroutineImpl(CoroutineImpl&) = delete;
+        CoroutineImpl(CoroutineImpl const&) = delete;
         CoroutineImpl(CoroutineImpl&&) = delete;
     };
 
@@ -152,6 +157,7 @@ namespace crouton {
     };
 
 
+
     /** A utility to detect re-entrant use of a coroutine method, i.e. calling it again before the
         first call completes. In some cases this is illegal because it would mess up its state.
 
@@ -173,6 +179,7 @@ namespace crouton {
         bool& _scope;
     };
 
+    
 
     /** Returns a description of a coroutine, ideally the name of its function. */
     std::string CoroutineName(coro_handle);

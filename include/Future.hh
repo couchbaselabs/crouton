@@ -128,7 +128,7 @@ namespace crouton {
         A coroutine can get the value by calling `co_await` on it, which suspends the coroutine
         until the value is available. */
     template <typename T>
-    class Future : public CoroutineHandle<FutureImpl<T>> {
+    class Future : public Coroutine<FutureImpl<T>> {
     public:
         Future(FutureProvider<T> &provider)   :_state(provider._state) { }
 
@@ -160,7 +160,7 @@ namespace crouton {
 
 
     template <>
-    class Future<void> : public CoroutineHandle<FutureImpl<void>> {
+    class Future<void> : public Coroutine<FutureImpl<void>> {
     public:
         bool hasValue() const           {return _state->hasValue();}
         void value() const              {_state->value();}
@@ -185,9 +185,9 @@ namespace crouton {
 
     // Implementation (promise_type) of a coroutine that returns a Future<T>.
     template <typename T>
-    class FutureImpl : public CoroutineImpl<Future<T>,FutureImpl<T>> {
+    class FutureImpl : public CoroutineImpl<FutureImpl<T>> {
     public:
-        using super = CoroutineImpl<Future<T>,FutureImpl<T>>;
+        using super = CoroutineImpl<FutureImpl<T>>;
         using handle_type = typename super::handle_type;
 
         FutureImpl() = default;
@@ -219,9 +219,9 @@ namespace crouton {
 
 
     template <>
-    class FutureImpl<void> : public CoroutineImpl<Future<void>,FutureImpl<void>> {
+    class FutureImpl<void> : public CoroutineImpl<FutureImpl<void>> {
     public:
-        using super = CoroutineImpl<Future<void>,FutureImpl<void>>;
+        using super = CoroutineImpl<FutureImpl<void>>;
         using handle_type = super::handle_type;
         FutureImpl() = default;
         void waitForValue();
