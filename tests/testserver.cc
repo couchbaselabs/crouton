@@ -57,5 +57,5 @@ static Task run() {
 
 
 int main(int argc, const char * argv[]) {
-    return UVMain(argc, argv, run);
+    return Main(argc, argv, run);
 }

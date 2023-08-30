@@ -158,3 +158,15 @@ TEST_CASE("Actor") {
 }
 
 #endif // __clang__
+
+
+TEST_CASE("Randomize") {
+    uint8_t buf[10];
+    ::memset(buf, 0, sizeof(buf));
+    for (int pass = 0; pass < 5; ++pass) {
+        Randomize(buf, sizeof(buf));
+        for (int i = 0; i < 10; ++i)
+            printf("%02x ", buf[i]);
+        printf("\n");
+    }
+}

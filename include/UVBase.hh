@@ -46,14 +46,14 @@ namespace crouton {
     /** Main process function that runs an event loop.
         When/if the Future resolves, it returns its value as the process status,
         or if the value is an exception it logs an error and returns 1. */
-    int UVMain(int argc, const char * argv[], Future<int> (*fn)());
+    int Main(int argc, const char * argv[], Future<int> (*fn)());
 
     /** Main process function that runs an event loop.
         It calls `fn` to create the Task, then runs the event loop forever or until stopped. */
-    int UVMain(int argc, const char * argv[], Task (*fn)());
+    int Main(int argc, const char * argv[], Task (*fn)());
 
-    /// Process arguments, as captured by UVMain.
-    extern std::vector<std::string_view> UVArgs;
+    /// Process arguments, as captured by Main.
+    extern std::vector<std::string_view> MainArgs;
 
 
     /** Implementation of EventLoop for libuv.*/
@@ -61,7 +61,7 @@ namespace crouton {
     public:
         UVEventLoop();
         void run() override;
-        void runOnce(bool waitForIO =true) override;
+        bool runOnce(bool waitForIO =true) override;
         void stop() override;
         void perform(std::function<void()>) override;
 
@@ -69,7 +69,7 @@ namespace crouton {
 
         uv_loop_s* uvLoop() {return _loop.get();}
     private:
-        void _run(int mode);
+        bool _run(int mode);
 
         std::unique_ptr<uv_loop_s> _loop;
     };
@@ -123,4 +123,6 @@ namespace crouton {
         RETURN std::move(result.value());
     }
 
+
+    void Randomize(void* buf, size_t len);
 }

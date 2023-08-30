@@ -54,21 +54,22 @@ namespace crouton {
         _loop->data = this;
     }
 
-    void UVEventLoop::_run(int mode)  {
+    bool UVEventLoop::_run(int mode)  {
         NotReentrant nr(_running);
-        //std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
+        std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
         auto ns = uv_hrtime();
-        uv_run(_loop.get(), uv_run_mode(mode));
+        int status = uv_run(_loop.get(), uv_run_mode(mode));
         ns = uv_hrtime() - ns;
-        //std::cerr << "... end event loop (" << (ns / 1000000) << "ms) <<\n";
+        std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
+        return status != 0;
     }
 
     void UVEventLoop::run()  {
         _run(UV_RUN_DEFAULT);
     }
 
-    void UVEventLoop::runOnce(bool waitForIO)  {
-        _run(waitForIO ? UV_RUN_ONCE : UV_RUN_NOWAIT);
+    bool UVEventLoop::runOnce(bool waitForIO)  {
+        return _run(waitForIO ? UV_RUN_ONCE : UV_RUN_NOWAIT);
     }
 
     void UVEventLoop::stop()  {
@@ -181,13 +182,13 @@ namespace crouton {
     }
 
     
-    std::vector<std::string_view> UVArgs;
+    std::vector<std::string_view> MainArgs;
 
-    int UVMain(int argc, const char * argv[], Future<int>(*fn)()) {
+    int Main(int argc, const char * argv[], Future<int>(*fn)()) {
         auto args = uv_setup_args(argc, (char**)argv);
-        UVArgs.resize(argc);
+        MainArgs.resize(argc);
         for (int i = 0; i < argc; ++i)
-            UVArgs[i] = args[i];
+            MainArgs[i] = args[i];
 
         try {
             Future<int> fut = fn();
@@ -202,11 +203,11 @@ namespace crouton {
         }
     }
 
-    int UVMain(int argc, const char * argv[], Task(*fn)()) {
+    int Main(int argc, const char * argv[], Task(*fn)()) {
         auto args = uv_setup_args(argc, (char**)argv);
-        UVArgs.resize(argc);
+        MainArgs.resize(argc);
         for (int i = 0; i < argc; ++i)
-            UVArgs[i] = args[i];
+            MainArgs[i] = args[i];
 
         try {
             Task task = fn();
@@ -220,4 +221,11 @@ namespace crouton {
             return 1;
         }
     }
+
+
+    void Randomize(void* buf, size_t len) {
+        uv_random_t req;
+        check(uv_random(curLoop(), &req, buf, len, 0, nullptr), "generating random bytes");
+    }
+
 }

@@ -25,16 +25,16 @@ using namespace crouton;
 
 static optional<string> firstArg() {
     optional<string> arg;
-    if (UVArgs.size() >= 1)
-        arg = UVArgs[1];
+    if (MainArgs.size() >= 1)
+        arg = MainArgs[1];
     return arg;
 }
 
 static optional<string> popArg() {
     optional<string> arg;
-    if (UVArgs.size() >= 1) {
-        arg = std::move(UVArgs[1]);
-        UVArgs.erase(UVArgs.begin() + 1);
+    if (MainArgs.size() >= 1) {
+        arg = std::move(MainArgs[1]);
+        MainArgs.erase(MainArgs.begin() + 1);
     }
     return arg;
 }
@@ -100,5 +100,5 @@ static Future<int> run() {
 
 
 int main(int argc, const char * argv[]) {
-    return UVMain(argc, argv, run);
+    return Main(argc, argv, run);
 }

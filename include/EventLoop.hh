@@ -34,7 +34,8 @@ namespace crouton {
 
         /// Runs a single cycle of the event loop.
         /// @param waitForIO  If true, the call is allowed to block waiting for activity.
-        virtual void runOnce(bool waitForIO =true) =0;
+        /// @return  True if the event loop wants to run again (I/O or timers waiting)
+        virtual bool runOnce(bool waitForIO =true) =0;
 
         /// True if the event loop is currently in `run` or `runOnce`.
         virtual bool isRunning() const {return _running;}
