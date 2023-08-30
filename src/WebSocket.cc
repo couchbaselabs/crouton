@@ -37,6 +37,7 @@ namespace crouton {
     ,_handle(new tlsuv_websocket_t)
     {
         check(tlsuv_websocket_init(curLoop(), _handle), "creating WebSocket");
+        _handle->data = this;
     }
 
     void WebSocket::setHeader(const char* name, const char* value) {
@@ -63,8 +64,10 @@ namespace crouton {
 
     Future<HTTPStatus> WebSocket::connect() {
         auto onRead = [](uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
-            auto ws = (WebSocket*)stream->data;
-            ws->received(buf, nread);
+            auto ws = (tlsuv_websocket_t*)stream;
+            auto self = (WebSocket*)ws->data;
+            if (self)   // ignore message received while I'm closing
+                self->received(buf, nread);
         };
 
         ws_connect_request req(_handle);
@@ -72,6 +75,7 @@ namespace crouton {
               "connecting WebSocket");
         int status = AWAIT req;
         check(status, "connecting WebSocket");
+        _handle->data = this;
         RETURN HTTPStatus{status};
     }
 
@@ -120,7 +124,18 @@ namespace crouton {
     }
 
     void WebSocket::close() {
-        closeHandle(_handle);
+        if (_handle) {
+            _handle->data = nullptr;
+            tlsuv_websocket_close(_handle, [](uv_handle_t* h) noexcept {
+                // FIXME: Due to a bug in tlsuv, it's not possible to free the handle here.
+                // https://github.com/openziti/tlsuv/issues/177
+                // If the bug isn't fixed, I'll have to come up with a way to delete the handle
+                // afterwards, e.g. on the next event cycle...
+                
+                //delete (tlsuv_websocket_t*)h;
+            });
+            _handle = nullptr;
+        }
     }
 
 
