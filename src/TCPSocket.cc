@@ -138,19 +138,6 @@ namespace crouton {
     }
 
 
-    Future<void> TCPSocket::connect(std::string const& address, uint16_t port, bool withTLS) {
-        bind(address, port, withTLS);
-        return open();
-    }
-
-
-    void TCPSocket::bind(std::string const& address, uint16_t port, bool withTLS) {
-        assert(!isOpen());
-        assert(!_binding);
-        _binding.reset(new binding{address, port, withTLS});
-    }
-
-
     Future<void> TCPSocket::open() {
         assert(!isOpen());
         assert(_binding);

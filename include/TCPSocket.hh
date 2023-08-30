@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "ISocket.hh"
 #include "Stream.hh"
 #include <memory>
 
@@ -26,24 +27,18 @@ struct tlsuv_stream_s;
 namespace crouton {
 
     /** A TCP socket. */
-    class TCPSocket : public Stream {
+    class TCPSocket : public Stream, public ISocket {
     public:
         TCPSocket();
-
-        /// Specifies the address and port to connect to, and whether to use TLS.
-        void bind(std::string const& address, uint16_t port, bool withTLS);
 
         /// Opens the socket to the bound address. Resolves once opened.
         [[nodiscard]] virtual Future<void> open() override;
 
-        /// Equivalent to bind + open.
-        [[nodiscard]] Future<void> connect(std::string const& address, uint16_t port, bool withTLS);
-
         /// Sets the TCP nodelay option.
-        void setNoDelay(bool);
+        void setNoDelay(bool) override;
 
         /// Enables TCP keep-alive with the given ping interval.
-        void keepAlive(unsigned intervalSecs);
+        void keepAlive(unsigned intervalSecs) override;
 
     private:
         friend class TCPServer;
@@ -55,7 +50,5 @@ namespace crouton {
         };
 
         virtual void acceptFrom(uv_tcp_s* server);
-
-        std::unique_ptr<binding> _binding;
     };
 }

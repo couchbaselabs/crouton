@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "NWConnection.hh"
 #include <sys/socket.h> // for AF_INET
 
 using namespace std;
@@ -208,5 +209,44 @@ TEST_CASE("WebSocket", "[uv]") {
     };
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
-
 }
+
+
+#ifdef __APPLE__
+
+static Future<string> readNWSocket(const char* hostname, bool tls) {
+    NWConnection socket;
+    cerr << "Connecting...\n";
+    AWAIT socket.connect(hostname, (tls ? 443 : 80), tls);
+
+    cerr << "Writing...\n";
+    AWAIT socket.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
+
+    cerr << "Reading...\n";
+    string result = AWAIT socket.readAll();
+    RETURN result;
+}
+
+
+TEST_CASE("NWConnection", "[nw]") {
+    Future<string> response = readNWSocket("example.com", false);
+    string contents = response.waitForValue();
+    cerr << "HTTP response:\n" << contents << endl;
+    CHECK(contents.starts_with("HTTP/1.1 "));
+    CHECK(contents.size() > 1000);
+    CHECK(contents.size() < 2000);
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("NWConnection TLS", "[nw]") {
+    Future<string> response = readNWSocket("example.com", true);
+    string contents = response.waitForValue();
+    cerr << "HTTP response:\n" << contents << endl;
+    CHECK(contents.starts_with("HTTP/1.1 "));
+    CHECK(contents.size() > 1000);
+    CHECK(contents.size() < 2000);
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+#endif // __APPLE__
