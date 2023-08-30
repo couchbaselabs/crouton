@@ -94,7 +94,7 @@ namespace crouton {
 
         /// Sets the Future's result as an exception and unblocks anyone waiting for it.
         /// Calling value() will re-throw the exception.
-        void setException(std::exception_ptr x) {_state->setException(x);}
+        void setException(std::exception_ptr x) const {_state->setException(x);}
 
         /// Gets the future's value, or throws its exception.
         /// It's illegal to call this before a value is set.
@@ -115,7 +115,7 @@ namespace crouton {
         operator Future<void>();
         bool hasValue() const                   {return _state->hasValue();}
         void setValue() const                   {_state->setValue();}
-        void setException(std::exception_ptr x) {_state->setException(x);}
+        void setException(std::exception_ptr x) const {_state->setException(x);}
         void value() const                      {return _state->value();}
         void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:

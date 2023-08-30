@@ -58,7 +58,7 @@ namespace crouton {
             return impl.handle();               // Generator's coroutine takes over
         }
 
-        std::optional<T> await_resume()             {return this->impl().yielded_value();}
+        std::optional<T> await_resume()             {return this->impl().yieldedValue();}
 
     private:
         friend class GeneratorImpl<T>;
@@ -98,8 +98,8 @@ namespace crouton {
         GeneratorImpl() = default;
 
         void clear() {
-            super::clear();
             _yielded_value = std::nullopt;
+            _exception = nullptr;
         }
 
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
@@ -110,14 +110,17 @@ namespace crouton {
                 return std::nullopt;
             while (!_ready)
                 h.resume();
-            return yielded_value();
+            return yieldedValue();
         }
 
         // Returns the value yielded by the coroutine function after it's run.
-        std::optional<T> yielded_value() {
+        std::optional<T> yieldedValue() {
             assert(_ready);
             _ready = false;
-            this->rethrow();
+            if (auto x = _exception) {
+                clear();
+                std::rethrow_exception(x);
+            }
             return std::move(_yielded_value);
         }
 
@@ -138,6 +141,9 @@ namespace crouton {
             return YielderTo{resumer};
         }
 
+        // Invoked if the coroutine throws an exception
+        void unhandled_exception()                  {_exception = std::current_exception();}
+
         // Invoked when the coroutine fn returns without a result, implicitly or via co_return.
         // If co_return is to take a parameter, implement `return_value` instead:
         // `void return_value(XXX value) { ... }`
@@ -152,12 +158,13 @@ namespace crouton {
     private:
         template <class U> friend class Generator;
 
-        /// Tells me which coroutine should resume after I co_yield the next value.
+        // Tells me which coroutine should resume after I co_yield the next value.
         void returnControlTo(coro_handle consumer) {_consumer = consumer;}
 
-        std::optional<T>        _yielded_value;                    // Latest value yielded
-        coro_handle _consumer = CORO_NS::noop_coroutine(); // Coroutine awaiting my value
-        bool                    _ready = false;                    // True when a value is available
+        std::optional<T>    _yielded_value;                    // Latest value yielded
+        std::exception_ptr  _exception = nullptr;             // Latest exception thrown
+        coro_handle         _consumer = CORO_NS::noop_coroutine(); // Coroutine awaiting my value
+        bool                _ready = false;                    // True when a value is available
     };
 
 }

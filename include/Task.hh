@@ -48,6 +48,7 @@ namespace crouton {
             return {};
         }
         Yielder yield_value(bool)               { return Yielder(handle()); }
+        void unhandled_exception()              {std::cerr << "*** Task failed with exception\n";}
         void return_void()                      { }
     private:
     };

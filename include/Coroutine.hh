@@ -110,9 +110,6 @@ namespace crouton {
             return {};
         }
 
-        // Invoked if the coroutine throws an exception
-        void unhandled_exception()              {_exception = std::current_exception();}
-
         // Invoked after the coroutine terminates for any reason.
         // "You must not return a value that causes the terminated coroutine to try to continue
         // running! The only useful thing you might do in this method other than returning straight
@@ -127,12 +124,6 @@ namespace crouton {
     protected:
         CoroutineImpl(CoroutineImpl&) = delete;
         CoroutineImpl(CoroutineImpl&&) = delete;
-
-        void clear()    {_exception = nullptr;}
-        void rethrow()  {if (auto x = _exception) {clear(); std::rethrow_exception(x);}}
-
-    private:
-        std::exception_ptr  _exception = nullptr;             // Latest exception thrown
     };
 
 
