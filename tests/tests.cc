@@ -123,6 +123,8 @@ TEST_CASE("Future coroutine") {
 #endif
 
 
+#ifdef __clang__    // GCC 12 doesn't seem to support ActorImpl ctor taking parameters
+
 class TestActor : public Actor {
 public:
     Future<int64_t> fibonacciSum(int n) const {
@@ -145,12 +147,14 @@ public:
 
 TEST_CASE("Actor") {
     RunCoroutine([]() -> Future<void> {
-        TestActor actor;
-        cerr << "actor = " << (void*)&actor << endl;
-        Future<int64_t> sum10 = actor.fibonacciSum(10);
-        Future<int64_t> sum20 = actor.fibonacciSum(20);
+        auto actor = std::make_shared<TestActor>();
+        cerr << "actor = " << (void*)actor.get() << endl;
+        Future<int64_t> sum10 = actor->fibonacciSum(10);
+        Future<int64_t> sum20 = actor->fibonacciSum(20);
         cerr << "Sum10 is " << (AWAIT sum10) << endl;
         cerr << "Sum20 is " << (AWAIT sum20) << endl;
         RETURN;
     });
 }
+
+#endif // __clang__

@@ -19,13 +19,17 @@
 #pragma once
 #include "Future.hh"
 #include <deque>
+#include <memory>
 
 namespace crouton {
 
     /** An Actor is a class that runs one Future-returning coroutine method at a time,
         even if those methods are called concurrently, even from multiple threads.
-        It keeps a queue of waiting calls, and when one coroutine completes it starts the next. */
-    class Actor {
+        It keeps a queue of waiting calls, and when one coroutine completes it starts the next.
+
+        An Actor MUST be managed as a shared pointer, created with `std::make_shared()`.
+        This ensures it remains alive as long as any coroutines are running or queued. */
+    class Actor : public std::enable_shared_from_this<Actor> {
     public:
         /// By default, an Actor's coroutines run on the thread it was created on.
         Actor()                                     :Actor(Scheduler::current()) { }
@@ -93,31 +97,25 @@ namespace crouton {
     class ActorMethodImpl : public FutureImpl<T> {
     public:
 
-        template <typename... ArgTypes>
-        ActorMethodImpl(crouton::Actor& actor, ArgTypes... args)
-        :_actor(actor)
-        {
-            std::cerr << "Created ActorMethodImpl " << (void*)this << " on Actor " << (void*)&actor << std::endl;
-        }
-
-        template <typename... ArgTypes>
-        ActorMethodImpl(crouton::Actor const& actor, ArgTypes... args)
-        :_actor(actor)
+        explicit ActorMethodImpl(crouton::Actor const& actor, ...)
+        :_actor(const_cast<Actor&>(actor).shared_from_this())
         {
             std::cerr << "Created ActorMethodImpl " << (void*)this << " on const Actor " << (void*)&actor << std::endl;
         }
 
+        explicit ActorMethodImpl(crouton::Actor const* actor, ...) :ActorMethodImpl(*actor) { }
+
         struct suspendInitial : public CORO_NS::suspend_always {
-            ActorMethodImpl* _impl;
+            ActorMethodImpl* self;
             bool await_ready() const noexcept {
-                return _impl->_actor.startNew(_impl->handle());
+                return self->_actor->startNew(self->handle());
             }
         };
 
         struct suspendFinal : public Finisher {
-            ActorMethodImpl* _impl;
+            ActorMethodImpl* self;
             coro_handle await_suspend(coro_handle h) noexcept {
-                _impl->_actor.finished(h);
+                self->_actor->finished(h);
                 return Finisher::await_suspend(h);
             }
         };
@@ -126,9 +124,9 @@ namespace crouton {
         suspendFinal final_suspend() noexcept   { return suspendFinal{{},this}; }
 
     private:
-        ActorMethodImpl() = delete;
+        ActorMethodImpl() = delete;     // I need to know the identity of the Actor owning the coro
         
-        Actor const& _actor;
+        std::shared_ptr<Actor> _actor;  // The Actor; keeps it alive as long as coroutine exists
     };
 
 }
