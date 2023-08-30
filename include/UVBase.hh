@@ -123,22 +123,4 @@ namespace crouton {
         RETURN std::move(result.value());
     }
 
-
-    /** Low-level struct pointing to mutable data.
-        Usually serves as the destination of a read.
-        Binary compatible with uv_buf_t. */
-    struct MutableBuf {
-        void*   base = nullptr;
-        size_t  len = 0;
-    };
-
-    /** Low-level struct pointing to immutable data.
-        Usually serves as the source of a write.
-        Binary compatible with uv_buf_t. */
-    struct ConstBuf {
-        const void* base = nullptr;
-        size_t      len = 0;
-    };
-    //TODO //FIXME: uv_buf_t's fields are in the opposite order on Windows. Deal with that.
-
 }

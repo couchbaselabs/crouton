@@ -16,8 +16,8 @@
 		272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727303F2A8D6F35000CCA22 /* TCPSocket.cc */; };
 		272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730472A8D8A73000CCA22 /* Scheduler.cc */; };
 		2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2727304D2A8E9D99000CCA22 /* UVBase.cc */; };
-		272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272730502A8EC61D000CCA22 /* AsyncFile.hh */; };
-		272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730512A8EC61D000CCA22 /* AsyncFile.cc */; };
+		272730522A8EC61D000CCA22 /* FileStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272730502A8EC61D000CCA22 /* FileStream.hh */; };
+		272730532A8EC61D000CCA22 /* FileStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730512A8EC61D000CCA22 /* FileStream.cc */; };
 		272730552A8ED3D1000CCA22 /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272730542A8ED3D1000CCA22 /* Future.cc */; };
 		272A851E2A96DA8F0083D947 /* api.c in Sources */ = {isa = PBXBuildFile; fileRef = 272A851B2A96DA630083D947 /* api.c */; };
 		272A851F2A96DA8F0083D947 /* http.c in Sources */ = {isa = PBXBuildFile; fileRef = 272A851C2A96DA630083D947 /* http.c */; };
@@ -64,6 +64,8 @@
 		27F49CD72A9E4E8E00BFB24C /* Backtrace.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */; };
 		27F49CDB2A9E6DB600BFB24C /* testserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D4F2A9031EF005C3066 /* testserver.cc */; };
 		27F49CDD2A9E6E0500BFB24C /* testclient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2711C18C2A9965B600361566 /* testclient.cc */; };
+		27F603042A9EB826006FA1D0 /* IStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27F603022A9EB826006FA1D0 /* IStream.hh */; };
+		27F603052A9EB826006FA1D0 /* IStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F603032A9EB826006FA1D0 /* IStream.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -241,8 +243,8 @@
 		2727304B2A8E811B000CCA22 /* Defer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Defer.hh; sourceTree = "<group>"; };
 		2727304C2A8E9D48000CCA22 /* UVBase.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UVBase.hh; sourceTree = "<group>"; };
 		2727304D2A8E9D99000CCA22 /* UVBase.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UVBase.cc; sourceTree = "<group>"; };
-		272730502A8EC61D000CCA22 /* AsyncFile.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncFile.hh; sourceTree = "<group>"; };
-		272730512A8EC61D000CCA22 /* AsyncFile.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AsyncFile.cc; sourceTree = "<group>"; };
+		272730502A8EC61D000CCA22 /* FileStream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = FileStream.hh; sourceTree = "<group>"; };
+		272730512A8EC61D000CCA22 /* FileStream.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FileStream.cc; sourceTree = "<group>"; };
 		272730542A8ED3D1000CCA22 /* Future.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
 		272A85102A96DA630083D947 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		272A85122A96DA630083D947 /* llhttp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = llhttp.h; sourceTree = "<group>"; };
@@ -366,6 +368,8 @@
 		27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Backtrace.hh; sourceTree = "<group>"; };
 		27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Backtrace.cc; sourceTree = "<group>"; };
 		27F49CD82A9E593700BFB24C /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		27F603022A9EB826006FA1D0 /* IStream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IStream.hh; sourceTree = "<group>"; };
+		27F603032A9EB826006FA1D0 /* IStream.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IStream.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -416,13 +420,14 @@
 			children = (
 				27F49CCD2A9D007D00BFB24C /* Actor.hh */,
 				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
-				272730502A8EC61D000CCA22 /* AsyncFile.hh */,
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
 				279D5D442A8FE174005C3066 /* Crouton.hh */,
 				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
+				272730502A8EC61D000CCA22 /* FileStream.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				272A85282A97B2090083D947 /* HTTPClient.hh */,
+				27F603022A9EB826006FA1D0 /* IStream.hh */,
 				279D5D632A952DD1005C3066 /* Pipe.hh */,
 				272728FE2A8D6B43000CCA22 /* Scheduler.hh */,
 				279D5D5F2A952986005C3066 /* Stream.hh */,
@@ -482,9 +487,10 @@
 			isa = PBXGroup;
 			children = (
 				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
-				272730512A8EC61D000CCA22 /* AsyncFile.cc */,
+				272730512A8EC61D000CCA22 /* FileStream.cc */,
 				272730542A8ED3D1000CCA22 /* Future.cc */,
 				272A85292A97B2090083D947 /* HTTPClient.cc */,
+				27F603032A9EB826006FA1D0 /* IStream.cc */,
 				279D5D642A952DD1005C3066 /* Pipe.cc */,
 				272730472A8D8A73000CCA22 /* Scheduler.cc */,
 				279D5E562A956CC3005C3066 /* stream_wrapper.hh */,
@@ -973,7 +979,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				272730522A8EC61D000CCA22 /* AsyncFile.hh in Headers */,
+				272730522A8EC61D000CCA22 /* FileStream.hh in Headers */,
 				279D5D652A952DD1005C3066 /* Pipe.hh in Headers */,
 				272A85302A982DE50083D947 /* WebSocket.hh in Headers */,
 				279D5D472A902588005C3066 /* TCPServer.hh in Headers */,
@@ -983,6 +989,7 @@
 				272A852A2A97B2090083D947 /* HTTPClient.hh in Headers */,
 				279D5D612A952986005C3066 /* Stream.hh in Headers */,
 				272A85262A96DCB30083D947 /* URL.hh in Headers */,
+				27F603042A9EB826006FA1D0 /* IStream.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1153,7 +1160,7 @@
 				27F49CD72A9E4E8E00BFB24C /* Backtrace.cc in Sources */,
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
-				272730532A8EC61D000CCA22 /* AsyncFile.cc in Sources */,
+				272730532A8EC61D000CCA22 /* FileStream.cc in Sources */,
 				272A852B2A97B2090083D947 /* HTTPClient.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
 				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
@@ -1161,6 +1168,7 @@
 				272A85312A982DE50083D947 /* WebSocket.cc in Sources */,
 				272A85272A96DCB30083D947 /* URL.cc in Sources */,
 				279D5D482A902588005C3066 /* TCPServer.cc in Sources */,
+				27F603052A9EB826006FA1D0 /* IStream.cc in Sources */,
 				279D5D622A952986005C3066 /* Stream.cc in Sources */,
 				279D5D662A952DD1005C3066 /* Pipe.cc in Sources */,
 			);

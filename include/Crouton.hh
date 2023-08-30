@@ -25,7 +25,7 @@
 #include "Task.hh"
 
 #include "AddrInfo.hh"
-#include "AsyncFile.hh"
+#include "FileStream.hh"
 #include "HTTPClient.hh"
 #include "TCPSocket.hh"
 #include "TCPServer.hh"

@@ -44,7 +44,8 @@ TEST_CASE("URLs", "[uv]") {
 
 static Future<string> readFile(string const& path) {
     string contents;
-    FileStream f = AWAIT FileStream::open(path);
+    FileStream f(path);
+    AWAIT f.open();
     char buffer[100];
     while (true) {
         int64_t len = AWAIT f.read(sizeof(buffer), &buffer[0]);
@@ -65,6 +66,7 @@ TEST_CASE("Read a file", "[uv]") {
     string contents = cf.waitForValue();
     //cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
     CHECK(contents.size() > 500);
+    CHECK(contents.size() < 5000);
     REQUIRE(Scheduler::current().assertEmpty());
 }
 

@@ -33,6 +33,19 @@ namespace crouton {
         char        data[kCapacity];        ///< The data itself
 
         size_t available() const {return length - used;}
+        bool empty() const       {return length == used;}
+
+        ConstBuf read(size_t maxLen) {
+            size_t n = std::min(maxLen, available());
+            ConstBuf result{.base = data + used, .len = n};
+            used += n;
+            return result;
+        }
+
+        void unRead(size_t len) {
+            assert(len <= used);
+            used -= len;
+        }
     };
 
     using BufferRef = std::unique_ptr<Buffer>;
