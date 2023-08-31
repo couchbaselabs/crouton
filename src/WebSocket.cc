@@ -118,7 +118,7 @@ namespace crouton {
         if (nread > 0) {
             provider->setValue(std::string((const char*)buf, nread));
         } else if (nread < 0) {
-            std::exception_ptr x = makeExceptionPtr(UVError("reading from WebSocket", int(nread)));
+            std::exception_ptr x = make_exception_ptr(UVError("reading from WebSocket", int(nread)));
             provider->setException(x);
         }
     }

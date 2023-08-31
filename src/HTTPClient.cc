@@ -99,7 +99,7 @@ namespace crouton {
             if (len >= 0)
                 bf.setValue();
             else
-                bf.setException(makeExceptionPtr(UVError("writing to HTTP request", int(len))));
+                bf.setException(make_exception_ptr(UVError("writing to HTTP request", int(len))));
         };
         check(tlsuv_http_req_data(_req, body.data(), body.size(), callback),
               "writing to an HTTP request");
@@ -232,7 +232,7 @@ namespace crouton {
             _bodyFuture.setValue(std::move(_partialBody));
         } else if (len < 0) {
             detach();
-            _bodyFuture.setException(makeExceptionPtr(UVError("reading HTTP response", int(len))));
+            _bodyFuture.setException(make_exception_ptr(UVError("reading HTTP response", int(len))));
         }
     }
 

@@ -22,6 +22,7 @@
 #include "Scheduler.hh"
 #include "uv.h"
 #include <concepts>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 
@@ -34,19 +35,6 @@ namespace crouton {
             std::cerr << "** libuv error: " << x.what() << std::endl;
             throw x;
         }
-    }
-
-
-    /// Creates a std::exception_ptr from an exception object.
-    /// (Unfortunately it has to throw and catch it to do so.)
-    template <typename X>
-    std::exception_ptr makeExceptionPtr(X const& exc) {
-        try {
-            throw exc;
-        } catch (...) {
-            return std::current_exception();
-        }
-        //abort(); // unreachable
     }
 
 
