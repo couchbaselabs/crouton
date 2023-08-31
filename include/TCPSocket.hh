@@ -26,19 +26,13 @@ struct tlsuv_stream_s;
 
 namespace crouton {
 
-    /** A TCP socket. */
+    /** A TCP socket. (For TLS connections, use TLSSocket or NWConnection.) */
     class TCPSocket : public Stream, public ISocket {
     public:
         TCPSocket();
 
         /// Opens the socket to the bound address. Resolves once opened.
         [[nodiscard]] virtual Future<void> open() override;
-
-        /// Sets the TCP nodelay option.
-        void setNoDelay(bool) override;
-
-        /// Enables TCP keep-alive with the given ping interval.
-        void keepAlive(unsigned intervalSecs) override;
 
     private:
         friend class TCPServer;

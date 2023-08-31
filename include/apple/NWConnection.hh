@@ -16,7 +16,7 @@ struct dispatch_queue_s;
 struct nw_connection;
 struct nw_error;
 
-namespace crouton {
+namespace crouton::apple {
 
     class NWError : public std::runtime_error {
     public:
@@ -24,22 +24,19 @@ namespace crouton {
     };
 
 
-    /** A TCP client connection using Apple's Network.framework. */
+    /** A TCP client connection using Apple's Network.framework.
+        Supports TLS. */
     class NWConnection final : public IStream, public ISocket {
     public:
         NWConnection() = default;
         ~NWConnection();
 
+        void useTLS(bool tls)                               {_useTLS = tls;}
+
         /// Opens the socket to the bound address. Resolves once opened.
         [[nodiscard]] virtual Future<void> open() override;
 
-        /// Sets the TCP nodelay option.
-        void setNoDelay(bool) override;
-
-        /// Enables TCP keep-alive with the given ping interval.
-        void keepAlive(unsigned intervalSecs) override;
-
-        bool isOpen() const override {return _isOpen;}
+        bool isOpen() const override                        {return _isOpen;}
 
         [[nodiscard]] Future<void> close() override;
 
@@ -55,10 +52,13 @@ namespace crouton {
 
         nw_connection*      _conn = nullptr;
         dispatch_queue_s*   _queue = nullptr;
+        std::optional<FutureProvider<ConstBuf>> _onRead;
+        std::optional<FutureProvider<void>> _onWrite;
         FutureProvider<void> _onClose;
         dispatch_data_s*    _content = nullptr;
         ConstBuf            _contentBuf;
         size_t              _contentUsed;
+        bool                _useTLS = false;
         bool                _isOpen = false;
         bool                _eof = false;
     };

@@ -22,14 +22,14 @@
 #include <Network/Network.h>
 #include <algorithm>
 
-namespace crouton {
+namespace crouton::apple {
     using namespace std;
 
     template <typename T>
-    struct Autoreleaser {
-        Autoreleaser(T* t)  :_ref(t) { }
-        Autoreleaser(Autoreleaser&& other) :_ref(other._ref) {other._ref = nullptr;}
-        ~Autoreleaser()     {nw_release(_ref);}
+    struct NWAutoreleaser {
+        NWAutoreleaser(T* t)  :_ref(t) { }
+        NWAutoreleaser(NWAutoreleaser&& other) :_ref(other._ref) {other._ref = nullptr;}
+        ~NWAutoreleaser()   {nw_release(_ref);}
 
         operator T*()       {return _ref;}
     private:
@@ -37,7 +37,7 @@ namespace crouton {
     };
 
     template <typename T>
-    Autoreleaser<T> autorelease(T* t)   {return Autoreleaser<T>(t);}
+    NWAutoreleaser<T> autorelease(T* t)   {return NWAutoreleaser<T>(t);}
 
 
 
@@ -61,21 +61,18 @@ namespace crouton {
         }
     }
 
-    void NWConnection::setNoDelay(bool) { } // TODO
-
-    void NWConnection::keepAlive(unsigned intervalSecs) { } // TODO
-
     Future<void> NWConnection::open() {
         string portStr = std::to_string(_binding->port);
         nw_endpoint_t endpoint = nw_endpoint_create_host(_binding->address.c_str(), portStr.c_str());
 
         nw_parameters_configure_protocol_block_t tlsConfig;
-        if (_binding->withTLS)
+        if (_useTLS)
             tlsConfig = NW_PARAMETERS_DEFAULT_CONFIGURATION;
         else
             tlsConfig = NW_PARAMETERS_DISABLE_PROTOCOL;
         auto params = autorelease(nw_parameters_create_secure_tcp(tlsConfig,
                                                             NW_PARAMETERS_DEFAULT_CONFIGURATION));
+        //TODO: Set nodelay, keepalive based on _binding
         _conn = nw_connection_create(endpoint, params);
 
         _queue = dispatch_queue_create("NWConnection", DISPATCH_QUEUE_SERIAL);
@@ -84,21 +81,29 @@ namespace crouton {
         FutureProvider<void> onOpen;
         nw_connection_set_state_changed_handler(_conn, ^(nw_connection_state_t state,
                                                          nw_error_t error) {
+            std::exception_ptr x;
             switch (state) {
                 case nw_connection_state_ready:
                     _isOpen = true;
                     onOpen.setValue();
                     break;
                 case nw_connection_state_cancelled:
-                    if (!onOpen.hasValue())
-                        onOpen.setException(make_exception_ptr(runtime_error("cancelled")));
+                    x = make_exception_ptr(runtime_error("cancelled"));
                     _onClose.setValue();
                     break;
                 case nw_connection_state_failed:
-                    onOpen.setException(make_exception_ptr(NWError(error)));
+                    x = make_exception_ptr(NWError(error));
                     break;
                 default:
                     break;
+            }
+            if (x) {
+                if (!onOpen.hasValue())
+                    onOpen.setException(x);
+                if (auto read = std::move(_onRead))
+                    read->setException(x);
+                if (auto write = std::move(_onWrite))
+                    write->setException(x);
             }
         });
         nw_connection_start(_conn);
@@ -135,43 +140,48 @@ namespace crouton {
 
 
     Future<ConstBuf> NWConnection::_readNoCopy(size_t maxLen) {
-        FutureProvider<ConstBuf> result;
+        assert(!_onRead);
         if (_content && _contentUsed < _contentBuf.len) {
             // I can return some unRead data from the buffer:
             auto len = std::min(maxLen, _contentBuf.len - _contentUsed);
-            result.setValue(ConstBuf{.base = (char*)_contentBuf.base + _contentUsed, .len = len});
+            ConstBuf result{.base = (char*)_contentBuf.base + _contentUsed, .len = len};
             _contentUsed += len;
+            return result;
 
         } else if (_eof) {
-            result.setValue(ConstBuf{});
+            return ConstBuf{};
             
         } else {
             // Read from the stream:
-            clearReadBuf();
-            nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
-                                  ^(dispatch_data_t content,
-                                    nw_content_context_t context,
-                                    bool is_complete,
-                                    nw_error_t error) {
-                if (is_complete) {
-                    std::cerr << "NWConnection read EOF\n";
-                    _eof = true;
-                }
-                if (content) {
-                    ConstBuf buf;
-                    _content = dispatch_data_create_map(content, &buf.base, &buf.len);
-                    _contentUsed = buf.len;
-                    _contentBuf = buf;
-                    cerr << "NWConnection read " << buf.len << " bytes\n";
-                    result.setValue(std::move(buf));
-                } else if (error) {
-                    result.setException(make_exception_ptr(NWError(error)));
-                } else if (is_complete) {
-                    result.setValue({});
-                }
+            dispatch_sync(_queue, ^{
+                _onRead.emplace();
+                clearReadBuf();
+                nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
+                                      ^(dispatch_data_t content,
+                                        nw_content_context_t context,
+                                        bool is_complete,
+                                        nw_error_t error) {
+                    if (is_complete) {
+                        std::cerr << "NWConnection read EOF\n";
+                        _eof = true;
+                    }
+                    if (content) {
+                        ConstBuf buf;
+                        _content = dispatch_data_create_map(content, &buf.base, &buf.len);
+                        _contentUsed = buf.len;
+                        _contentBuf = buf;
+                        cerr << "NWConnection read " << buf.len << " bytes\n";
+                        _onRead->setValue(std::move(buf));
+                    } else if (error) {
+                        _onRead->setException(make_exception_ptr(NWError(error)));
+                    } else if (is_complete) {
+                        _onRead->setValue({});
+                    }
+                    _onRead.reset();
+                });
             });
+            return _onRead.value();
         }
-        return result;
     }
 
 
@@ -183,21 +193,25 @@ namespace crouton {
 
 
     Future<void> NWConnection::_writeOrShutdown(ConstBuf src, bool shutdown) {
+        assert(!_onWrite);
         clearReadBuf();
-        FutureProvider<void> result;
-        __block bool released = false;
-        dispatch_data_t content = dispatch_data_create(src.base, src.len, _queue,
-                                                       ^{ released = true; });
-        nw_connection_send(_conn, content, NW_CONNECTION_DEFAULT_STREAM_CONTEXT, shutdown,
-                           ^(nw_error_t error) {
-            assert(released);
-            if (error)
-                result.setException(make_exception_ptr(NWError(error)));
-            else
-                result.setValue();
+        dispatch_sync(_queue, ^{
+            __block __unused bool released = false;
+            dispatch_data_t content = dispatch_data_create(src.base, src.len, _queue,
+                                                           ^{ released = true; });
+            _onWrite.emplace();
+            nw_connection_send(_conn, content, NW_CONNECTION_DEFAULT_STREAM_CONTEXT, shutdown,
+                               ^(nw_error_t error) {
+                assert(released);
+                if (error)
+                    _onWrite->setException(make_exception_ptr(NWError(error)));
+                else
+                    _onWrite->setValue();
+                _onWrite.reset();
+            });
+            dispatch_release(content);
         });
-        dispatch_release(content);
-        return result;
+        return _onWrite.value();
     }
 
 }

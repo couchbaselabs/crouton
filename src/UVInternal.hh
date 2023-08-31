@@ -29,8 +29,11 @@ namespace crouton {
 
     /// Checks a libuv function result and throws a UVError exception if it's negative.
     static inline void check(std::signed_integral auto status, const char* what) {
-        if (status < 0)
-            throw UVError(what, int(status));
+        if (status < 0) {
+            UVError x(what, int(status));
+            std::cerr << "** libuv error: " << x.what() << std::endl;
+            throw x;
+        }
     }
 
 

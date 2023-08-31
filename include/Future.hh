@@ -112,13 +112,13 @@ namespace crouton {
     public:
         FutureProvider()                        {reset();}
         Future<void> future();
-        operator Future<void>();
         bool hasValue() const                   {return _state->hasValue();}
         void setValue() const                   {_state->setValue();}
         void setException(std::exception_ptr x) const {_state->setException(x);}
         void value() const                      {return _state->value();}
         void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:
+        friend class Future<void>;
         std::shared_ptr<FutureState<void>> _state;
     };
 
@@ -162,6 +162,10 @@ namespace crouton {
     template <>
     class Future<void> : public Coroutine<FutureImpl<void>> {
     public:
+        /// Creates an already-ready Future.
+        Future()                :_state(std::make_shared<FutureState<void>>()) {_state->setValue();}
+        Future(FutureProvider<void> &p) :_state(p._state) { }
+
         bool hasValue() const           {return _state->hasValue();}
         void value() const              {_state->value();}
         inline void waitForValue();

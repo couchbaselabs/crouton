@@ -1,6 +1,6 @@
 # Makefile! Just a launcher for scripts...
 
-all: test release
+all: debug release
 
 clean:
 	rm -r build_cmake

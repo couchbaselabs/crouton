@@ -56,11 +56,11 @@ namespace crouton {
 
     bool UVEventLoop::_run(int mode)  {
         NotReentrant nr(_running);
-        std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
+        //std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
         auto ns = uv_hrtime();
         int status = uv_run(_loop.get(), uv_run_mode(mode));
         ns = uv_hrtime() - ns;
-        std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
+        //std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
         return status != 0;
     }
 

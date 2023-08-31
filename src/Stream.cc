@@ -60,7 +60,7 @@ namespace crouton {
 
     Future<void> Stream::close() {
         _close();
-        return FutureProvider<void>{};
+        return Future<void>();
     }
 
 

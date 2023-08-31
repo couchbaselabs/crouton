@@ -154,7 +154,7 @@ namespace crouton {
 
     Future<void> FileStream::close() {
         _close();
-        return FutureProvider<void>();
+        return Future<void>();
     }
 
 }

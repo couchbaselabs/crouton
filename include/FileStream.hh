@@ -51,7 +51,7 @@ namespace crouton {
         [[nodiscard]] Future<void> close() override;
 
         /// Closes the write side, but not the read side. (Like a socket's `shutdown`.)
-        [[nodiscard]] Future<void> closeWrite() override    {return FutureProvider<void>();}
+        [[nodiscard]] Future<void> closeWrite() override    {return Future<void>();}
 
         [[nodiscard]] Future<size_t> read(size_t len, void* dst) override;
 

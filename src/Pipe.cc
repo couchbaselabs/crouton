@@ -46,7 +46,7 @@ namespace crouton {
 
 
     Future<void> Pipe::open() {
-        return FutureProvider<void>();
+        return Future<void>();
     }
 
 }

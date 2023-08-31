@@ -75,7 +75,6 @@ namespace crouton {
 
 
     Future<void> FutureProvider<void>::future()                      {return Future<void>(_state);}
-    FutureProvider<void>::operator Future<void>()                    {return future();}
 
 
     void FutureImpl<void>::waitForValue() {

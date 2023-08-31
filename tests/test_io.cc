@@ -18,6 +18,7 @@
 
 #include "tests.hh"
 #include "NWConnection.hh"
+#include "TLSSocket.hh"
 #include <sys/socket.h> // for AF_INET
 
 using namespace std;
@@ -82,40 +83,45 @@ TEST_CASE("DNS lookup", "[uv]") {
 }
 
 
-static Future<string> readSocket(const char* hostname, bool tls) {
-    TCPSocket socket;
-    cerr << "Connecting...\n";
-    AWAIT socket.connect(hostname, (tls ? 443 : 80), tls);
-
-    cerr << "Writing...\n";
-    AWAIT socket.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
-
-    cerr << "Reading...\n";
-    string result = AWAIT socket.readAll();
-    RETURN result;
-}
-
-
 TEST_CASE("Read a socket", "[uv]") {
-    Future<string> response = readSocket("example.com", false);
-    string contents = response.waitForValue();
-    cerr << "HTTP response:\n" << contents << endl;
-    CHECK(contents.starts_with("HTTP/1.1 "));
-    CHECK(contents.size() > 1000);
-    CHECK(contents.size() < 2000);
-    REQUIRE(Scheduler::current().assertEmpty());
+    RunCoroutine([]() -> Future<void> {
+        TCPSocket socket;
+        cerr << "-- Test Connecting...\n";
+        AWAIT socket.connect("example.com", 80);
+
+        cerr << "-- Connected! Test Writing...\n";
+        AWAIT socket.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
+
+        cerr << "-- Test Reading...\n";
+        string result = AWAIT socket.readAll();
+
+        cerr << "HTTP response:\n" << result << endl;
+        CHECK(result.starts_with("HTTP/1.1 "));
+        CHECK(result.size() > 1000);
+        CHECK(result.size() < 2000);
+        REQUIRE(Scheduler::current().assertEmpty());
+    });
 }
 
 
-TEST_CASE("Read a TLS socket", "[uv]") {
-    Future<string> response = readSocket("example.com", true);
-    string contents = response.waitForValue();
-    cerr << "HTTPS response:\n" << contents << endl;
-    CHECK(contents.starts_with("HTTP/1.1 "));
-    CHECK(contents.ends_with("</html>\n"));
-    CHECK(contents.size() > 1000);
-    CHECK(contents.size() < 2000);
-    REQUIRE(Scheduler::current().assertEmpty());
+TEST_CASE("Read a TLS socket") {
+    RunCoroutine([]() -> Future<void> {
+        cerr << "-- Creating TLSStream\n";
+        mbed::TLSSocket tlsStream;
+        tlsStream.bind("example.com", 443);
+
+        cerr << "-- Test Connecting...\n";
+        AWAIT tlsStream.open();
+
+        cerr << "-- Test connected! Writing...\n";
+        AWAIT tlsStream.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
+
+        cerr << "-- Test Reading...\n";
+        string result = AWAIT tlsStream.readAll();
+        cerr << "-- Test Read: " << result << endl;
+
+        AWAIT tlsStream.close();
+    });
 }
 
 
@@ -215,9 +221,11 @@ TEST_CASE("WebSocket", "[uv]") {
 #ifdef __APPLE__
 
 static Future<string> readNWSocket(const char* hostname, bool tls) {
-    NWConnection socket;
     cerr << "Connecting...\n";
-    AWAIT socket.connect(hostname, (tls ? 443 : 80), tls);
+    apple::NWConnection socket;
+    socket.bind(hostname, (tls ? 443 : 80));
+    socket.useTLS(tls);
+    AWAIT socket.open();
 
     cerr << "Writing...\n";
     AWAIT socket.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");

@@ -52,6 +52,7 @@ include_directories(
 
 include_directories( SYSTEM
     vendor/llhttp/include/
+    vendor/mbedtls/include/
     vendor/tlsuv/deps/uv_link_t/include
 )
 
@@ -94,7 +95,6 @@ target_compile_options( TLSuv PRIVATE
 )
 
 target_include_directories( TLSuv SYSTEM PUBLIC
-    vendor/mbedtls/include/
     vendor/tlsuv/include/
     vendor/tlsuv/deps/uv_link_t/
     vendor/tlsuv/src/
@@ -137,7 +137,8 @@ else()
     else()
         # Clang-specific:
         add_compile_options(
-             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
+            -Wno-gnu-zero-variadic-macro-arguments
+            -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
         )
     endif()
 endif()
@@ -148,15 +149,18 @@ endif()
 
 include_directories(
     include/
+    include/apple/
+    include/mbedtls/
     src/
     src/support/
 )
 
 add_library( LibCrouton STATIC
     src/AddrInfo.cc
-    src/AsyncFile.cc
+    src/FileStream.cc
     src/Future.cc
     src/HTTPClient.cc
+    src/IStream.cc
     src/Pipe.cc
     src/Scheduler.cc
     src/Stream.cc
@@ -165,6 +169,7 @@ add_library( LibCrouton STATIC
     src/URL.cc
     src/UVBase.cc
     src/WebSocket.cc
+    src/mbedtls/TLSSocket.cc
     src/support/Backtrace.cc
 )
 
@@ -173,6 +178,17 @@ set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
 target_link_libraries( LibCrouton INTERFACE
     TLSuv
 )
+
+if(APPLE)
+    target_sources( LibCrouton PRIVATE
+        src/apple/NWConnection.cc
+    )
+    target_link_libraries( LibCrouton INTERFACE
+        "-framework CoreFoundation"
+        "-framework Network"
+        "-framework Security"
+    )
+endif()
 
 
 #### DEMO TOOLS

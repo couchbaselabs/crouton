@@ -21,6 +21,7 @@
 void RunCoroutine(Future<void> (*test)()) {
     Future<void> result = test();
     Scheduler::current().runUntil([&]{return result.hasValue();});
+    result.value(); // check exception
 }
 
 
@@ -132,7 +133,7 @@ public:
         int64_t sum = 0;
         auto fib = fibonacci(INT_MAX);
         for (int i = 0; i < n; i++) {
-            AWAIT Timer::sleep(0.1);//TEMP
+            AWAIT Timer::sleep(0.1);
             optional<int64_t> f;
             if ((f = AWAIT fib))
                 sum += f.value();
