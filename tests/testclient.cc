@@ -23,36 +23,11 @@ using namespace std;
 using namespace crouton;
 
 
-static optional<string> firstArg() {
-    optional<string> arg;
-    if (MainArgs.size() >= 1)
-        arg = MainArgs[1];
-    return arg;
-}
-
-static optional<string> popArg() {
-    optional<string> arg;
-    if (MainArgs.size() >= 1) {
-        arg = std::move(MainArgs[1]);
-        MainArgs.erase(MainArgs.begin() + 1);
-    }
-    return arg;
-}
-
-static optional<string> popFlag() {
-    if (auto flag = firstArg(); flag && flag->starts_with("-")) {
-        popArg();
-        return flag;
-    } else {
-        return nullopt;
-    }
-}
-
-
 static Future<int> run() {
+    // Read flags:
     bool includeHeaders = false;
     bool verbose = false;
-    while (auto flag = popFlag()) {
+    while (auto flag = MainArgs.popFlag()) {
         if (flag == "-i")
             includeHeaders = true;
         else if (flag == "-v")
@@ -63,15 +38,19 @@ static Future<int> run() {
         }
     }
 
-    auto url = popArg();
+    // Read URL argument:
+    auto url = MainArgs.popFirst();
     if (!url) {
         std::cerr << "Missing URL";
         RETURN 1;
     }
-    HTTPClient client{url.value()};
+
+    // Send HTTP request:
+    HTTPClient client{string(url.value())};
     HTTPRequest req(client, "GET", "/");
     HTTPResponse resp = AWAIT req.response();
 
+    // Display result:
     bool ok = (resp.status == HTTPStatus::OK);
     if (!ok) {
         cout << "*** " << int(resp.status) << " " << resp.statusMessage << " ***" << endl;

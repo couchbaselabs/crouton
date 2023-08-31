@@ -29,7 +29,7 @@ Crouton is a C++20 coroutine runtime library that provides some general purpose 
     
 ## Status
 
-This is very new code! So far, it builds with Clang on macOS and passes some basic tests.
+This is very new code! So far, it builds with Clang (Xcode 14) on macOS and GCC 12 on Ubuntu, and passes some basic tests.
 
 ## Example
 
