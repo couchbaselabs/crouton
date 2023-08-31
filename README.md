@@ -1,6 +1,6 @@
 #  Crouton
 
-Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV] and [tlsuv][TLSUV] libraries.
+Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], mbedTLS[MBEDTLS] and [tlsuv][TLSUV] libraries. (On Apple platforms it can also use the system Network.framework.)
 
 ## Features
 
@@ -73,9 +73,8 @@ cout << endl;
 
 ### Building With CMake
 
-    make debug
+    make all
     make test
-    make release
 
 The library is `libCrouton`, in the `build_cmake/debug/` or `build_cmake/release/` directory.
 
