@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Stream.hh"
+#include <utility>
 
 struct uv_pipe_s;
 

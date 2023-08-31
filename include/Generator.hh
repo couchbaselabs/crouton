@@ -18,8 +18,10 @@
 
 #pragma once
 #include "Coroutine.hh"
+#include <exception>
 #include <iterator>
 #include <optional>
+#include <utility>
 
 namespace crouton {
     template <typename T> class GeneratorImpl;

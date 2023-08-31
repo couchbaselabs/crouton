@@ -22,7 +22,9 @@
 #include <exception>
 #include <cassert>
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <utility>
 
 namespace crouton {
     template <typename T> class Future;

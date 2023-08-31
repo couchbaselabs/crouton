@@ -23,6 +23,8 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 struct uv_loop_s;

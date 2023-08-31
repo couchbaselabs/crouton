@@ -20,6 +20,7 @@
 #include "IStream.hh"
 #include "Generator.hh"
 #include "UVBase.hh"
+#include <memory>
 #include <string>
 
 namespace crouton {

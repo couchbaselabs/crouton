@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Scheduler.hh"
+#include <iostream>
 
 namespace crouton {
     class TaskImpl;

@@ -9,6 +9,7 @@
 
 #include "ISocket.hh"
 #include "IStream.hh"
+#include <optional>
 #include <stdexcept>
 
 struct dispatch_data_s;

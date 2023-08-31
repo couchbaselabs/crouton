@@ -16,6 +16,7 @@
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/pem.h>
 #include <mbedtls/ssl.h>
+#include <cstring>
 
 #ifdef __APPLE__
     #include <fcntl.h>

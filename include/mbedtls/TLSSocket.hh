@@ -7,6 +7,7 @@
 #pragma once
 #include "ISocket.hh"
 #include "IStream.hh"
+#include <memory>
 
 namespace crouton {
     struct Buffer;

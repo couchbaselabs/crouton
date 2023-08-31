@@ -19,6 +19,7 @@
 #pragma once
 #include "HTTPClient.hh"
 #include <deque>
+#include <string_view>
 
 struct tlsuv_websocket_s;
 struct uv_buf_t;

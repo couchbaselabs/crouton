@@ -22,6 +22,7 @@
 #include <atomic>
 #include <deque>
 #include <functional>
+#include <iostream>
 #include <mutex>
 #include <ranges>
 #include <unordered_map>
