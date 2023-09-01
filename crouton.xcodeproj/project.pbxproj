@@ -38,6 +38,7 @@
 		278F7E452AA26894005B12F2 /* llhttp.c in Sources */ = {isa = PBXBuildFile; fileRef = 272A851D2A96DA630083D947 /* llhttp.c */; };
 		278F7E482AA26DC1005B12F2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
 		278F7E492AA26DC7005B12F2 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E332AA015C0005B12F2 /* Security.framework */; };
+		278F7E4C2AA28642005B12F2 /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F7E4B2AA28642005B12F2 /* WebSocketProtocol.hh */; };
 		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
 		279D5D472A902588005C3066 /* TCPServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* TCPServer.hh */; };
@@ -329,6 +330,7 @@
 		278F7E392AA1489B005B12F2 /* HTTPParser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPParser.cc; sourceTree = "<group>"; };
 		278F7E3C2AA16D46005B12F2 /* test_http.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = test_http.cc; sourceTree = "<group>"; };
 		278F7E3E2AA24FEE005B12F2 /* StringUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = StringUtils.hh; sourceTree = "<group>"; };
+		278F7E4B2AA28642005B12F2 /* WebSocketProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketProtocol.hh; sourceTree = "<group>"; };
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* Crouton.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Crouton.hh; sourceTree = "<group>"; };
@@ -503,6 +505,7 @@
 				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
 				272730492A8D99B0000CCA22 /* UVInternal.hh */,
 				272A852F2A982DE50083D947 /* WebSocket.cc */,
+				278F7E4B2AA28642005B12F2 /* WebSocketProtocol.hh */,
 				278F7E352AA1165C005B12F2 /* apple */,
 				278F7E292A9FF3DA005B12F2 /* mbedtls */,
 				279D5D572A9146DA005C3066 /* support */,
@@ -907,6 +910,7 @@
 				272A852A2A97B2090083D947 /* HTTPConnection.hh in Headers */,
 				279D5D612A952986005C3066 /* Stream.hh in Headers */,
 				272A85262A96DCB30083D947 /* URL.hh in Headers */,
+				278F7E4C2AA28642005B12F2 /* WebSocketProtocol.hh in Headers */,
 				27F603042A9EB826006FA1D0 /* IStream.hh in Headers */,
 				278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */,
 			);

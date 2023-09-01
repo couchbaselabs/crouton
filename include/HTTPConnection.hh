@@ -98,6 +98,10 @@ namespace crouton {
         [[nodiscard]] Future<void> close() override;
         [[nodiscard]] Future<void> closeWrite() override;
 
+        /// The HTTPConnection's raw socket stream.
+        /// Only for use when upgrading protocols (i.e. to WebSocket.)
+        IStream& upgradedStream();
+
     private:
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
         Future<void> _write(ConstBuf) override;

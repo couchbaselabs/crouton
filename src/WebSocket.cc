@@ -16,130 +16,173 @@
 // limitations under the License.
 //
 
-#if 0
-
 #include "WebSocket.hh"
+#include "StringUtils.hh"
 #include "UVInternal.hh"
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation"
-#endif
-
-#include "websocket.h"
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+#include "WebSocketProtocol.hh"
+#include <mbedtls/base64.h>
+#include <mbedtls/sha1.h>
 
 namespace crouton {
+    using namespace std;
+
 
     WebSocket::WebSocket(std::string urlStr)
-    :_url(std::move(urlStr))
-    ,_handle(new tlsuv_websocket_t)
+    :_connection(urlStr)
+    ,_parser(make_unique<ClientProtocol>())
     {
-        check(tlsuv_websocket_init(curLoop(), _handle), "creating WebSocket");
-        _handle->data = this;
+        _request.headers.set("Connection", "Upgrade");
+        _request.headers.set("Upgrade", "WebSocket");
+        _request.headers.set("Sec-WebSocket-Version", "13");
+
+        // Generate a base64-encoded 16-byte random `Sec-WebSocket-Key`:
+        uint8_t rawKey[16];
+        Randomize(&rawKey, sizeof(rawKey));
+        char key[100];
+        size_t len;
+        mbedtls_base64_encode((uint8_t*)key, sizeof(key), &len, rawKey, sizeof(rawKey));
+        key[len] = '\0';
+        _request.headers.set("Sec-WebSocket-Key", string(key));
+
+        // Compute the `Sec-WebSocket-Accept` response the server should generate from the key:
+        strcat(key, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+        uint8_t digest[20];
+        mbedtls_sha1((const uint8_t*)key, strlen(key), digest);
+        char accept[60];
+        mbedtls_base64_encode((uint8_t*)accept, sizeof(accept), &len, digest, sizeof(digest));
+        _accept = string(accept, len);
     }
+
+
+    WebSocket::~WebSocket() {close();}
+
 
     void WebSocket::setHeader(const char* name, const char* value) {
-        tlsuv_websocket_set_header(_handle, name, value);
+        _request.headers.set(name, value);
     }
 
-    class ws_connect_request : public connect_request {
-    public:
-        explicit ws_connect_request(tlsuv_websocket_t* wsHandle) :_wsHandle(wsHandle) { }
 
-        static void callbackWithStatus(uv_connect_t *req, int status) {
-            auto self = static_cast<ws_connect_request*>(req);
-            if (status >= -1) {
-                // If the callback succeeded or returned generic error -1,
-                // return the HTTP status instead if there is one:
-                if (int httpStatus = self->_wsHandle->req->resp.code; httpStatus > 0)
-                    status = httpStatus;
-            }
-            self->completed(status);
-        }
+    Future<void> WebSocket::connect() {
+        HTTPResponse response = AWAIT _connection.send(_request);
 
-        tlsuv_websocket_t* _wsHandle;
-    };
+        _responseHeaders = response.headers();
+        if (auto status = response.status(); status != HTTPStatus::SwitchingProtocols)
+            throw runtime_error("Server returned wrong status " + to_string(int(status)));
+        if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
+                !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
+            throw runtime_error("Server did not upgrade to WebSocket protocol");
+        if (_accept != _responseHeaders.get("Sec-WebSocket-Accept"))
+            throw runtime_error("Server returned wrong Sec-WebSocket-Accept value");
 
-    Future<HTTPStatus> WebSocket::connect() {
-        auto onRead = [](uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
-            auto ws = (tlsuv_websocket_t*)stream;
-            auto self = (WebSocket*)ws->data;
-            if (self)   // ignore message received while I'm closing
-                self->received(buf, nread);
-        };
-
-        ws_connect_request req(_handle);
-        check(tlsuv_websocket_connect(&req, _handle, _url.c_str(), req.callbackWithStatus, onRead),
-              "connecting WebSocket");
-        int status = AWAIT req;
-        check(status, "connecting WebSocket");
-        _handle->data = this;
-        RETURN HTTPStatus{status};
+        _stream = &response.upgradedStream();
     }
 
-    Future<void> WebSocket::send(const void* data, size_t len) {
-        uv_buf_t buf{.base = (char*)data, .len = len};
-        write_request req;
-        check(tlsuv_websocket_write(&req, _handle, &buf, req.callbackWithStatus),
-              "writing to WebSocket");
-        check(AWAIT req, "writing to WebSocket");
-    }
-
-    Future<void> WebSocket::send(std::string msg) {
-        // Use co_await to ensure `msg` stays in scope until the write completes.
-        AWAIT send(msg.data(), msg.size());
-        RETURN;
-    }
-
-    Future<std::string> WebSocket::receive() {
-        auto result = _nextIncoming.future();
-        if (_nextIncoming.hasValue()) {
-            if (_moreIncoming.empty()) {
-                _nextIncoming.reset();
-            } else {
-                _nextIncoming = std::move(_moreIncoming.front());
-                _moreIncoming.pop_front();
-            }
-        }
-        return result;
-    }
-
-    void WebSocket::received(const uv_buf_t *buf, ssize_t nread) {
-        FutureProvider<std::string> *provider;
-        if (_nextIncoming.hasValue()) {
-            _moreIncoming.emplace_back();
-            provider = &_moreIncoming.back();
-        } else {
-            provider = &_nextIncoming;
-        }
-
-        if (nread > 0) {
-            provider->setValue(std::string((const char*)buf, nread));
-        } else if (nread < 0) {
-            std::exception_ptr x = make_exception_ptr(UVError("reading from WebSocket", int(nread)));
-            provider->setException(x);
-        }
-    }
 
     void WebSocket::close() {
-        if (_handle) {
-            _handle->data = nullptr;
-            tlsuv_websocket_close(_handle, [](uv_handle_t* h) noexcept {
-                // FIXME: Due to a bug in tlsuv, it's not possible to free the handle here.
-                // https://github.com/openziti/tlsuv/issues/177
-                // If the bug isn't fixed, I'll have to come up with a way to delete the handle
-                // afterwards, e.g. on the next event cycle...
-                
-                //delete (tlsuv_websocket_t*)h;
-            });
-            _handle = nullptr;
-        }
+        _connection.close();
     }
 
 
+    Future<void> WebSocket::send(const void* data, size_t len, MessageType type) {
+        // Note: This method is not a coroutine, and it passes the message to _stream->write
+        // as a `string`, so the caller does not need to keep the data valid.
+        string frame(len + 10, 0);
+        size_t frameLen = ClientProtocol::formatMessage((std::byte*)frame.data(),
+                                                        (const char*)data,
+                                                        len,
+                                                        uWS::OpCode(type),
+                                                        len,
+                                                        false);
+        frame.resize(frameLen);
+        return _stream->write(frame);
+    }
+
+
+    Future<WebSocket::Message> WebSocket::receive() {
+        while (_incoming.empty()) {
+            ConstBuf data = AWAIT _stream->readNoCopy(100000);
+            if (data.len == 0)
+                RETURN {"", NONE};
+            _parser->consume((std::byte*)data.base, data.len, this);
+        }
+        Message msg = std::move(_incoming.front());
+        _incoming.pop_front();
+        RETURN msg;
+    }
+
+
+    // Called from inside _parser->consume()
+    bool WebSocket::handleFragment(std::byte* data,
+                                   size_t dataLen,
+                                   size_t remainingBytes,
+                                   uint8_t opCode,
+                                   bool fin)
+    {
+        // Beginning:
+        if (!_curMessage) {
+            _curMessage.emplace();
+            _curMessage->reserve(dataLen + remainingBytes);
+            _curMessage->type = (MessageType)opCode;
+        }
+
+        // Data:
+        _curMessage->append((char*)data, dataLen);
+
+        // End:
+        if (fin && remainingBytes == 0) {
+            _incoming.emplace_back(std::move(_curMessage.value()));
+            _curMessage = nullopt;
+        }
+        return true;
+    }
+
+
+    // Called from inside _parser->consume()
+    void WebSocket::protocolError() {
+        throw runtime_error("WebSocket protocol error");
+    }
+
 }
-#endif
+
+
+#pragma mark - WEBSOCKETPROTOCOL
+
+
+// The rest of the implementation of uWS::WebSocketProtocol, which calls into WebSocket:
+namespace uWS {
+
+    static constexpr size_t kMaxMessageLength = 1 << 20;
+
+
+// The `user` parameter points to the owning WebSocketImpl object.
+#define USER_SOCK ((crouton::WebSocket*)user)
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::setCompressed(void* user) {
+        return false;  //TODO: Implement compression
+    }
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::refusePayloadLength(void* user, size_t length) {
+        return length > kMaxMessageLength;
+    }
+
+    template <const bool isServer>
+    void WebSocketProtocol<isServer>::forceClose(void* user) {
+        USER_SOCK->protocolError();
+    }
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::handleFragment(std::byte* data, size_t length, size_t remainingByteCount,
+                                                     uint8_t opcode, bool fin, void* user) {
+        // WebSocketProtocol expects this method to return true on error, but this confuses me
+        // so I'm having my code return false on error, hence the `!`. --jpa
+        return !USER_SOCK->handleFragment(data, length, remainingByteCount, opcode, fin);
+    }
+
+
+    // Explicitly generate code for template methods:
+
+//    template class WebSocketProtocol<SERVER>;
+    template class WebSocketProtocol<CLIENT>;
+}  // namespace uWS

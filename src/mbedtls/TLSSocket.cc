@@ -113,6 +113,10 @@ namespace crouton::mbed {
         // TLSSocket wants to read.
         Future<ssize_t> read(void *buf, size_t maxLen) {
             //cerr << "TLSStream read(" << maxLen << ") ...\n";
+            if (_readEOF) {
+                std::cerr << "WARNING: Client is reading from TLSSocket that's already at EOF\n";
+                RETURN 0;
+            }
             while (true) {
                 int result = mbedtls_ssl_read(&_ssl, (uint8_t*)buf, maxLen);
                 if (result == MBEDTLS_ERR_SSL_WANT_READ || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -123,10 +127,11 @@ namespace crouton::mbed {
                     //cerr << "\tTLSStream.read got " << result << endl;
                     //cerr << "\t\t" << string_view((char*)buf, result) << endl;
                     RETURN result;
-                } else if (result == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+                } else if (result == 0 || result == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
                     // Peer closed their write stream; EOF
+                    _readEOF = true;
                     RETURN 0;
-                } else if (result < 0) {
+                } else {
                     // Error!
                     check(result, "read");
                 }

@@ -22,8 +22,8 @@ Crouton is a C++20 coroutine runtime library that provides some general purpose 
     * File I/O
     * In-process pipes (streams)
     * TCP sockets, with or without TLS
-    * HTTP client
-    * ~~WebSocket client~~ [temporarily under renovation]
+    * HTTP client (no server yet)
+    * WebSocket client (no server yet)
     * A TCP server/listener (without TLS support so far)
     * URL parser
     

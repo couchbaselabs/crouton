@@ -6,6 +6,7 @@
 
 #pragma once
 #include <string>
+#include <string_view>   
 
 namespace crouton {
 
@@ -32,6 +33,17 @@ namespace crouton {
         for (char &c : str)
             c = toLower(c);
         return str;
+    }
+
+    static inline bool equalIgnoringCase(std::string_view a, std::string_view b) {
+        size_t len = a.size();
+        if (len != b.size())
+            return false;
+        for (size_t i = 0; i < len; i++) {
+            if (toLower(a[i]) != toLower(b[i]))
+                return false;
+        }
+        return true;
     }
 
 }

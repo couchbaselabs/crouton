@@ -47,9 +47,9 @@ namespace crouton {
         if (!_url.query.empty())
             throw invalid_argument("HTTPConnection URL must not have a query");
         bool tls;
-        if (string scheme = _url.normalizedScheme(); scheme == "http")
+        if (string scheme = _url.normalizedScheme(); scheme == "http" || scheme == "ws")
             tls = false;
-        else if (scheme == "https")
+        else if (scheme == "https" || scheme == "wss")
             tls = true;
         else
             throw invalid_argument("Non-HTTP URL");
@@ -88,7 +88,7 @@ namespace crouton {
             AWAIT _socket->open();
 
         // Prepend my URL's path, if any, to the request uri:
-        if (!req.uri.starts_with('/'))
+        if (!req.uri.empty() && !req.uri.starts_with('/'))
             req.uri.insert(0, 1, '/');
         if (string_view path = _url.path; !path.empty()) {
             if (path.ends_with('/'))
@@ -110,6 +110,7 @@ namespace crouton {
             AWAIT _stream->write(out.str());
         }
 
+        // Send the request body:
         if (!req.body.empty())
             AWAIT _stream->write(req.body);
         if (req.bodyStream) {
@@ -173,6 +174,11 @@ namespace crouton {
 
     Future<void> HTTPResponse::_write(ConstBuf) {
         throw logic_error("HTTPReponse is not writeable");
+    }
+
+    IStream& HTTPResponse::upgradedStream() {
+        assert(_parser.upgraded());
+        return *_connection._stream;
     }
 
 }

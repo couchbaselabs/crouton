@@ -134,21 +134,33 @@ TEST_CASE("Read a TLS socket", "[uv]") {
 }
 
 
-#if 0
 TEST_CASE("WebSocket", "[uv]") {
     auto test = []() -> Future<void> {
-        //FIXME: This requires Sync Gateway to be running locally
-        WebSocket ws("ws://work.local:4985/travel-sample/_blipsync");
-        ws.setHeader("Sec-WebSocket-Protocol", "BLIP_3+CBMobile_3");
-        HTTPStatus status = AWAIT ws.connect();
-        REQUIRE(status == HTTPStatus::SwitchingProtocols);
-        AWAIT ws.send("foo");
+        WebSocket ws("wss://ws.postman-echo.com/raw");
+        cerr << "-- Test Connecting...\n";
+        try {
+            AWAIT ws.connect();
+        } catch (std::exception const& x) {
+            cerr << "EXCEPTION: " << x.what() << endl;
+            for (auto &h : ws.responseHeaders())
+                cout << '\t' << h.first << ": " << h.second << endl;
+            FAIL();
+        }
+        for (auto &h : ws.responseHeaders())
+            cout << '\t' << h.first << ": " << h.second << endl;
+        cerr << "-- Test Sending Message...\n";
+        AWAIT ws.send("This is a test of WebSockets in Crouton.", WebSocket::Text);
+
+        cerr << "-- Test Receiving Message...\n";
+        auto msg = AWAIT ws.receive();
+        cerr << "-- Received type " << int(msg.type) << ": " << msg << endl;
+        CHECK(msg.type == WebSocket::Text);
+        CHECK(msg == "This is a test of WebSockets in Crouton.");
         ws.close();
     };
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
 }
-#endif
 
 
 #ifdef __APPLE__
