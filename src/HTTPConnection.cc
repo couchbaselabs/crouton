@@ -171,12 +171,6 @@ namespace crouton {
         RETURN result;
     }
 
-    void HTTPResponse::_unRead(size_t len) {
-        assert(len <= _bufUsed);
-        _bufUsed -= len;
-    }
-
-
     Future<void> HTTPResponse::_write(ConstBuf) {
         throw logic_error("HTTPReponse is not writeable");
     }

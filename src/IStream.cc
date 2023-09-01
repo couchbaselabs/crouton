@@ -24,34 +24,46 @@ namespace crouton {
     using namespace std;
 
 
-    Future<ConstBuf> IStream::readNoCopy(size_t maxLen) {
-        NotReentrant nr(_readBusy);
-        return _readNoCopy(maxLen);
+    Future<ConstBuf> IStream::i_readNoCopy(size_t maxLen) {
+        if (_readUsed >= _readBuf.len) {
+            _readBuf = AWAIT _readNoCopy(maxLen);
+            _readUsed = 0;
+        }
+        ConstBuf result((char*)_readBuf.base + _readUsed,
+                        std::min(maxLen, _readBuf.len - _readUsed));
+        _readUsed += result.len;
+        RETURN result;
     }
 
 
-    void IStream::unRead(size_t len) {
-        NotReentrant nr(_readBusy);
-        _unRead(len);
-    }
-
-
-    Future<size_t> IStream::read(size_t maxLen, void* dst) {
-        NotReentrant nr(_readBusy);
-        return _read(maxLen, dst);
-    }
-
-
-    Future<size_t> IStream::_read(size_t maxLen, void* dst) {
+    Future<size_t> IStream::i_read(size_t maxLen, void* dst) {
         size_t bytesRead = 0;
         while (bytesRead < maxLen) {
-            ConstBuf bytes = AWAIT _readNoCopy(maxLen - bytesRead);
+            ConstBuf bytes = AWAIT i_readNoCopy(maxLen - bytesRead);
             if (bytes.len == 0)
                 break;
             ::memcpy((char*)dst + bytesRead, bytes.base, bytes.len);
             bytesRead += bytes.len;
         }
         RETURN bytesRead;
+    }
+
+
+    Future<ConstBuf> IStream::readNoCopy(size_t maxLen) {
+        NotReentrant nr(_readBusy);
+        return i_readNoCopy(maxLen);
+    }
+
+    void IStream::unRead(size_t len) {
+        NotReentrant nr(_readBusy);
+        assert(len <= _readUsed);
+        _readUsed -= len;
+    }
+
+
+    Future<size_t> IStream::read(size_t maxLen, void* dst) {
+        NotReentrant nr(_readBusy);
+        return i_read(maxLen, dst);
     }
 
 
@@ -71,7 +83,7 @@ namespace crouton {
         while (len < maxLen) {
             size_t n = std::min(kGrowSize, maxLen - len);
             data.resize(len + n);
-            size_t bytesRead = AWAIT _read(n, &data[len]);
+            size_t bytesRead = AWAIT i_read(n, &data[len]);
 
             if (bytesRead < n) {
                 data.resize(len + bytesRead);
@@ -90,7 +102,7 @@ namespace crouton {
         string data;
         while (data.size() < maxLen) {
             auto dataLen = data.size();
-            ConstBuf peek = AWAIT _readNoCopy(maxLen - dataLen);
+            ConstBuf peek = AWAIT i_readNoCopy(maxLen - dataLen);
 
             // Check for a match that's split between the old and new data:
             if (!data.empty()) {
@@ -101,7 +113,7 @@ namespace crouton {
                     found += end.size();
                     found = std::min(found, maxLen);
                     data.resize(found);
-                    _unRead(peek.len - (found - dataLen));
+                    unRead(peek.len - (found - dataLen));
                     break;
                 } else {
                     data.resize(dataLen);
@@ -113,14 +125,14 @@ namespace crouton {
                 found += end.size();
                 found = std::min(found, maxLen - data.size());
                 data.append((char*)peek.base, found);
-                _unRead(peek.len - found);
+                unRead(peek.len - found);
                 break;
             }
 
             // Otherwise append all the input data and read more:
             size_t addLen = std::min(peek.len, maxLen - data.size());
             data.append((char*)peek.base, addLen);
-            _unRead(peek.len - addLen);
+            unRead(peek.len - addLen);
         }
         RETURN data;
     }

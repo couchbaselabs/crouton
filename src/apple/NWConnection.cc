@@ -185,13 +185,6 @@ namespace crouton::apple {
     }
 
 
-    void NWConnection::_unRead(size_t len) {
-        assert(_contentBuf.base);
-        assert(len <= _contentUsed);
-        _contentUsed -= len;
-    }
-
-
     Future<void> NWConnection::_writeOrShutdown(ConstBuf src, bool shutdown) {
         assert(!_onWrite);
         clearReadBuf();

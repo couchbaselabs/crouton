@@ -100,7 +100,6 @@ namespace crouton {
 
     private:
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        void _unRead(size_t len) override;
         Future<void> _write(ConstBuf) override;
 
         HTTPConnection& _connection;

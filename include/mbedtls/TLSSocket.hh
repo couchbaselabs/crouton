@@ -31,7 +31,6 @@ namespace crouton::mbed {
 
     protected:
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        void _unRead(size_t len) override;
         [[nodiscard]] Future<void> _write(ConstBuf) override;
 
     private:

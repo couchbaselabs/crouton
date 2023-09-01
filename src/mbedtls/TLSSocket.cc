@@ -281,11 +281,6 @@ namespace crouton::mbed {
 
     }
 
-    void TLSSocket::_unRead(size_t len)  {
-        NotReentrant nr(_busy);
-        _inputBuf->unRead(len);
-    }
-
     Future<void> TLSSocket::_write(ConstBuf buf)  {
         NotReentrant nr(_busy);
         return _impl->write(buf);

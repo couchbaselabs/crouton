@@ -64,9 +64,6 @@ namespace crouton {
     protected:
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
 
-        /// Marks the last `len` bytes from the last `_readNoCopy` call as unread.
-        void _unRead(size_t len) override;
-
         /// Abstract write method subclasses must implement.
         /// @note  If a subclass natively supports multi-buffer write ("writev"),
         ///     it can override the virtual multi-buffer write method too, and implement

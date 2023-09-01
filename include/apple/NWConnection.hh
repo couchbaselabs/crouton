@@ -48,7 +48,6 @@ namespace crouton::apple {
 
     private:
         [[nodiscard]] virtual Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        void _unRead(size_t len) override;
         [[nodiscard]] Future<void> _write(ConstBuf b) override {return _writeOrShutdown(b, false);}
         [[nodiscard]] Future<void> _writeOrShutdown(ConstBuf, bool shutdown);
         void _close();

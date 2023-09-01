@@ -120,9 +120,6 @@ namespace crouton {
         /// The abstract read method that subclasses must implement.
         [[nodiscard]] virtual Future<ConstBuf> _readNoCopy(size_t maxLen) =0;
 
-        /// Marks the last `len` bytes from the last `_readNoCopy` call as unread.
-        virtual void _unRead(size_t len) =0;
-
         /// Abstract write method subclasses must implement.
         /// @note  If a subclass natively supports multi-buffer write ("writev"),
         ///     it can override the virtual multi-buffer write method too, and implement
@@ -130,8 +127,11 @@ namespace crouton {
         [[nodiscard]] virtual Future<void> _write(ConstBuf) =0;
 
     private:
-        Future<size_t> _read(size_t len, void* dst);
-        
+        [[nodiscard]] Future<ConstBuf> i_readNoCopy(size_t maxLen);
+        Future<size_t> i_read(size_t len, void* dst);
+
+        ConstBuf _readBuf;
+        size_t _readUsed = 0;
         bool _readBusy = false;
         bool _writeBusy = false;
     };

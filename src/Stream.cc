@@ -76,6 +76,7 @@ namespace crouton {
         return _stream && (bytesAvailable() > 0 || _stream->is_readable());
     }
 
+    
     Future<ConstBuf> Stream::_readNoCopy(size_t maxLen) {
         assert(isOpen());
         NotReentrant nr(_readBusy);
@@ -87,11 +88,6 @@ namespace crouton {
 
         // Advance _inputBuf->used and return the pointer:
         RETURN _inputBuf->read(maxLen);
-    }
-
-    void Stream::_unRead(size_t len) {
-        NotReentrant nr(_readBusy);
-        _inputBuf->unRead(len);
     }
 
 

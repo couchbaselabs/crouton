@@ -106,12 +106,6 @@ namespace crouton {
     }
 
 
-    void FileStream::_unRead(size_t len) {
-        NotReentrant nr(_busy);
-        _readBuf->unRead(len);
-    }
-
-
     // This is FileStream's primitive write operation.
     Future<void> FileStream::pwritev(const ConstBuf bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);

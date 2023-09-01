@@ -80,7 +80,6 @@ namespace crouton {
  
         // IStream methods:
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        void _unRead(size_t len) override;
         [[nodiscard]] Future<void> _write(ConstBuf) override;
         [[nodiscard]] Future<void> write(const ConstBuf buffers[], size_t nBuffers) override;
 
