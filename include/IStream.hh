@@ -8,6 +8,7 @@
 #include "Future.hh"
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace crouton {
 
@@ -17,6 +18,14 @@ namespace crouton {
     struct MutableBuf {
         void*   base = nullptr;
         size_t  len = 0;
+
+        MutableBuf() = default;
+        MutableBuf(void* b, size_t ln) :base(b), len(ln) { }
+        MutableBuf(std::string& str) :base(str.data()), len(str.size()) { }
+
+        explicit operator std::string_view() const {
+            return std::string_view((const char*)base, len);
+        }
     };
 
     
@@ -26,6 +35,14 @@ namespace crouton {
     struct ConstBuf {
         const void* base = nullptr;
         size_t      len = 0;
+
+        ConstBuf() = default;
+        ConstBuf(const void* b, size_t ln) :base(b), len(ln) { }
+        ConstBuf(std::string_view str) :base(str.data()), len(str.size()) { }
+
+        explicit operator std::string_view() const {
+            return std::string_view((const char*)base, len);
+        }
     };
     //TODO //FIXME: uv_buf_t's fields are in the opposite order on Windows. Deal with that.
 
@@ -56,7 +73,7 @@ namespace crouton {
 
         /// Lowest level read method.  Reads at least 1 byte, except at EOF.
         /// Returned buffer belongs to the stream, and is valid until the next read or close call.
-        [[nodiscard]] virtual Future<ConstBuf> readNoCopy(size_t maxLen);
+        [[nodiscard]] virtual Future<ConstBuf> readNoCopy(size_t maxLen = 65536);
 
         /// Makes the last `len` read bytes unread again.
         /// The last read call must have been `readNoCopy`.

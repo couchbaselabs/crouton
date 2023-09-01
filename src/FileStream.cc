@@ -87,7 +87,7 @@ namespace crouton {
     // We also override this IStream method, because it's more efficient to do it with preadv;
     // it saves a memcpy.
     Future<size_t> FileStream::read(size_t len, void* dst) {
-        MutableBuf buf{.base = dst, .len = len};
+        MutableBuf buf(dst, len);
         return preadv(&buf, 1, -1);
     }
 
@@ -98,7 +98,7 @@ namespace crouton {
         if (!_readBuf)
             _readBuf = make_unique<Buffer>();
         if (_readBuf->empty()) {
-            MutableBuf buf{.base = _readBuf->data, .len = Buffer::kCapacity};
+            MutableBuf buf(_readBuf->data, Buffer::kCapacity);
             _readBuf->length = uint32_t(AWAIT _preadv(&buf, 1, -1));
             _readBuf->used = 0;
         }

@@ -31,85 +31,11 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
 set(ENABLE_PROGRAMS  OFF CACHE INTERNAL "")
 set(ENABLE_TESTING  OFF CACHE INTERNAL "")
 
-# tlsuv options:
-# set(TLSUV_TLSLIB  mbedtls CACHE INTERNAL "")
-
 add_subdirectory(vendor/libuv)
 add_subdirectory(vendor/llhttp)
 add_subdirectory(vendor/mbedtls)
-# add_subdirectory(vendor/tlsuv)    # Nope, I'm building tlsuv myself (below)
 
 find_package(ZLIB REQUIRED)
-
-
-#### TLSUV
-
-
-include_directories(
-    vendor/libuv/include/
-    vendor/tlsuv/include/tlsuv
-)
-
-include_directories( SYSTEM
-    vendor/llhttp/include/
-    vendor/mbedtls/include/
-    vendor/tlsuv/deps/uv_link_t/include
-)
-
-
-# I cannot figure out how to build tlsuv with CMake, specifically how to tell it where
-# llhttp is, so I'll just build it myself.
-
-add_library( TLSuv STATIC
-    vendor/tlsuv/src/tlsuv.c
-    vendor/tlsuv/src/bio.c
-    vendor/tlsuv/src/http.c
-    vendor/tlsuv/src/tcp_src.c
-    vendor/tlsuv/src/um_debug.c
-    vendor/tlsuv/src/um_debug.h
-    vendor/tlsuv/src/websocket.c
-    vendor/tlsuv/src/http_req.c
-    vendor/tlsuv/src/tls_link.c
-    vendor/tlsuv/src/base64.c
-    vendor/tlsuv/src/tls_engine.c
-    vendor/tlsuv/src/compression.c
-    vendor/tlsuv/src/compression.h
-    vendor/tlsuv/src/p11.c
-    vendor/tlsuv/src/p11.h
-    vendor/tlsuv/src/mbedtls/engine.c
-    vendor/tlsuv/src/mbedtls/keys.c
-    vendor/tlsuv/src/mbedtls/mbed_p11.c
-    vendor/tlsuv/src/mbedtls/p11_ecdsa.c
-    vendor/tlsuv/src/mbedtls/p11_rsa.c
-    vendor/tlsuv/deps/uv_link_t/src/uv_link_observer_t.c
-    vendor/tlsuv/deps/uv_link_t/src/uv_link_source_t.c
-    vendor/tlsuv/deps/uv_link_t/src/defaults.c
-    vendor/tlsuv/deps/uv_link_t/src/uv_link_t.c
-)
-
-target_compile_options( TLSuv PRIVATE
-    -Wno-pedantic
-    -Wno-gnu-zero-variadic-macro-arguments
-    -Wno-unused-function
-    -Wno-unused-variable
-)
-
-target_include_directories( TLSuv SYSTEM PUBLIC
-    vendor/tlsuv/include/
-    vendor/tlsuv/deps/uv_link_t/
-    vendor/tlsuv/src/
-)
-
-target_link_libraries(TLSuv PRIVATE
-    uv_a
-    llhttp_static
-    ZLIB::ZLIB
-)
-
-# use mbedtls:
-target_compile_definitions(TLSuv PRIVATE USE_MBEDTLS)
-target_include_directories(TLSuv PUBLIC vendor/mbedtls/include)
-target_link_libraries(TLSuv PRIVATE mbedtls)
 
 
 #### CROUTON CONFIG
@@ -148,6 +74,16 @@ endif()
 
 
 include_directories(
+    vendor/libuv/include/
+)
+
+include_directories( SYSTEM
+    vendor/llhttp/include/
+    vendor/mbedtls/include/
+)
+
+
+include_directories(
     include/
     include/apple/
     include/mbedtls/
@@ -159,7 +95,8 @@ add_library( LibCrouton STATIC
     src/AddrInfo.cc
     src/FileStream.cc
     src/Future.cc
-    src/HTTPClient.cc
+    src/HTTPConnection.cc
+    src/HTTPParser.cc
     src/IStream.cc
     src/Pipe.cc
     src/Scheduler.cc
@@ -176,7 +113,10 @@ add_library( LibCrouton STATIC
 set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
 
 target_link_libraries( LibCrouton INTERFACE
-    TLSuv
+    uv_a
+    llhttp_static
+    mbedtls
+#    ZLIB::ZLIB
 )
 
 if(APPLE)
@@ -222,6 +162,7 @@ if (NOT CROUTON_IOS)
 
     add_executable( CroutonTests
         tests/tests.cc
+        tests/test_http.cc
         tests/test_io.cc
         vendor/catch2/catch_amalgamated.cpp
     )

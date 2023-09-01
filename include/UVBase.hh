@@ -54,8 +54,17 @@ namespace crouton {
         It calls `fn` to create the Task, then runs the event loop forever or until stopped. */
     int Main(int argc, const char * argv[], Task (*fn)());
 
+    class Args : public std::vector<std::string_view> {
+    public:
+        std::optional<std::string_view> first() const;
+
+        std::optional<std::string_view> popFirst();
+
+        std::optional<std::string_view> popFlag();
+    };
+
     /// Process arguments, as captured by Main.
-    extern std::vector<std::string_view> MainArgs;
+    extern Args MainArgs;
 
 
     /** Implementation of EventLoop for libuv.*/

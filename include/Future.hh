@@ -64,6 +64,12 @@ namespace crouton {
             _gotValue();
         }
 
+        void setValue(T const& value) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _value.emplace(value);
+            _gotValue();
+        }
+
     private:
         std::optional<T> _value {};
     };
@@ -93,6 +99,7 @@ namespace crouton {
 
         /// Sets the Future's value and unblocks anyone waiting for it.
         void setValue(T&& t) const              {_state->setValue(std::move(t));}
+        void setValue(T const& t) const         {_state->setValue(t);}
 
         /// Sets the Future's result as an exception and unblocks anyone waiting for it.
         /// Calling value() will re-throw the exception.
@@ -217,6 +224,7 @@ namespace crouton {
         }
         void unhandled_exception()              {_provider.setException(std::current_exception());}
         void return_value(T&& value)            {_provider.setValue(std::move(value));}
+        void return_value(T const& value)       {_provider.setValue(value);}
         Finisher final_suspend() noexcept       {return {};}
 
     protected:

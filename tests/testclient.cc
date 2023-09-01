@@ -23,36 +23,11 @@ using namespace std;
 using namespace crouton;
 
 
-static optional<string> firstArg() {
-    optional<string> arg;
-    if (MainArgs.size() >= 1)
-        arg = MainArgs[1];
-    return arg;
-}
-
-static optional<string> popArg() {
-    optional<string> arg;
-    if (MainArgs.size() >= 1) {
-        arg = std::move(MainArgs[1]);
-        MainArgs.erase(MainArgs.begin() + 1);
-    }
-    return arg;
-}
-
-static optional<string> popFlag() {
-    if (auto flag = firstArg(); flag && flag->starts_with("-")) {
-        popArg();
-        return flag;
-    } else {
-        return nullopt;
-    }
-}
-
-
 static Future<int> run() {
+    // Read flags:
     bool includeHeaders = false;
     bool verbose = false;
-    while (auto flag = popFlag()) {
+    while (auto flag = MainArgs.popFlag()) {
         if (flag == "-i")
             includeHeaders = true;
         else if (flag == "-v")
@@ -63,35 +38,37 @@ static Future<int> run() {
         }
     }
 
-    auto url = popArg();
+    // Read URL argument:
+    auto url = MainArgs.popFirst();
     if (!url) {
         std::cerr << "Missing URL";
         RETURN 1;
     }
-    HTTPClient client{url.value()};
-    HTTPRequest req(client, "GET", "/");
-    HTTPResponse resp = AWAIT req.response();
 
-    bool ok = (resp.status == HTTPStatus::OK);
+    // Send HTTP request:
+    HTTPConnection client{string(url.value())};
+    HTTPRequest req;
+    HTTPResponse resp = AWAIT client.send(req);
+
+    // Display result:
+    bool ok = (resp.status() == HTTPStatus::OK);
     if (!ok) {
-        cout << "*** " << int(resp.status) << " " << resp.statusMessage << " ***" << endl;
+        cout << "*** " << int(resp.status()) << " " << resp.statusMessage() << " ***" << endl;
     }
 
     if (includeHeaders || verbose) {
-        auto headers = resp.headers();
-        optional<pair<string_view,string_view>> header;
-        while ((header = (AWAIT headers))) {
-            cout << header->first << " = " << header->second << endl;
+        for (auto &header : resp.headers()) {
+            cout << header.first << ": " << header.second << endl;
         }
         cout << endl;
     }
 
     if (ok || verbose) {
-        string body;
+        ConstBuf data;
         do {
-            body = AWAIT resp.readBody();
-            cout << body;
-        } while (!body.empty());
+            data = AWAIT resp.readNoCopy();
+            cout << string_view(data);
+        } while (data.len > 0);
         cout << endl;
     }
 

@@ -1,9 +1,6 @@
 [submodule "vendor/libuv"]
 	path = vendor/libuv
 	url = https://github.com/libuv/libuv.git
-[submodule "vendor/tlsuv"]
-	path = vendor/tlsuv
-	url = https://github.com/snej/tlsuv.git
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git

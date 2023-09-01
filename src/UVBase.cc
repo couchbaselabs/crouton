@@ -182,7 +182,7 @@ namespace crouton {
     }
 
     
-    std::vector<std::string_view> MainArgs;
+    Args MainArgs;
 
     int Main(int argc, const char * argv[], Future<int>(*fn)()) {
         auto args = uv_setup_args(argc, (char**)argv);
@@ -221,6 +221,33 @@ namespace crouton {
             return 1;
         }
     }
+
+
+    optional<string_view> Args::first() const {
+        optional<string_view> arg;
+        if (MainArgs.size() >= 1)
+            arg = MainArgs[1];
+        return arg;
+    }
+
+    optional<string_view> Args::popFirst() {
+        optional<string_view> arg;
+        if (MainArgs.size() >= 1) {
+            arg = std::move(MainArgs[1]);
+            MainArgs.erase(MainArgs.begin() + 1);
+        }
+        return arg;
+    }
+
+    optional<string_view> Args::popFlag() {
+        if (auto flag = first(); flag && flag->starts_with("-")) {
+            popFirst();
+            return flag;
+        } else {
+            return nullopt;
+        }
+    }
+
 
 
     void Randomize(void* buf, size_t len) {

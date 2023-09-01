@@ -1,0 +1,12 @@
+//
+//  llhttp.xcconfig
+//
+//  Created by Jens Alfke on 8/22/23.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "StaticLib.xcconfig"
+
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-missing-prototypes  -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough

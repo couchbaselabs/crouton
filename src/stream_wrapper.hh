@@ -40,7 +40,7 @@ namespace crouton {
 
         ConstBuf read(size_t maxLen) {
             size_t n = std::min(maxLen, available());
-            ConstBuf result{.base = data + used, .len = n};
+            ConstBuf result(data + used, n);
             used += n;
             return result;
         }
@@ -54,7 +54,7 @@ namespace crouton {
     using BufferRef = std::unique_ptr<Buffer>;
 
 
-    /** Abstract base class of low-level wrappers around libuv and tlsuv streams.
+    /** Abstract base class of low-level wrappers around libuv streams.
         Public methods are mostly named after their libuv C counterparts. */
     struct stream_wrapper {
         virtual ~stream_wrapper() = default;

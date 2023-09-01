@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "HTTPParser.hh"
 #include "NWConnection.hh"
 #include "TLSSocket.hh"
 #include <sys/socket.h> // for AF_INET
@@ -40,6 +41,14 @@ TEST_CASE("URLs", "[uv]") {
         CHECK(url.hostname == "example.com");
         CHECK(url.port == 0);
         CHECK(url.path == "");
+    }
+    {
+        URL url("/some/thing?foo=bar");
+        CHECK(url.scheme == "");
+        CHECK(url.hostname == "");
+        CHECK(url.port == 0);
+        CHECK(url.path == "/some/thing");
+        CHECK(url.query == "foo=bar");
     }
 }
 
@@ -104,7 +113,7 @@ TEST_CASE("Read a socket", "[uv]") {
 }
 
 
-TEST_CASE("Read a TLS socket") {
+TEST_CASE("Read a TLS socket", "[uv]") {
     RunCoroutine([]() -> Future<void> {
         cerr << "-- Creating TLSStream\n";
         mbed::TLSSocket tlsStream;
@@ -125,97 +134,21 @@ TEST_CASE("Read a TLS socket") {
 }
 
 
-TEST_CASE("HTTP GET", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("http://example.com/foo");
-        HTTPRequest req(client, "GET", "/");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::NotFound);
-        CHECK(resp.statusMessage == "Not Found");
-        cout << "Headers:\n";
-        auto headers = resp.headers();
-        int n = 0;
-        while (auto header = AWAIT headers) {
-            cout << '\t' << header->first << " = " << header->second << endl;
-            ++n;
-        }
-        CHECK(n >= 7);
-        cout << "BODY:\n";
-        string body = AWAIT resp.entireBody();
-        cout << body << endl;
-        CHECK(body.starts_with("<!doctype html>"));
-        CHECK(body.size() >= 200);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("HTTPS GET", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("https://example.com");
-        HTTPRequest req(client, "GET", "/");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::OK);
-        CHECK(resp.statusMessage == "OK");
-        cout << "Headers:\n";
-        auto headers = resp.headers();
-        int n = 0;
-        while (auto header = AWAIT headers) {
-            cout << '\t' << header->first << " = " << header->second << endl;
-            ++n;
-        }
-        CHECK(n >= 10);
-        cout << "BODY:\n";
-        string body = AWAIT resp.entireBody();
-        cout << body << endl;
-        CHECK(body.starts_with("<!doctype html>"));
-        CHECK(body.size() >= 1000);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("HTTPs GET Streaming", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("https://mooseyard.com");
-        HTTPRequest req(client, "GET", "/Music/Mine/Easter.mp3");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::OK);
-        cout << "BODY:\n";
-        size_t len = 0;
-        while(true) {
-            string chunk = AWAIT resp.readBody();
-            cout << "\t...read " << chunk.size() << " bytes\n";
-            len += chunk.size();
-            if (chunk.empty())
-                break;
-        }
-        cout << "Total bytes read: " << len << endl;
-        CHECK(len == 4086469);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
+#if 0
 TEST_CASE("WebSocket", "[uv]") {
     auto test = []() -> Future<void> {
         //FIXME: This requires Sync Gateway to be running locally
         WebSocket ws("ws://work.local:4985/travel-sample/_blipsync");
         ws.setHeader("Sec-WebSocket-Protocol", "BLIP_3+CBMobile_3");
         HTTPStatus status = AWAIT ws.connect();
-        REQUIRE(status == HTTPStatus::Connected);
+        REQUIRE(status == HTTPStatus::SwitchingProtocols);
         AWAIT ws.send("foo");
         ws.close();
     };
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
 }
+#endif
 
 
 #ifdef __APPLE__

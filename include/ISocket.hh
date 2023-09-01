@@ -11,6 +11,7 @@
 #include <cassert>
 
 namespace crouton {
+    class IStream;
 
     /** Abstract interface for opening a network connection. */
     class ISocket {
@@ -35,6 +36,15 @@ namespace crouton {
             bind(address, port);
             return open();
         }
+
+        /// True if the socket is open/connected.
+        virtual bool isOpen() const =0;
+
+        /// The socket's data stream.
+        virtual IStream& stream() =0;
+
+        /// The socket's data stream.
+        virtual IStream const& stream() const =0;
 
         virtual ~ISocket() = default;
 
