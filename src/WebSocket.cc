@@ -16,6 +16,8 @@
 // limitations under the License.
 //
 
+#if 0
+
 #include "WebSocket.hh"
 #include "UVInternal.hh"
 
@@ -140,3 +142,4 @@ namespace crouton {
 
 
 }
+#endif

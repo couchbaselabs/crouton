@@ -1,6 +1,6 @@
 #  Crouton
 
-Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], mbedTLS[MBEDTLS] and [tlsuv][TLSUV] libraries. (On Apple platforms it can also use the system Network.framework.)
+Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], mbedTLS[MBEDTLS] and [llhttp][LLHTTP] libraries. (On Apple platforms it can also use the system Network.framework.)
 
 ## Features
 
@@ -23,32 +23,31 @@ Crouton is a C++20 coroutine runtime library that provides some general purpose 
     * In-process pipes (streams)
     * TCP sockets, with or without TLS
     * HTTP client
-    * WebSocket client
+    * ~~WebSocket client~~ [temporarily under renovation]
     * A TCP server/listener (without TLS support so far)
     * URL parser
     
-## Status
+## Status: EXPERIMENTAL
 
 This is very new code! So far, it builds with Clang (Xcode 14) on macOS and GCC 12 on Ubuntu, and passes some basic tests.
 
 ## Example
 
 ```c++
-HTTPClient client("https://example.com");
-HTTPRequest req(client, "GET", "/");
-HTTPResponse resp = co_await req.response();
+HTTPConnection client("https://example.com");
+HTTPRequest req;
+HTTPResponse resp = co_await req.sendRequest(req);
 
-cout << int(resp.status) << " " << resp.statusMessage << endl;
+cout << int(resp.status()) << " " << resp.statusMessage() << endl;
 
-auto headers = resp.headers();
-while (auto header = co_await headers)
-    cout << header->first << " = " << header->second << endl;
+for (auto &header : resp.headers())
+    cout << header.first << " = " << header.second << endl;
 
-string body;
+ConstBuf body;
 do {
-    body = co_await resp.readBody();
-    cout << body;
-} while (!body.empty());
+    body = co_await resp.readNoCopy();
+    cout << string_view(body);
+} while (body.len > 0);
 cout << endl;
 ```
 
@@ -80,11 +79,11 @@ The library is `libCrouton`, in the `build_cmake/debug/` or `build_cmake/release
 
 ### Building With Xcode
 
-**Before first building with Xcode**, you must use CMake to build some libraries:
+**Before first building with Xcode**, you must use CMake to build libuv and mbedTLS:
 
     make xcode_deps
 
-You only need to do this on initial setup, and after any of the submodules are updated.
+You only need to do this on initial setup, and after those submodules are updated.
 
 Then:
 - open crouton.xcodeproj
@@ -97,9 +96,9 @@ Then:
 - Crouton code by Jens Alfke ([@snej][SNEJ])
 - Initial inspiration, coroutine knowledge, starting code: [Simon Tatham's brilliant tutorial][TUTORIAL].
 - Event loops, I/O, networking: [libuv][LIBUV] (MIT license)
-- TLS, HTTP, WebSockets: [tlsuv][TLSUV] (MIT license)
-  - TLS engine: [mbedTLS][MBEDTLS] (Apache license)
-  - HTTP parser: [llhttp][LLHTTP] (MIT license)
+- TLS engine: [mbedTLS][MBEDTLS] (Apache license)
+- HTTP parser: [llhttp][LLHTTP] (MIT license)
+- Extra inspiration and URL parser: [tlsuv][TLSUV]
 
 [SNEJ]: https://github.com/snej
 [TUTORIAL]: https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/coroutines-c++20/

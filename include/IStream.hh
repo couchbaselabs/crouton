@@ -22,6 +22,10 @@ namespace crouton {
         MutableBuf() = default;
         MutableBuf(void* b, size_t ln) :base(b), len(ln) { }
         MutableBuf(std::string& str) :base(str.data()), len(str.size()) { }
+
+        explicit operator std::string_view() const {
+            return std::string_view((const char*)base, len);
+        }
     };
 
     
@@ -35,6 +39,10 @@ namespace crouton {
         ConstBuf() = default;
         ConstBuf(const void* b, size_t ln) :base(b), len(ln) { }
         ConstBuf(std::string_view str) :base(str.data()), len(str.size()) { }
+
+        explicit operator std::string_view() const {
+            return std::string_view((const char*)base, len);
+        }
     };
     //TODO //FIXME: uv_buf_t's fields are in the opposite order on Windows. Deal with that.
 

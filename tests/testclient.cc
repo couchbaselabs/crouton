@@ -46,31 +46,29 @@ static Future<int> run() {
     }
 
     // Send HTTP request:
-    HTTPClient client{string(url.value())};
-    HTTPRequest req(client, "GET", "/");
-    HTTPResponse resp = AWAIT req.response();
+    HTTPConnection client{string(url.value())};
+    HTTPRequest req;
+    HTTPResponse resp = AWAIT client.send(req);
 
     // Display result:
-    bool ok = (resp.status == HTTPStatus::OK);
+    bool ok = (resp.status() == HTTPStatus::OK);
     if (!ok) {
-        cout << "*** " << int(resp.status) << " " << resp.statusMessage << " ***" << endl;
+        cout << "*** " << int(resp.status()) << " " << resp.statusMessage() << " ***" << endl;
     }
 
     if (includeHeaders || verbose) {
-        auto headers = resp.headers();
-        optional<pair<string_view,string_view>> header;
-        while ((header = (AWAIT headers))) {
-            cout << header->first << " = " << header->second << endl;
+        for (auto &header : resp.headers()) {
+            cout << header.first << ": " << header.second << endl;
         }
         cout << endl;
     }
 
     if (ok || verbose) {
-        string body;
+        ConstBuf data;
         do {
-            body = AWAIT resp.readBody();
-            cout << body;
-        } while (!body.empty());
+            data = AWAIT resp.readNoCopy();
+            cout << string_view(data);
+        } while (data.len > 0);
         cout << endl;
     }
 

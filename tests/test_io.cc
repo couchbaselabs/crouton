@@ -113,7 +113,7 @@ TEST_CASE("Read a socket", "[uv]") {
 }
 
 
-TEST_CASE("Read a TLS socket") {
+TEST_CASE("Read a TLS socket", "[uv]") {
     RunCoroutine([]() -> Future<void> {
         cerr << "-- Creating TLSStream\n";
         mbed::TLSSocket tlsStream;
@@ -134,84 +134,7 @@ TEST_CASE("Read a TLS socket") {
 }
 
 
-TEST_CASE("HTTP GET", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("http://example.com/foo");
-        HTTPRequest req(client, "GET", "/");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::NotFound);
-        CHECK(resp.statusMessage == "Not Found");
-        cout << "Headers:\n";
-        auto headers = resp.headers();
-        int n = 0;
-        while (auto header = AWAIT headers) {
-            cout << '\t' << header->first << " = " << header->second << endl;
-            ++n;
-        }
-        CHECK(n >= 7);
-        cout << "BODY:\n";
-        string body = AWAIT resp.entireBody();
-        cout << body << endl;
-        CHECK(body.starts_with("<!doctype html>"));
-        CHECK(body.size() >= 200);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("HTTPS GET", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("https://example.com");
-        HTTPRequest req(client, "GET", "/");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::OK);
-        CHECK(resp.statusMessage == "OK");
-        cout << "Headers:\n";
-        auto headers = resp.headers();
-        int n = 0;
-        while (auto header = AWAIT headers) {
-            cout << '\t' << header->first << " = " << header->second << endl;
-            ++n;
-        }
-        CHECK(n >= 10);
-        cout << "BODY:\n";
-        string body = AWAIT resp.entireBody();
-        cout << body << endl;
-        CHECK(body.starts_with("<!doctype html>"));
-        CHECK(body.size() >= 1000);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("HTTPs GET Streaming", "[uv]") {
-    auto test = []() -> Future<void> {
-        HTTPClient client("https://mooseyard.com");
-        HTTPRequest req(client, "GET", "/Music/Mine/Easter.mp3");
-        HTTPResponse resp = AWAIT req.response();
-        cout << "Status: " << int(resp.status) << " " << resp.statusMessage << endl;
-        CHECK(resp.status == HTTPStatus::OK);
-        cout << "BODY:\n";
-        size_t len = 0;
-        while(true) {
-            string chunk = AWAIT resp.readBody();
-            cout << "\t...read " << chunk.size() << " bytes\n";
-            len += chunk.size();
-            if (chunk.empty())
-                break;
-        }
-        cout << "Total bytes read: " << len << endl;
-        CHECK(len == 4086469);
-    };
-    test().waitForValue();
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
+#if 0
 TEST_CASE("WebSocket", "[uv]") {
     auto test = []() -> Future<void> {
         //FIXME: This requires Sync Gateway to be running locally
@@ -225,6 +148,7 @@ TEST_CASE("WebSocket", "[uv]") {
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
 }
+#endif
 
 
 #ifdef __APPLE__

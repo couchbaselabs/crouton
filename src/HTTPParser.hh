@@ -7,6 +7,11 @@
 #pragma once
 #include "IStream.hh"
 #include "URL.hh"
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
 
 struct llhttp_settings_s;
 struct llhttp__internal_s;
@@ -24,7 +29,7 @@ namespace crouton {
     };
 
     /// HTTP request methods.
-    enum class HTTPMethod : uint8_t {       // needs to match enum llhttp_method in llhttp.h
+    enum class HTTPMethod : uint8_t {     // !!! values must match enum `llhttp_method` in llhttp.h
         DELETE = 0,
         GET,
         HEAD,
@@ -32,6 +37,41 @@ namespace crouton {
         PUT,
         CONNECT,
         OPTIONS,
+    };
+
+
+    /// A map of HTTP header names->values. Inherits from `unordered_map`.
+    class HTTPHeaders : public std::unordered_map<std::string,std::string> {
+    public:
+        using unordered_map::unordered_map;
+
+        /// True if the header name exists. Name lookup is case-insensitive.
+        bool contains(std::string const& name) const {
+            return find(canonicalName(name)) != end();
+        }
+
+        /// Returns the value of a header. Name lookup is case-insensitive.
+        std::string get(std::string const& name) const {
+            auto i = find(canonicalName(name));
+            return (i != end()) ? i->second : "";
+        }
+
+        /// Sets a header, replacing any prior value. The name is canonicalized.
+        void set(std::string const& name, std::string const& value) {
+            (*this)[canonicalName(name)] = value;
+        }
+
+        /// Sets a header, appending to any prior value (with a comma as a delimiter.)
+        /// The name is canonicalized.
+        void add(std::string const& name, std::string const& value) {
+            if (auto [i, added] = insert({canonicalName(name), value}); !added) {
+                i->second += ", ";
+                i->second += value;
+            }
+        }
+
+        /// Title-capitalizes a header name, e.g. `conTent-TYPe` -> `Content-Type`.
+        static std::string canonicalName(std::string name);
     };
 
 
@@ -58,11 +98,12 @@ namespace crouton {
         /// Constructs a parser that will be fed data by calling `parseData`.
         explicit HTTPParser(Role role)                      :HTTPParser(nullptr, role) { }
 
+        HTTPParser(HTTPParser&&);
         ~HTTPParser();
 
         /// Reads from the stream until the request headers are parsed.
         /// The `status`, `statusMessage`, `headers` fields are not populated until this occurs.
-        Future<HTTPStatus> readRequest();
+        Future<void> readHeaders();
 
         /// Low-level method, mostly for testing, that feeds data to the parser.
         /// Returns true if the status and headers are available.
@@ -89,7 +130,7 @@ namespace crouton {
         std::string statusMessage;
 
         /// All the HTTP headers.
-        std::unordered_map<std::string, std::string> headers;
+        HTTPHeaders headers;
 
         /// Returns the value of an HTTP header. (Case-insensitive.)
         std::string_view getHeader(const char* name);
@@ -97,6 +138,7 @@ namespace crouton {
         //---- Body
 
         /// Reads from the response body and returns some more data.
+        /// `readHeaders` MUST have completed before you call this.
         /// On EOF returns an empty string.
         Future<std::string> readBody();
 

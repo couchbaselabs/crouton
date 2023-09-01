@@ -22,7 +22,6 @@
 #include <memory>
 
 struct uv_tcp_s;
-struct tlsuv_stream_s;
 
 namespace crouton {
 
@@ -33,6 +32,10 @@ namespace crouton {
 
         /// Opens the socket to the bound address. Resolves once opened.
         [[nodiscard]] virtual Future<void> open() override;
+
+        bool isOpen() const override            {return Stream::isOpen();}
+        IStream& stream() override              {return *this;}
+        IStream const& stream() const override  {return *this;}
 
     private:
         friend class TCPServer;

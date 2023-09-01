@@ -26,7 +26,7 @@
 
 #include "AddrInfo.hh"
 #include "FileStream.hh"
-#include "HTTPClient.hh"
+#include "HTTPConnection.hh"
 #include "TCPSocket.hh"
 #include "TCPServer.hh"
 #include "URL.hh"

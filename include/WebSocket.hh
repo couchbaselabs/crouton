@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "HTTPClient.hh"
+#include "HTTPConnection.hh"
 #include <deque>
 #include <string_view>
 

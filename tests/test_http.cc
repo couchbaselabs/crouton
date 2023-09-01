@@ -102,11 +102,85 @@ TEST_CASE("WebSocket Response Parser", "[http]") {
     CHECK(parser.status == HTTPStatus::SwitchingProtocols);
     CHECK(parser.statusMessage == "Switching Protocols");
     CHECK(parser.headers.size() == 4);
-    CHECK(parser.headers["Sec-WebSocket-Accept"] == "HSmrc0sMlYUkAGmm5OPpG2HaGWk=");
-    CHECK(parser.headers["Sec-WebSocket-Protocol"] == "chat");
+    CHECK(parser.headers.get("Sec-WebSocket-Accept") == "HSmrc0sMlYUkAGmm5OPpG2HaGWk=");
+    CHECK(parser.headers.get("Sec-WebSocket-Protocol") == "chat");
     CHECK(parser.complete());
     CHECK(parser.upgraded());
     CHECK(parser.latestBodyData() == "...websocketdatafromhereon...");
+}
+
+
+TEST_CASE("HTTP GET", "[uv][http]") {
+    auto test = []() -> Future<void> {
+        HTTPConnection connection("http://example.com/");
+        HTTPRequest req{.uri = "/foo"};
+        HTTPResponse resp = AWAIT connection.send(req);
+
+        cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
+        CHECK(resp.status() == HTTPStatus::NotFound);
+        CHECK(resp.statusMessage() == "Not Found");
+        cout << "Headers:\n";
+        for (auto &h : resp.headers())
+            cout << '\t' << h.first << " = " << h.second << endl;
+        CHECK(resp.headers().size() >= 7);
+
+        cout << "BODY:\n";
+        string body = AWAIT resp.readAll();
+        cout << body << endl;
+        CHECK(body.starts_with("<!doctype html>"));
+        CHECK(body.size() >= 200);
+    };
+    test().waitForValue();
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("HTTPS GET", "[uv][http]") {
+    auto test = []() -> Future<void> {
+        HTTPConnection connection("https://example.com/");
+        HTTPRequest req;
+        HTTPResponse resp = AWAIT connection.send(req);
+
+        cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
+        CHECK(resp.status() == HTTPStatus::OK);
+        CHECK(resp.statusMessage() == "OK");
+        cout << "Headers:\n";
+        for (auto &h : resp.headers())
+            cout << '\t' << h.first << " = " << h.second << endl;
+        CHECK(resp.headers().size() >= 7);
+        cout << "BODY:\n";
+        string body = AWAIT resp.readAll();
+        cout << body << endl;
+        CHECK(body.starts_with("<!doctype html>"));
+        CHECK(body.size() >= 1000);
+    };
+    test().waitForValue();
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("HTTPs GET Streaming", "[uv][http]") {
+    auto test = []() -> Future<void> {
+        HTTPConnection connection("https://mooseyard.com");
+        HTTPRequest req{.uri = "/Music/Mine/Easter.mp3"};
+        HTTPResponse resp = AWAIT connection.send(req);
+
+        cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
+        CHECK(resp.status() == HTTPStatus::OK);
+        cout << "BODY:\n";
+        size_t len = 0;
+        while(true) {
+            ConstBuf chunk = AWAIT resp.readNoCopy();
+            cout << "\t...read " << chunk.len << " bytes\n";
+            if (chunk.len == 0)
+                break;
+            len += chunk.len;
+        }
+        cout << "Total bytes read: " << len << endl;
+        CHECK(len == 4086469);
+    };
+    test().waitForValue();
+    REQUIRE(Scheduler::current().assertEmpty());
 }
 
 

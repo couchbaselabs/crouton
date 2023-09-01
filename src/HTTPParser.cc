@@ -17,6 +17,7 @@
 //
 
 #include "HTTPParser.hh"
+#include "StringUtils.hh"
 #include "llhttp.h"
 
 namespace crouton {
@@ -27,6 +28,16 @@ namespace crouton {
     :runtime_error(reason)
     ,code(code)
     { }
+
+
+    string HTTPHeaders::canonicalName(string name) {
+        bool inWord = false;
+        for (char &c : name) {
+            c = inWord ? toLower(c) : toUpper(c);
+            inWord = isAlphanumeric(c);
+        }
+        return name;
+    }
 
 #define SELF ((HTTPParser*)parser->data)
 
@@ -68,16 +79,19 @@ namespace crouton {
         llhttp_init(_parser.get(),
                     (role == Request ? HTTP_REQUEST : HTTP_RESPONSE),
                     _settings.get());
-        _parser->data = this;
     }
+
+
+    HTTPParser::HTTPParser(HTTPParser&&) = default;
 
 
     HTTPParser::~HTTPParser() {
-        llhttp_reset(_parser.get());
+        if (_parser)
+            llhttp_reset(_parser.get());
     }
 
 
-    Future<HTTPStatus> HTTPParser::readRequest() {
+    Future<void> HTTPParser::readHeaders() {
         assert(_stream);
         if (!_stream->isOpen())
             AWAIT _stream->open();
@@ -86,8 +100,6 @@ namespace crouton {
         do {
             data = AWAIT _stream->readNoCopy();
         } while (!parseData(data));
-
-        RETURN this->status;
     }
 
 
@@ -111,6 +123,7 @@ namespace crouton {
 
 
     bool HTTPParser::parseData(ConstBuf data) {
+        _parser->data = this;
         llhttp_errno_t err;
         if (data.len > 0)
             err = llhttp_execute(_parser.get(), (const char*)data.base, data.len);
@@ -143,11 +156,7 @@ namespace crouton {
 
     int HTTPParser::addHeader(std::string value) {
         assert(!_curHeaderName.empty());
-        auto [i, added] = this->headers.insert({_curHeaderName, value});
-        if (!added) {
-            i->second += ", ";
-            i->second += value;
-        }
+        this->headers.add(_curHeaderName, value);
         _curHeaderName = "";
         return 0;
     }

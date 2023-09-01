@@ -54,7 +54,7 @@ namespace crouton {
     using BufferRef = std::unique_ptr<Buffer>;
 
 
-    /** Abstract base class of low-level wrappers around libuv and tlsuv streams.
+    /** Abstract base class of low-level wrappers around libuv streams.
         Public methods are mostly named after their libuv C counterparts. */
     struct stream_wrapper {
         virtual ~stream_wrapper() = default;

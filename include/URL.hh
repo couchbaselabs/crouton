@@ -46,6 +46,9 @@ namespace crouton {
         std::string_view path;
         std::string_view query;
 
+        /// Lowercased version of `scheme`
+        std::string normalizedScheme() const;
+
     protected:
     };
 
