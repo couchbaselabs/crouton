@@ -144,7 +144,7 @@ namespace crouton::apple {
         if (_content && _contentUsed < _contentBuf.len) {
             // I can return some unRead data from the buffer:
             auto len = std::min(maxLen, _contentBuf.len - _contentUsed);
-            ConstBuf result{.base = (char*)_contentBuf.base + _contentUsed, .len = len};
+            ConstBuf result((char*)_contentBuf.base + _contentUsed, len);
             _contentUsed += len;
             return result;
 

@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "HTTPParser.hh"
 #include "UVBase.hh"
 #include "Generator.hh"
 #include <string>
@@ -30,16 +31,6 @@ struct tlsuv_http_hdr_s;
 
 namespace crouton {
     class HTTPResponse;
-
-    enum class HTTPStatus : int {
-        Unknown = 0,
-        Connected = 101,
-        OK = 200,
-        MovedPermanently = 301,
-        NotFound = 404,
-        ServerError = 500,
-    };
-
 
     /** An HTTP connection to a server, from which multiple requests can be made.
         This object must remain valid as long as any HTTPRequest created from it exists. */

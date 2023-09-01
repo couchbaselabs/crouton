@@ -40,7 +40,7 @@ namespace crouton {
 
         ConstBuf read(size_t maxLen) {
             size_t n = std::min(maxLen, available());
-            ConstBuf result{.base = data + used, .len = n};
+            ConstBuf result(data + used, n);
             used += n;
             return result;
         }

@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "HTTPParser.hh"
 #include "NWConnection.hh"
 #include "TLSSocket.hh"
 #include <sys/socket.h> // for AF_INET
@@ -40,6 +41,14 @@ TEST_CASE("URLs", "[uv]") {
         CHECK(url.hostname == "example.com");
         CHECK(url.port == 0);
         CHECK(url.path == "");
+    }
+    {
+        URL url("/some/thing?foo=bar");
+        CHECK(url.scheme == "");
+        CHECK(url.hostname == "");
+        CHECK(url.port == 0);
+        CHECK(url.path == "/some/thing");
+        CHECK(url.query == "foo=bar");
     }
 }
 
@@ -209,7 +218,7 @@ TEST_CASE("WebSocket", "[uv]") {
         WebSocket ws("ws://work.local:4985/travel-sample/_blipsync");
         ws.setHeader("Sec-WebSocket-Protocol", "BLIP_3+CBMobile_3");
         HTTPStatus status = AWAIT ws.connect();
-        REQUIRE(status == HTTPStatus::Connected);
+        REQUIRE(status == HTTPStatus::SwitchingProtocols);
         AWAIT ws.send("foo");
         ws.close();
     };
