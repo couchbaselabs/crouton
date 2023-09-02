@@ -19,7 +19,6 @@
 #include "tests.hh"
 #include "HTTPParser.hh"
 #include "NWConnection.hh"
-#include "TLSSocket.hh"
 #include <sys/socket.h> // for AF_INET
 
 using namespace std;
@@ -160,6 +159,15 @@ TEST_CASE("WebSocket", "[uv]") {
     };
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("readdir", "[uv]") {
+    cerr << "Dir is " << fs::realpath(".") << endl;
+    auto dir = fs::readdir(".");
+    while (auto ent = dir.next()) {
+        cerr << ent->name << " (" << int(ent->type) << ")\n";
+    }
 }
 
 

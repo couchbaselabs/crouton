@@ -7,7 +7,7 @@
 #pragma once
 #include <utility>
 
-namespace snej {
+namespace crouton {
 
     template <class Fun>
     class ScopeGuard {
@@ -40,7 +40,7 @@ namespace snej {
     }  // namespace detail
 
 // I prefer the name DEFER to SCOPE_EXIT --jens
-#define DEFER auto ANONYMOUS_VARIABLE(DEFERRED) = detail::ScopeGuardOnExit() + [&]()
+#define DEFER auto ANONYMOUS_VARIABLE(DEFERRED) = crouton::detail::ScopeGuardOnExit() + [&]()
 
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2)      CONCATENATE_IMPL(s1, s2)

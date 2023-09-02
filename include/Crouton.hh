@@ -26,8 +26,10 @@
 
 #include "AddrInfo.hh"
 #include "FileStream.hh"
+#include "Filesystem.hh"
 #include "HTTPConnection.hh"
 #include "TCPSocket.hh"
 #include "TCPServer.hh"
+#include "TLSSocket.hh"
 #include "URL.hh"
 #include "WebSocket.hh"
