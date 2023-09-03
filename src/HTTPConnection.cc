@@ -150,12 +150,17 @@ namespace crouton {
 
 
     HTTPResponse::HTTPResponse(HTTPConnection& connection)
-    :_connection(connection)
+    :_connection(&connection)
     ,_parser(*connection._stream, HTTPParser::Response)
     { }
 
+    HTTPResponse::HTTPResponse(HTTPResponse&& r)
+    :_connection(r._connection)
+    ,_parser(std::move(r._parser))
+    { }
+
     Future<void> HTTPResponse::close() {
-        return _connection.closeResponse();
+        return _connection->closeResponse();
     }
 
     Future<void> HTTPResponse::closeWrite() {
@@ -178,7 +183,7 @@ namespace crouton {
 
     IStream& HTTPResponse::upgradedStream() {
         assert(_parser.upgraded());
-        return *_connection._stream;
+        return *_connection->_stream;
     }
 
 }

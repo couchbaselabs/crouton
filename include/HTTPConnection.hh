@@ -82,7 +82,7 @@ namespace crouton {
     class HTTPResponse : public IStream {
     public:
         explicit HTTPResponse(HTTPConnection&);
-        HTTPResponse(HTTPResponse&& r) :_connection(r._connection), _parser(std::move(r._parser)) { }
+        HTTPResponse(HTTPResponse&&);
 
         /// The HTTP status code.
         HTTPStatus status() const               {return _parser.status;}
@@ -106,7 +106,7 @@ namespace crouton {
         [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
         Future<void> _write(ConstBuf) override;
 
-        HTTPConnection& _connection;
+        HTTPConnection* _connection;
         HTTPParser _parser;
         std::string _buf;
         size_t _bufUsed = 0;

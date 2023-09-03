@@ -83,7 +83,7 @@ static Future<void> waitFor(chrono::milliseconds ms) {
     FutureProvider<void> f;
     Timer::after(ms.count() / 1000.0, [f] {
         cerr << "\tTimer fired\n";
-        f.setValue();
+        f.setResult();
     });
     return f;
 }

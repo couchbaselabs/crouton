@@ -36,40 +36,12 @@ namespace crouton {
         return sched.next();
     }
 
-    void FutureStateBase::setException(std::exception_ptr x) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _exception = x;
-        _gotValue();
-    }
-
     void FutureStateBase::_gotValue() {
-        if (_hasValue)
-            throw std::logic_error("Future's value can only be set once");
         _hasValue = true;
         if (_suspension) {
             _suspension->wakeUp();
             _suspension = nullptr;
         }
-    }
-
-    void FutureStateBase::_checkValue() {
-        if (_exception)
-            std::rethrow_exception(_exception);
-        if (!_hasValue)
-            throw std::logic_error("Future does not have a value yet");
-    }
-
-
-    void FutureState<void>::value() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _checkValue();
-    }
-
-    void FutureState<void>::setValue() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_hasValue)
-            throw std::logic_error("Future's value can only be set once");
-        _gotValue();
     }
 
 

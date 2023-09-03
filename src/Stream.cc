@@ -141,14 +141,14 @@ namespace crouton {
     void Stream::_readCallback(BufferRef buf, int err) {
         if (_futureBuf) {
             if (err == 0) {
-                _futureBuf->setValue(std::move(buf));
+                _futureBuf->setResult(std::move(buf));
             } else if (err == UV_EOF || err == UV_EINVAL) {
-                _futureBuf->setValue(nullptr);
+                _futureBuf->setResult(nullptr);
             } else {
                 try {
                     check(err, "reading from the network");
                 } catch (...) {
-                    _futureBuf->setException(std::current_exception());
+                    _futureBuf->setResult(std::current_exception());
                 }
             }
             _futureBuf = nullopt;

@@ -85,11 +85,11 @@ namespace crouton::apple {
             switch (state) {
                 case nw_connection_state_ready:
                     _isOpen = true;
-                    onOpen.setValue();
+                    onOpen.setResult();
                     break;
                 case nw_connection_state_cancelled:
                     x = make_exception_ptr(runtime_error("cancelled"));
-                    _onClose.setValue();
+                    _onClose.setResult();
                     break;
                 case nw_connection_state_failed:
                     x = make_exception_ptr(NWError(error));
@@ -99,11 +99,11 @@ namespace crouton::apple {
             }
             if (x) {
                 if (!onOpen.hasValue())
-                    onOpen.setException(x);
+                    onOpen.setResult(x);
                 if (auto read = std::move(_onRead))
-                    read->setException(x);
+                    read->setResult(x);
                 if (auto write = std::move(_onWrite))
-                    write->setException(x);
+                    write->setResult(x);
             }
         });
         nw_connection_start(_conn);
@@ -115,7 +115,7 @@ namespace crouton::apple {
         if (_conn)
             nw_connection_cancel(_conn);
         else if (_onClose.hasValue())
-            _onClose.setValue();
+            _onClose.setResult();
         return _onClose;
     }
 
@@ -171,11 +171,11 @@ namespace crouton::apple {
                         _contentUsed = buf.len;
                         _contentBuf = buf;
                         cerr << "NWConnection read " << buf.len << " bytes\n";
-                        _onRead->setValue(std::move(buf));
+                        _onRead->setResult(std::move(buf));
                     } else if (error) {
-                        _onRead->setException(make_exception_ptr(NWError(error)));
+                        _onRead->setResult(NWError(error));
                     } else if (is_complete) {
-                        _onRead->setValue({});
+                        _onRead->setResult(ConstBuf{});
                     }
                     _onRead.reset();
                 });
@@ -197,9 +197,9 @@ namespace crouton::apple {
                                ^(nw_error_t error) {
                 assert(released);
                 if (error)
-                    _onWrite->setException(make_exception_ptr(NWError(error)));
+                    _onWrite->setResult(NWError(error));
                 else
-                    _onWrite->setValue();
+                    _onWrite->setResult();
                 _onWrite.reset();
             });
             dispatch_release(content);

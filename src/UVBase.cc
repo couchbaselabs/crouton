@@ -99,7 +99,7 @@ namespace crouton {
 
     Future<void> Timer::sleep(double delaySecs) {
         FutureProvider<void> provider;
-        Timer::after(delaySecs, [provider]{provider.setValue();});
+        Timer::after(delaySecs, [provider]{provider.setResult();});
         return provider;
     }
 
@@ -173,9 +173,9 @@ namespace crouton {
         }, [](uv_work_t *req, int status) noexcept {
             auto work = static_cast<QueuedWork*>(req);
             if (work->exception)
-                work->provider.setException(work->exception);
+                work->provider.setResult(work->exception);
             else
-                work->provider.setValue();
+                work->provider.setResult();
             delete work;
         }), "making a background call");
         return work->provider.future();
