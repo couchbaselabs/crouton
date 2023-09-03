@@ -158,12 +158,130 @@ namespace crouton {
 
 
 
-    /** A utility to detect re-entrant use of a coroutine method, i.e. calling it again before the
-        first call completes. In some cases this is illegal because it would mess up its state.
+    /** A cooperative mutex. The first coroutine to `co_await` it gets back a `Lock`
+        object, without blocking. From then on, any other coroutine that awaits the mutex will
+        block. When the lock goes out of scope it means the first coroutine is done with the
+        mutex. The first waiter (if any) will be resumed, getting its own Lock, and so on. */
+    class CoMutex {
+    public:
+        class Lock {
+        public:
+            ~Lock()         {if (_mutex) _mutex->unlock();}
+            void unlock()   {auto m = _mutex; _mutex = nullptr; m->unlock();}
+        private:
+            friend class CoMutex;
+            explicit Lock(CoMutex* m) :_mutex(m) { }
+            Lock(Lock const&) = delete;
+            CoMutex* _mutex;
+        };
 
-        `NotReentrant` simply sets the flag `scope` when constructed, and clears it when destructed.
-        An instance would be declared at the start of a non-reentrant method.
-        `scope` would typically be a data member of `this`. */
+        bool locked() const {return _busy;}
+
+        bool await_ready() noexcept {
+            auto ready = !_busy; _busy = true; return ready;
+        }
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            _waiters.push_back(h);
+            return std::noop_coroutine();
+        }
+
+        Lock await_resume() noexcept {
+            return Lock(this);
+        }
+
+    private:
+        void unlock() {
+            if (_waiters.empty())
+                _busy = false;
+            else {
+                coro_handle next = _waiters.front();
+                _waiters.erase(_waiters.begin());
+                next.resume();
+            }
+        }
+
+        bool _busy = false;
+        std::vector<coro_handle> _waiters;
+    };
+
+
+
+    /** A cooperative condition variable. A coroutine that `co_await`s it will block until
+        something calls `notify`, passing in a value. That wakes up the waiting coroutine and
+        returns that value as the result of `co_await`. The CoCondition is then back in its
+        empty state and can be reused, if desired.
+
+        If `notify` is called first, the `co_await` doesn't block, it just returns the value.
+
+        This is very useful as an adapter for callback-based asynchronous code like libuv.
+        Just create a `CoCondition` and call the asynchronous function with a callback that
+        will call `notify` on it. Then `co_await` the `CoCondition`. If the callback is given a
+        result value, pass it to `notify` and you'll get it as the result of `co_await`.
+
+        @note It currently doesn't support more than one waiting coroutine, but it wouldn't be hard
+        to add that capability (`_waiter` just needs to become a vector/queue.) */
+    template <typename T>
+    class CoCondition {
+    public:
+        bool await_ready() noexcept {return _value.has_value();}
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            assert(!_waiter);   // currently only supports a single waiter
+            _waiter = h;
+            return std::noop_coroutine();
+        }
+
+        T&& await_resume() noexcept {
+            return std::move(_value).value();
+        }
+
+        template <typename U>
+        void notify(U&& val) {
+            _value.emplace(std::forward<U>(val));
+            if (auto w = _waiter) {
+                _waiter = nullptr;
+                w.resume();
+            }
+        }
+
+    private:
+        coro_handle _waiter;
+        std::optional<T> _value;
+    };
+
+    template <>
+    class CoCondition<void> {
+    public:
+        bool await_ready() noexcept {return _notified;}
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            assert(!_waiter);   // currently only supports a single waiter
+            _waiter = h;
+            return std::noop_coroutine();
+        }
+
+        void await_resume() noexcept {
+            _notified = false;
+        }
+
+        template <typename U>
+        void notify(U&& val) {
+            assert(!_notified);
+            _notified = true;
+            if (auto w = _waiter) {
+                _waiter = nullptr;
+                w.resume();
+            }
+        }
+
+    private:
+        coro_handle _waiter;
+        bool _notified = false;
+    };
+
+
+    // DEPRECATED -- use CoMutex instead.
     class NotReentrant {
     public:
         explicit NotReentrant(bool& scope) 

@@ -31,12 +31,17 @@ namespace crouton {
     template <typename T> class FutureImpl;
 
 
-    // Base class of the shared state co-owned by a Future and its FutureProvider.
+    // Internal base class of the shared state co-owned by a Future and its FutureProvider.
     class FutureStateBase {
     public:
         bool hasValue() const;
         coro_handle suspend(coro_handle coro);
         void setException(std::exception_ptr x);
+
+        template <class X>
+        void setException(X&& x) requires std::derived_from<X, std::exception> {
+            setException(std::make_exception_ptr(std::forward<X>(x)));
+        }
 
     protected:
         void _gotValue();
@@ -48,6 +53,7 @@ namespace crouton {
         bool                _hasValue = false;      // True when a value or exception is set
     };
 
+    // Internal state shared by a Future and its FutureProvider
     template <typename T>
     class FutureState : public FutureStateBase {
     public:
@@ -84,7 +90,7 @@ namespace crouton {
 
 
     /** The producer side of a Future, which creates the Future object and is responsible for
-        setting its value. */
+        setting its value. Use this if you want to create a Future without being a coroutine. */
     template <typename T>
     class FutureProvider {
     public:
@@ -103,7 +109,8 @@ namespace crouton {
 
         /// Sets the Future's result as an exception and unblocks anyone waiting for it.
         /// Calling value() will re-throw the exception.
-        void setException(std::exception_ptr x) const {_state->setException(x);}
+        template <class X>
+            void setException(X&& x) const     {_state->setException(std::forward<X>(x));}
 
         /// Gets the future's value, or throws its exception.
         /// It's illegal to call this before a value is set.
@@ -123,7 +130,8 @@ namespace crouton {
         Future<void> future();
         bool hasValue() const                   {return _state->hasValue();}
         void setValue() const                   {_state->setValue();}
-        void setException(std::exception_ptr x) const {_state->setException(x);}
+        template <class X>
+            void setException(X&& x) const      {_state->setException(std::forward<X>(x));}
         void value() const                      {return _state->value();}
         void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:
@@ -134,6 +142,7 @@ namespace crouton {
 
 
     /** Represents a value, produced by a `FutureProvider<T>`, that may not be available yet.
+        This is a typical type for a coroutine to return.
         A coroutine can get the value by calling `co_await` on it, which suspends the coroutine
         until the value is available. */
     template <typename T>
@@ -147,8 +156,17 @@ namespace crouton {
             _state->setValue(std::move(value));
         }
 
+        /// Creates an already-failed future :(
+        template <class X>
+        Future(X&& x) requires std::derived_from<X, std::exception>
+        :_state(std::make_shared<FutureState<T>>()) {
+            _state->setException(std::forward<X>(x));
+        }
+
         /// True if a value or exception has been set by the provider.
         bool hasValue() const           {return _state->hasValue();}
+
+        /// Returns the value, or throws the exception. Don't call this if hasValue is false.
         T&& value() const               {return _state->value();}
 
         /// Blocks until the value is available. Must NOT be called from a coroutine!
@@ -167,7 +185,6 @@ namespace crouton {
         std::shared_ptr<FutureState<T>>  _state;
     };
 
-
     template <>
     class Future<void> : public Coroutine<FutureImpl<void>> {
     public:
@@ -175,6 +192,12 @@ namespace crouton {
         Future()                :_state(std::make_shared<FutureState<void>>()) {_state->setValue();}
         Future(FutureProvider<void> &p) :_state(p._state) { }
 
+		/// Creates an already-failed future :(
+        template <class X>
+        Future(X&& x) requires std::derived_from<X, std::exception>
+        :_state(std::make_shared<FutureState<void>>()) {
+            _state->setException(std::forward<X>(x));
+        }
         bool hasValue() const           {return _state->hasValue();}
         void value() const              {_state->value();}
         inline void waitForValue();
@@ -223,6 +246,10 @@ namespace crouton {
             return {};
         }
         void unhandled_exception()              {_provider.setException(std::current_exception());}
+        template <class X>  // you can co_return an exception
+        void return_value(X&& x) requires std::derived_from<X, std::exception> {
+            _provider.setException(std::forward<X>(x));
+        }
         void return_value(T&& value)            {_provider.setValue(std::move(value));}
         void return_value(T const& value)       {_provider.setValue(value);}
         Finisher final_suspend() noexcept       {return {};}
