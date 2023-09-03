@@ -29,15 +29,6 @@ namespace crouton {
     using namespace std;
 
 
-    /** Stream wrapper for a uv_tcp_t handle. */
-    struct tcp_stream_wrapper : public uv_stream_wrapper {
-        explicit tcp_stream_wrapper(uv_tcp_t *s) :uv_stream_wrapper((uv_stream_t*)s) { }
-        uv_tcp_t* tcpHandle()                   {return (uv_tcp_t*)_stream;}
-        virtual int setNoDelay(bool e)          {return uv_tcp_nodelay(tcpHandle(), e);}
-        virtual int keepAlive(unsigned i)       {return uv_tcp_keepalive(tcpHandle(), (i > 0), i);}
-    };
-
-
     TCPSocket::TCPSocket() = default;
 
 
@@ -46,14 +37,14 @@ namespace crouton {
         uv_tcp_init(curLoop(), tcpHandle);
         check(uv_accept((uv_stream_t*)server, (uv_stream_t*)tcpHandle),
               "accepting client connection");
-        opened(make_unique<tcp_stream_wrapper>(tcpHandle));
+        opened(make_unique<uv_stream_wrapper>((uv_stream_t*)tcpHandle));
     }
 
 
     Future<void> TCPSocket::open() {
         assert(!isOpen());
         assert(_binding);
-        std::unique_ptr<stream_wrapper> stream;
+        std::unique_ptr<uv_stream_wrapper> stream;
         connect_request req;
         int err;
 
@@ -67,12 +58,12 @@ namespace crouton {
 
         auto tcpHandle = new uv_tcp_t;
         uv_tcp_init(curLoop(), tcpHandle);
-        stream = make_unique<tcp_stream_wrapper>(tcpHandle);
+        stream = make_unique<uv_stream_wrapper>((uv_stream_t*)tcpHandle);
         err = uv_tcp_connect(&req, tcpHandle, &addr,
                              req.callbackWithStatus);
 
-        stream->setNoDelay(_binding->noDelay);
-        stream->keepAlive(_binding->keepAlive);
+        uv_tcp_nodelay(tcpHandle, _binding->noDelay);
+        uv_tcp_keepalive(tcpHandle, (_binding->keepAlive > 0), _binding->keepAlive);
         _binding = nullptr;
 
         check(err, "opening connection");

@@ -26,7 +26,7 @@
 
 namespace crouton {
     struct Buffer;
-    struct stream_wrapper;
+    struct uv_stream_wrapper;
 
     /** An asynchronous bidirectional stream. Abstract base class of Pipe and TCPSocket. */
     class Stream : public IStream {
@@ -66,9 +66,9 @@ namespace crouton {
     protected:
         Stream() = default;
 
-        void opened(std::unique_ptr<stream_wrapper> s);
+        void opened(std::unique_ptr<uv_stream_wrapper> s);
 
-        std::unique_ptr<stream_wrapper> _stream;  // Handle for stream operations
+        std::unique_ptr<uv_stream_wrapper> _stream;  // Handle for stream operations
 
     private:
         using BufferRef = std::unique_ptr<Buffer>;

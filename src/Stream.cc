@@ -30,7 +30,7 @@ namespace crouton {
     }
 
 
-    void Stream::opened(std::unique_ptr<stream_wrapper> s) {
+    void Stream::opened(std::unique_ptr<uv_stream_wrapper> s) {
         assert(!_stream); 
         _stream = std::move(s);
         _stream->_allocCallback = [this](size_t suggested) {

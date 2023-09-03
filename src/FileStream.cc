@@ -48,8 +48,8 @@ namespace crouton {
 
     FileStream::FileStream(int fd)                     :_fd(fd) { }
 
-    FileStream::FileStream(FileStream&& fs)            {std::swap(_fd, fs._fd);}
-    FileStream& FileStream::operator=(FileStream&& fs) {_close(); std::swap(_fd, fs._fd); return *this;}
+//    FileStream::FileStream(FileStream&& fs)            {std::swap(_fd, fs._fd);}
+//    FileStream& FileStream::operator=(FileStream&& fs) {_close(); std::swap(_fd, fs._fd); return *this;}
     FileStream::~FileStream()                          {_close();}
 
 
