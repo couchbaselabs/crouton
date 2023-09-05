@@ -198,7 +198,7 @@ namespace crouton {
             void *resume, *destroy;
         };
         auto guts = ((fake_coroutine_guts*)h.address());
-        std::string symbol = fleece::FunctionName(guts->resume ?: guts->destroy);
+        std::string symbol = fleece::FunctionName(guts->resume ? guts->resume : guts->destroy);
         if (symbol.ends_with(" (.resume)"))
             symbol = symbol.substr(0, symbol.size() - 10);
         else if (symbol.ends_with(" (.destroy)"))

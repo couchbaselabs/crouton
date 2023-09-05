@@ -9,4 +9,4 @@
 
 #include "StaticLib.xcconfig"
 
-WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-missing-prototypes  -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-pedantic  -Wno-missing-prototypes  -Wno-implicit-int-conversion  -Wno-unreachable-code  -Wno-implicit-fallthrough

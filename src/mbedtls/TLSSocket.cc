@@ -127,7 +127,7 @@ namespace crouton::mbed {
                 } else if (result < 0) {
                     // Error!
                     check(result, "write");
-                } else if (result < buf.len) {
+                } else if (size_t(result) < buf.len) {
                     // Incomplete write; update the buffer and repeat:
                     //cerr << "\tTLSStream.write wrote " << result << "; continuing..." << endl;
                     buf.base = (char*)buf.base + result;

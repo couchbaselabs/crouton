@@ -68,7 +68,7 @@ namespace crouton {
 
 
     Future<void> IStream::readExactly(size_t len, void* dst) {
-        int64_t bytesRead = AWAIT read(len, dst);
+        size_t bytesRead = AWAIT read(len, dst);
         if (bytesRead < len)
             check(int(UV_EOF), "reading from the network");
         RETURN;

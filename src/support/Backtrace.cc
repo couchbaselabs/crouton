@@ -139,7 +139,7 @@ namespace fleece {
 
 
     bool Backtrace::writeTo(ostream &out) const {
-        for (int i = 0; i < _addrs.size(); ++i) {
+        for (unsigned i = 0; i < _addrs.size(); ++i) {
             if (i > 0)
                 out << '\n';
             out << '\t';

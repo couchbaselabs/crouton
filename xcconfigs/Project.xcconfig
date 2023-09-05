@@ -20,7 +20,7 @@ CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND        = NO
 
 CLANG_UNDEFINED_BEHAVIOR_SANITIZER_INTEGER     = NO     // lots of valid code triggers this one
 
-WARNING_CFLAGS                                 = $(WARNING_CFLAGS)     -Wall    -Wimplicit-fallthrough     -Wno-gnu-statement-expression     -Wno-gnu-zero-variadic-macro-arguments     -Wno-assume    -Wno-unqualified-std-cast-call
+WARNING_CFLAGS                                 = $(WARNING_CFLAGS)     -Wall   -Wpedantic   -Wimplicit-fallthrough     -Wno-gnu-statement-expression     -Wno-gnu-zero-variadic-macro-arguments     -Wno-assume    -Wno-unqualified-std-cast-call  -Wno-unused-parameter
 
 // Arch / deployment:
 PRODUCT_NAME                                   = $(TARGET_NAME)
