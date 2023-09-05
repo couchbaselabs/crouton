@@ -25,9 +25,10 @@ using namespace crouton;
 
 static Future<int> run() {
     // Read flags:
+    auto args = MainArgs();
     bool includeHeaders = false;
     bool verbose = false;
-    while (auto flag = MainArgs.popFlag()) {
+    while (auto flag = args.popFlag()) {
         if (flag == "-i")
             includeHeaders = true;
         else if (flag == "-v")
@@ -39,7 +40,7 @@ static Future<int> run() {
     }
 
     // Read URL argument:
-    auto url = MainArgs.popFirst();
+    auto url = args.popFirst();
     if (!url) {
         std::cerr << "Missing URL";
         RETURN 1;
@@ -49,7 +50,7 @@ static Future<int> run() {
     HTTPConnection client{string(url.value())};
     HTTPRequest req;
     HTTPResponse resp = AWAIT client.send(req);
-
+ 
     // Display result:
     bool ok = (resp.status() == HTTPStatus::OK);
     if (!ok) {

@@ -28,6 +28,7 @@
 #include "FileStream.hh"
 #include "Filesystem.hh"
 #include "HTTPConnection.hh"
+#include "Process.hh"
 #include "TCPSocket.hh"
 #include "TCPServer.hh"
 #include "TLSSocket.hh"

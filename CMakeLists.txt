@@ -98,6 +98,7 @@ add_library( LibCrouton STATIC
     src/HTTPParser.cc
     src/IStream.cc
     src/Pipe.cc
+    src/Process.cc
     src/Scheduler.cc
     src/Stream.cc
     src/TCPServer.cc
