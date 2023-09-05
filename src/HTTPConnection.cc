@@ -17,6 +17,7 @@
 //
 
 #include "HTTPConnection.hh"
+#include "NWConnection.hh"
 #include "TLSSocket.hh"
 #include "TCPSocket.hh"
 #include "UVInternal.hh"
@@ -57,11 +58,8 @@ namespace crouton {
         if (port == 0)
             port = tls ? 443 : 80;
 
-        // Create the socket:       //FIXME: Don't hardcode the class names
-        if (tls)
-            _socket = make_unique<mbed::TLSSocket>();
-        else
-            _socket = make_unique<TCPSocket>();
+        // Create the socket:
+        _socket = ISocket::newSocket(tls);
         _socket->bind(string(_url.hostname), port);
         _stream = &_socket->stream();
     }

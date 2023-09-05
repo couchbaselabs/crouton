@@ -42,6 +42,7 @@ namespace crouton::apple {
     class NWConnection final : public IStream, public ISocket {
     public:
         NWConnection() = default;
+        explicit NWConnection(bool useTLS)                  :_useTLS(useTLS) { }
         ~NWConnection();
 
         void useTLS(bool tls)                               {_useTLS = tls;}

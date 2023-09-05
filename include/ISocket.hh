@@ -26,6 +26,10 @@ namespace crouton {
     /** Abstract interface for opening a network connection. */
     class ISocket {
     public:
+
+        /// Creates a new ISocket instance of a default subclass.
+        static std::unique_ptr<ISocket> newSocket(bool useTLS);
+
         /// Specifies the address and port to connect to, and whether to use TLS.
         virtual void bind(std::string const& address, uint16_t port) {
             assert(!_binding);
