@@ -130,15 +130,19 @@ namespace crouton {
     // Internal base class of the shared state co-owned by a Future and its FutureProvider.
     class FutureStateBase {
     public:
-        bool hasValue() const;
+        bool hasValue() const                       {return _state.load() == Ready;}
         coro_handle suspend(coro_handle coro);
-
     protected:
-        void _gotValue();
+        void _notify();
 
-        mutable std::mutex  _mutex;                 // For thread-safety
-        Suspension*         _suspension = nullptr;  // coro blocked awaiting my Future
-        bool                _hasValue = false;      // True when a value or exception is set
+        enum State : uint8_t {
+            Empty,      // initial state
+            Waiting,    // a coroutine is waiting and _suspension is set
+            Ready       // result is available and _result is set
+        };
+
+        Suspension*         _suspension = nullptr;  // coro that's blocked awaiting result
+        std::atomic<State>  _state = Empty;         // Current state, for thread-safety
     };
 
 
@@ -147,17 +151,14 @@ namespace crouton {
     class FutureState : public FutureStateBase {
     public:
         T&& value() {
-            std::unique_lock<std::mutex> lock(_mutex);
+            assert(hasValue());
             return std::move(_result).value();
         }
-
         template <typename U>
         void setResult(U&& value) {
-            std::unique_lock<std::mutex> lock(_mutex);
             _result = std::forward<U>(value);
-            _gotValue();
+            _notify();
         }
-
     private:
         Result<T> _result;
     };
@@ -167,19 +168,17 @@ namespace crouton {
     class FutureState<void> : public FutureStateBase {
     public:
         void value() {
-            std::unique_lock<std::mutex> lock(_mutex);
+            assert(hasValue());
             return _result.value();
         }
         void setResult() {
-            std::unique_lock<std::mutex> lock(_mutex);
             _result.set();
-            _gotValue();
+            _notify();
         }
         template <typename U>
         void setResult(U&& value) {
-            std::unique_lock<std::mutex> lock(_mutex);
             _result = std::forward<U>(value);
-            _gotValue();
+            _notify();
         }
     private:
         Result<void> _result;

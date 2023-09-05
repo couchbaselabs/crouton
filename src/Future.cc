@@ -20,27 +20,45 @@
 
 namespace crouton {
 
-    bool FutureStateBase::hasValue() const {
-        std::unique_lock<std::mutex> lock(_mutex);
-        return _hasValue;
-    }
-
+    // Called by Future::await_suspend.
+    // @param coro  the current coroutine that's `co_await`ing the Future
+    // @return  The coroutine that should resume
     coro_handle FutureStateBase::suspend(coro_handle coro) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_hasValue)
-            return coro;
-        assert(!_suspension);
-        Scheduler& sched = Scheduler::current();
-        _suspension = sched.suspend(coro);
-        lock.unlock();
-        return sched.next();
+        switch (State state = _state.load()) {
+            case Empty: {
+                // No value yet, so suspend this coroutine:
+                assert(!_suspension);
+                Scheduler& sched = Scheduler::current();
+                _suspension = sched.suspend(coro);
+                if (!_state.compare_exchange_strong(state, Waiting)) {
+                    // Oops, provider set a value while I was suspending; wake immediately:
+                    assert(state == Ready);
+                    _suspension->wakeUp();
+                }
+                return sched.next();
+            }
+            case Waiting:
+                throw std::logic_error("Another coroutine is already awaiting this Future");
+            case Ready:
+                // There's a value now, so continue:
+                return coro;
+        }
     }
 
-    void FutureStateBase::_gotValue() {
-        _hasValue = true;
-        if (_suspension) {
-            _suspension->wakeUp();
-            _suspension = nullptr;
+    void FutureStateBase::_notify() {
+        switch (State prev = _state.exchange(Ready)) {
+            case Empty:
+                // No one waiting yet
+                break;
+            case Waiting:
+                // Wake the waiting coroutine:
+                if (_suspension) {
+                    _suspension->wakeUp();
+                    _suspension = nullptr;
+                }
+                break;
+            case Ready:
+                throw std::logic_error("Future already has a result");
         }
     }
 
