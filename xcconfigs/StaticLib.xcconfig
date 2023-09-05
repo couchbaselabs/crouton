@@ -10,4 +10,4 @@ CODE_SIGN_STYLE          = Automatic
 EXECUTABLE_PREFIX        = lib
 SKIP_INSTALL             = YES
 
-SYSTEM_HEADER_SEARCH_PATHS  = $(inherited)  vendor/llhttp/include  vendor/mbedtls/include
+SYSTEM_HEADER_SEARCH_PATHS  = $(inherited)  vendor/libuv/include/  vendor/llhttp/include  vendor/mbedtls/include

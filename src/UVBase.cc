@@ -17,9 +17,9 @@
 //
 
 #include "UVBase.hh"
-#include "UVInternal.hh"
+#include "Backtrace.hh"
 #include "Task.hh"
-#include "uv.h"
+#include "UVInternal.hh"
 #include <cmath>
 
 namespace crouton {
@@ -56,11 +56,12 @@ namespace crouton {
 
     bool UVEventLoop::_run(int mode)  {
         NotReentrant nr(_running);
-        //std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking) ...";
+        std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking"
+        << ", alive=" << (bool)uv_loop_alive(_loop.get()) << ") ...";
         auto ns = uv_hrtime();
         int status = uv_run(_loop.get(), uv_run_mode(mode));
         ns = uv_hrtime() - ns;
-        //std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
+        std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
         return status != 0;
     }
 
@@ -184,12 +185,15 @@ namespace crouton {
     
     Args MainArgs;
 
-    int Main(int argc, const char * argv[], Future<int>(*fn)()) {
+    static void initArgs(int argc, const char * argv[]) {
         auto args = uv_setup_args(argc, (char**)argv);
         MainArgs.resize(argc);
         for (int i = 0; i < argc; ++i)
             MainArgs[i] = args[i];
+    }
 
+    int Main(int argc, const char * argv[], Future<int>(*fn)()) {
+        initArgs(argc, argv);
         try {
             Future<int> fut = fn();
             Scheduler::current().runUntil([&]{ return fut.hasValue(); });
@@ -204,11 +208,7 @@ namespace crouton {
     }
 
     int Main(int argc, const char * argv[], Task(*fn)()) {
-        auto args = uv_setup_args(argc, (char**)argv);
-        MainArgs.resize(argc);
-        for (int i = 0; i < argc; ++i)
-            MainArgs[i] = args[i];
-
+        initArgs(argc, argv);
         try {
             Task task = fn();
             Scheduler::current().run();
@@ -249,10 +249,38 @@ namespace crouton {
     }
 
 
-
     void Randomize(void* buf, size_t len) {
         uv_random_t req;
         check(uv_random(curLoop(), &req, buf, len, 0, nullptr), "generating random bytes");
+    }
+
+
+    std::string CoroutineName(coro_handle h) {
+        if (h.address() == nullptr)
+            return "(null)";
+#ifdef __clang__
+        // libc++ specific:
+        struct fake_coroutine_guts {
+            void *resume, *destroy;
+        };
+        auto guts = ((fake_coroutine_guts*)h.address());
+        std::string symbol = fleece::FunctionName(guts->resume ?: guts->destroy);
+        if (symbol.ends_with(" (.resume)"))
+            symbol = symbol.substr(0, symbol.size() - 10);
+        else if (symbol.ends_with(" (.destroy)"))
+            symbol = symbol.substr(0, symbol.size() - 11);
+        if (symbol.starts_with("crouton::"))
+            symbol = symbol.substr(9);
+        return symbol;
+#else
+        char buf[20];
+        auto result = std::to_chars(&buf[0], &buf[20], intptr_t(h.address()), 16);
+        return std::string(&buf[0], result.ptr);
+#endif
+    }
+
+    std::ostream& operator<< (std::ostream& out, coro_handle h) {
+        return out << "coro<" << CoroutineName(h) << ">";
     }
 
 }

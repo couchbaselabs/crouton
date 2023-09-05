@@ -265,8 +265,7 @@ namespace crouton {
             _notified = false;
         }
 
-        template <typename U>
-        void notify(U&& val) {
+        void notify() {
             assert(!_notified);
             _notified = true;
             if (auto w = _waiter) {

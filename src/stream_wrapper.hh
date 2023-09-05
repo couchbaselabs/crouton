@@ -17,7 +17,6 @@
 //
 
 #pragma once
-#include "uv.h"
 #include "UVInternal.hh"
 #include <algorithm>
 #include <functional>

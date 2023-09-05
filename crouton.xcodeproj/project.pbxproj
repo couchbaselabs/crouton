@@ -1080,9 +1080,9 @@
 			files = (
 				272728C72A8D6505000CCA22 /* tests.cc in Sources */,
 				27F49CCF2A9D011B00BFB24C /* test_io.cc in Sources */,
-				272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */,
 				278F7E3D2AA16D46005B12F2 /* test_http.cc in Sources */,
 				272A852D2A97F9760083D947 /* ListReporter.cc in Sources */,
+				272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -20,7 +20,7 @@
 #include "Coroutine.hh"
 #include "UVBase.hh"
 #include "Scheduler.hh"
-#include "uv.h"
+#include <uv.h>
 #include <concepts>
 #include <iostream>
 #include <optional>

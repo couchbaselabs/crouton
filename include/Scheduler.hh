@@ -28,71 +28,29 @@
 #include <unordered_map>
 #include <cassert>
 
-struct uv_loop_s;
-
 namespace crouton {
     class EventLoop;
-    class Scheduler;
+    class Suspension;
     class Task;
 
     static bool kLogScheduler = false;
-
-    /** Represents a coroutine handle that's been suspended by calling Scheduler::suspend(). */
-    class Suspension {
-    public:
-
-        /// Makes the associated suspended coroutine runnable again;
-        /// at some point its Scheduler will return it from next().
-        /// \note This may be called from any thread, but _only once_.
-        /// \warning  The pointer becomes invalid as soon as this is called.
-        void wakeUp();
-
-        // internal only, do not call
-        Suspension(coro_handle h, Scheduler *s) :_handle(h), _scheduler(s) { }
-
-    private:
-        friend class Scheduler;
-
-        coro_handle         _handle;                    // The coroutine (not really needed)
-        Scheduler*          _scheduler;                 // Scheduler that owns coroutine
-        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine is awake
-    };
-
 
     /** Schedules coroutines on a single thread. Each thread has an instance of this.
         @warning The API is *not* thread-safe, except as noted. */
     class Scheduler {
     public:
         /// Returns the Scheduler instance for the current thread. (Thread-safe, obviously.)
-        static Scheduler& current() {
-            if (!sCurSched)
-                sCurSched = new Scheduler();
-            return *sCurSched;
-        }
+        static Scheduler& current()                     {return sCurSched ? *sCurSched : _create();}
 
         /// True if this is the current thread's Scheduler. (Thread-safe.)
-        bool isCurrent() const           {return this == sCurSched;}
+        bool isCurrent() const                          {return this == sCurSched;}
 
         /// True if there are no tasks waiting to run.
-        bool isIdle() const {
-            return _ready.empty() && !_woke;
-        }
+        bool isIdle() const;
 
         /// Returns true if there are no coroutines ready or suspended, except possibly for the one
         /// belonging to the EventLoop. Checked at the end of unit tests.
-        bool assertEmpty() const {
-            bool e = true;
-            for (auto &r : _ready)
-                if (r != _eventLoopTask) {
-                    if (kLogScheduler) {std::cerr << "\tready: " << r << std::endl;}
-                    e = false;
-                }
-            for (auto &s : _suspended) {
-                if (kLogScheduler) {std::cerr << "\tsuspended: " << s.second._handle << std::endl;}
-                e = false;
-            }
-            return e;
-        }
+        bool assertEmpty() const;
 
         //---- Event loop:
 
@@ -124,154 +82,95 @@ namespace crouton {
             }
         }
 
+        //---- Awaitable: `co_await`ing a Scheduler moves the current coroutine to its thread.
+
+        bool await_ready() noexcept                         {return isCurrent();}
+        coro_handle await_suspend(coro_handle h) noexcept   {suspend(h); return current().next();}
+        void await_resume() noexcept                        {assert(isCurrent());}
+
+
         //---- Coroutine management; mostly called from coroutine implementations
 
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
         /// be returned from next().
-        void schedule(coro_handle h) {
-            if (kLogScheduler) {std::cerr << "Scheduler::schedule " << h << "\n";}
-            assert(isCurrent());
-            assert(!isWaiting(h));
-            if (!isReady(h))
-                _ready.push_back(h);
-        }
+        void schedule(coro_handle h);
 
         /// Allows a running coroutine `h` to give another ready coroutine some time.
         /// Returns the coroutine that should run next, possibly `h` if no others are ready.
-        coro_handle yield(coro_handle h) {
-            if (coro_handle nxt = nextOr(nullptr)) {
-                schedule(h);
-                return nxt;
-            } else {
-                if (kLogScheduler) {std::cerr << "Scheduler::yield " << h << " -- continue running\n";}
-                return h;
-            }
-        }
+        coro_handle yield(coro_handle h);
 
-        void resumed(coro_handle h) {
-            assert(isCurrent());
-            if (auto i = std::find(_ready.begin(), _ready.end(), h); i != _ready.end())
-                _ready.erase(i);
-        }
+        /// Removes the coroutine from the ready queue, if it's still in it.
+        /// To be called from an `await_resume` method.  //TODO: Is this method still needed?
+        void resumed(coro_handle h);
 
         /// Returns the coroutine that should be resumed. If none is ready, exits coroutine-land.
-        coro_handle next() {
-            return nextOr(CORO_NS::noop_coroutine());
-        }
+        coro_handle next();
 
         /// Returns the coroutine that should be resumed, or else `dflt`.
-        coro_handle nextOr(coro_handle dflt) {
-            assert(isCurrent());
-            scheduleWakers();
-            if (_ready.empty()) {
-                return dflt;
-            } else {
-                coro_handle h = _ready.front();
-                _ready.pop_front();
-                if (kLogScheduler) {std::cerr << "Scheduler::resume " << h << std::endl;}
-                return h;
-            }
-        }
+        coro_handle nextOr(coro_handle dflt);
 
         /// Returns the coroutine that should be resumed,
         /// or else the no-op coroutine that returns to the outer caller.
-        coro_handle finished(coro_handle h) {
-            if (kLogScheduler) {std::cerr << "Scheduler::finished " << h << "\n";}
-            assert(isCurrent());
-            assert(h.done());
-            assert(!isReady(h));
-            assert(!isWaiting(h));
-            // Always continue on to the caller of `h`, otherwise things get confused.
-            return CORO_NS::noop_coroutine();
-        }
+        coro_handle finished(coro_handle h);
 
         /// Adds a coroutine handle to the suspension set.
         /// To make it runnable again, call the returned Suspension's `wakeUp` method
         /// from any thread.
-        Suspension* suspend(coro_handle h) {
-            if (kLogScheduler) {std::cerr << "Scheduler::suspend " << h << "\n";}
-            assert(isCurrent());
-            assert(!isReady(h));
-            auto [i, added] = _suspended.try_emplace(h.address(), h, this);
-            return &i->second;
-        }
+        Suspension* suspend(coro_handle h);
 
         /// Called from "normal" code.
         /// Resumes the next ready coroutine and returns true.
         /// If no coroutines are ready, returns false.
-        bool resume() {
-            if (coro_handle h = nextOr(nullptr)) {
-                h.resume();
-                return true;
-            } else {
-                return false;
-            }
-        }
+        bool resume();
 
     private:
         friend class Suspension;
         
         Scheduler() = default;
-
-        /// Creates an EventLoop. (The implementation creates a UVEventLoop.)
+        static Scheduler& _create();
         EventLoop* newEventLoop();
-
         coro_handle eventLoopHandle();
         Task eventLoopTask();
-
-        bool isReady(coro_handle h) const {
-#if 1
-            for (auto &x : _ready)
-                if (x == h)
-                    return true;
-            return false;
-#else // Xcode 14.2 doesn't support this yet:
-            return std::ranges::any_of(_ready, [=](auto x) {return x == h;});
-#endif
-        }
-
-        bool isWaiting(coro_handle h) const {
-            return _suspended.find(h.address()) != _suspended.end();
-        }
-
+        bool isReady(coro_handle h) const;
+        bool isWaiting(coro_handle h) const;
         void _wakeUp();
-
-        /// Changes a waiting coroutine's state to 'ready' and notifies the Scheduler to resume
-        /// if it's blocked in next(). At some point next() will return this coroutine.
-        /// \note  This method is thread-safe.
-        void wakeUp() {
-            if (_woke.exchange(true) == false)
-                _wakeUp();
-        }
-
-        // Finds any waiting coroutines that want to wake up, removes them from `_suspended`
-        // and adds them to `_ready`.
-        void scheduleWakers() {
-            while (_woke.exchange(false) == true) {
-                // Some waiting coroutine is now ready:
-                for (auto i = _suspended.begin(); i != _suspended.end();) {
-                    if (i->second._wakeMe.test()) {
-                        if (kLogScheduler) {std::cerr << "Scheduler::scheduleWaker(" << i->first << ")\n";}
-                        _ready.push_back(i->second._handle);
-                        i = _suspended.erase(i);
-                    } else {
-                        ++i;
-                    }
-                }
-            }
-        }
+        void wakeUp();
+        void scheduleWakers();
 
         using SuspensionMap = std::unordered_map<const void*,Suspension>;
 
-        static inline __thread Scheduler* sCurSched; // Current thread's instance
+        static inline __thread Scheduler* sCurSched;        // Current thread's instance
 
-        std::deque<coro_handle>  _ready;         // Coroutines that are ready to run
-        SuspensionMap       _suspended;     // Suspended/sleeping coroutines
-        std::atomic<bool>   _woke = false;  // True if a suspended is waking
-        EventLoop*          _eventLoop;     // My event loop
-        bool                _ownsEventLoop = false;     // True if I created _eventLoop
-        coro_handle              _eventLoopTask = nullptr;   // EventLoop's coroutine handle
-        bool                _inEventLoopTask = false;   // True while in eventLoopTask()
+        std::deque<coro_handle> _ready;                     // Coroutines that are ready to run
+        SuspensionMap           _suspended;                 // Suspended/sleeping coroutines
+        EventLoop*              _eventLoop;                 // My event loop
+        coro_handle             _eventLoopTask = nullptr;   // EventLoop's coroutine handle
+        std::atomic<bool>       _woke = false;              // True if a suspended is waking
+        bool                    _ownsEventLoop = false;     // True if I created _eventLoop
+        bool                    _inEventLoopTask = false;   // True while in eventLoopTask()
+    };
+
+
+
+    /** Represents a coroutine that's been suspended by calling Scheduler::suspend().
+        It will resume after `wakeUp` is called. */
+    class Suspension {
+    public:
+        /// Makes the associated suspended coroutine runnable again;
+        /// at some point its Scheduler will return it from next().
+        /// @note This may be called from any thread, but _only once_.
+        /// @warning  The Suspention pointer becomes invalid as soon as this is called.
+        void wakeUp();
+
+        // internal only, do not call
+        Suspension(coro_handle h, Scheduler *s) :_handle(h), _scheduler(s) { }
+
+    private:
+        friend class Scheduler;
+
+        coro_handle         _handle;                    // The coroutine (not really needed)
+        Scheduler*          _scheduler;                 // Scheduler that owns coroutine
+        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine is awake
     };
 
 
