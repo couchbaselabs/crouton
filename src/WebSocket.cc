@@ -54,7 +54,7 @@ namespace crouton {
     }
 
 
-    WebSocket::~WebSocket() {close();}
+    WebSocket::~WebSocket() {disconnect();}
 
 
     void WebSocket::setHeader(const char* name, const char* value) {
@@ -78,14 +78,37 @@ namespace crouton {
     }
 
 
-    void WebSocket::close() {
-        _connection.close();
+    Future<void> WebSocket::close() {
+        if (_stream) {
+            if (!_closeReceived)
+                fprintf(stderr, "WARNING: WebSocket::close called before receiving a Close msg\n");
+            if (!_incoming.empty())
+                fprintf(stderr, "WARNING: WebSocket closing with %zu unread incoming messages\n",
+                        _incoming.size());
+            AWAIT _stream->close();
+            _stream = nullptr;
+        }
+    }
+
+
+    void WebSocket::disconnect() {
+        if (!_incoming.empty())
+            fprintf(stderr, "WARNING: WebSocket disconnected with %zu unread incoming messages\n",
+                    _incoming.size());
+        if (_stream) {
+            _connection.close();
+            _stream = nullptr;
+        }
     }
 
 
     Future<void> WebSocket::send(const void* data, size_t len, MessageType type) {
         // Note: This method is not a coroutine, and it passes the message to _stream->write
         // as a `string`, so the caller does not need to keep the data valid.
+        if (_closeSent || !_stream)
+            throw std::logic_error("WebSocket is already closing");
+        if (type == Close)
+            _closeSent = true;
         string frame(len + 10, 0);
         size_t frameLen = ClientProtocol::formatMessage((std::byte*)frame.data(),
                                                         (const char*)data,
@@ -98,20 +121,59 @@ namespace crouton {
     }
 
 
-    Future<WebSocket::Message> WebSocket::receive() {
-        while (_incoming.empty()) {
-            ConstBuf data = AWAIT _stream->readNoCopy(100000);
-            if (data.len == 0)
-                RETURN {"", NONE};
-            _parser->consume((std::byte*)data.base, data.len, this);
-        }
-        Message msg = std::move(_incoming.front());
-        _incoming.pop_front();
-        RETURN msg;
+    Future<void> WebSocket::send(Message const& msg) {
+        return send(msg.data(), msg.size(), msg.type);
     }
 
 
-    // Called from inside _parser->consume()
+    // Caller is initiating a close.
+    Future<void> WebSocket::sendClose(CloseCode code, std::string_view message) {
+        if (_closeSent)
+            return Future<void>{};
+        else
+            return send(Message(code, message));
+    }
+
+
+    Future<WebSocket::Message> WebSocket::receive() {
+        if (_closeReceived || !_stream)
+            RETURN runtime_error("WebSocket is closed");
+        while (true) {
+            while (_incoming.empty()) {
+                ConstBuf data = AWAIT _stream->readNoCopy(100000);
+                if (data.len == 0)
+                    RETURN Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
+                // Pass the data to the 3rd-party WebSocket parser, which will call handleFragment.
+                _parser->consume((std::byte*)data.base, data.len, this);
+            }
+
+            Message msg = std::move(_incoming.front());
+            _incoming.pop_front();
+            switch (msg.type) {
+                case Text:
+                case Binary:
+                    if (_closeReceived) {
+                        fprintf(stderr, "Peer illegally sent data message after CLOSE\n");
+                        break;
+                    }
+                    RETURN msg;     // Got a message!
+                case Close:
+                    (void) handleCloseMessage(msg);
+                    RETURN msg;     // Pass the CLOSE message to the peer.
+                case Ping:
+                    (void) send("", Pong);
+                    break;
+                case Pong:
+                    //TODO: Send periodic Pings and disconnect if no Pong received in time
+                default:
+                    break; // ignore
+           }
+        }
+    }
+
+
+    // Called from inside _parser->consume(), called by receive(), above.
+    // A single receive might result in multiple messages, so we queue them in `_incoming`.
     bool WebSocket::handleFragment(std::byte* data,
                                    size_t dataLen,
                                    size_t remainingBytes,
@@ -141,6 +203,56 @@ namespace crouton {
     void WebSocket::protocolError() {
         throw runtime_error("WebSocket protocol error");
     }
+
+
+    // Peer sent a CLOSE message, either initiating or responding.
+    Future<void> WebSocket::handleCloseMessage(Message const& msg) {
+        if ( _closeReceived )
+            return Future<void>{};
+        _closeReceived = true;
+        if ( _closeSent ) {
+            // I initiated the close; the peer has confirmed, so disconnect the socket now:
+            fprintf(stderr, "Close confirmed by peer; disconnecting socket now\n");
+            return close();
+        } else {
+            // Peer is initiating a close; echo it:
+            auto close = ClientProtocol::parseClosePayload((std::byte*)msg.data(), msg.size());
+            fprintf(stderr, "Client is requesting close (%d '%.*s'); echoing it\n",
+                    close.code, (int)close.length, (char*)close.message);
+            _closeSent = true;
+            return send(std::move(msg));
+        }
+    }
+
+
+#pragma mark - MESSAGE:
+
+
+    WebSocket::Message::Message(CloseCode code, string_view message)
+    :string(message.size() + 2, 0)
+    ,type(Close)
+    {
+        size_t sz = ClientProtocol::formatClosePayload((byte*)data(),
+                                                       int16_t(code),
+                                                       message.data(), message.size());
+        assert(sz <= size());
+        resize(sz);
+    }
+
+    WebSocket::CloseCode WebSocket::Message::closeCode() const {
+        if (type != Close)
+            throw std::logic_error("Not a CLOSE message");
+        auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
+        return CloseCode{payload.code};
+    }
+
+    string_view WebSocket::Message::closeMessage() const {
+        if (type != Close)
+            throw std::logic_error("Not a CLOSE message");
+        auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
+        return {(char*)payload.message, payload.length};
+    }
+
 
 }
 
@@ -173,8 +285,10 @@ namespace uWS {
     }
 
     template <const bool isServer>
-    bool WebSocketProtocol<isServer>::handleFragment(std::byte* data, size_t length, size_t remainingByteCount,
-                                                     uint8_t opcode, bool fin, void* user) {
+    bool WebSocketProtocol<isServer>::handleFragment(std::byte* data, size_t length,
+                                                     size_t remainingByteCount,
+                                                     uint8_t opcode, bool fin, void* user)
+    {
         // WebSocketProtocol expects this method to return true on error, but this confuses me
         // so I'm having my code return false on error, hence the `!`. --jpa
         return !USER_SOCK->handleFragment(data, length, remainingByteCount, opcode, fin);

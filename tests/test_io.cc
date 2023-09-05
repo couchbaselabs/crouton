@@ -155,7 +155,13 @@ TEST_CASE("WebSocket", "[uv]") {
         cerr << "-- Received type " << int(msg.type) << ": " << msg << endl;
         CHECK(msg.type == WebSocket::Text);
         CHECK(msg == "This is a test of WebSockets in Crouton.");
-        ws.close();
+
+        cerr << "-- Closing...\n";
+        AWAIT ws.sendClose();
+        msg = AWAIT ws.receive();
+        CHECK(msg.type == WebSocket::Close);
+        CHECK(msg.closeCode() == WebSocket::CloseCode::Normal);
+        AWAIT ws.close();
     };
     test().waitForValue();
     REQUIRE(Scheduler::current().assertEmpty());
