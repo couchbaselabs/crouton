@@ -30,6 +30,7 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
 # mbedTLS options:
 set(ENABLE_PROGRAMS  OFF CACHE INTERNAL "")
 set(ENABLE_TESTING  OFF CACHE INTERNAL "")
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE INTERNAL "") # Work around doc-comment syntax in 3.4
 
 add_subdirectory(vendor/libuv)
 add_subdirectory(vendor/llhttp)
@@ -73,11 +74,8 @@ endif()
 #### CROUTON LIBRARY
 
 
-include_directories(
-    vendor/libuv/include/
-)
-
 include_directories( SYSTEM
+    vendor/libuv/include/
     vendor/llhttp/include/
     vendor/mbedtls/include/
 )
@@ -94,6 +92,7 @@ include_directories(
 add_library( LibCrouton STATIC
     src/AddrInfo.cc
     src/FileStream.cc
+    src/Filesystem.cc
     src/Future.cc
     src/HTTPConnection.cc
     src/HTTPParser.cc
@@ -116,7 +115,6 @@ target_link_libraries( LibCrouton INTERFACE
     uv_a
     llhttp_static
     mbedtls
-#    ZLIB::ZLIB
 )
 
 if(APPLE)
