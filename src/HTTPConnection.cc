@@ -115,7 +115,7 @@ namespace crouton {
             AWAIT _stream->write(req.body);
         if (req.bodyStream) {
             while (true) {
-                if (ConstBuf buf = AWAIT req.bodyStream->readNoCopy(); buf.len > 0)
+                if (ConstBuf buf = AWAIT req.bodyStream->readNoCopy(); buf.size() > 0)
                     AWAIT _stream->write(buf);
                 else
                     break;
@@ -173,7 +173,7 @@ namespace crouton {
             _bufUsed = 0;
         }
         ConstBuf result(&_buf[_bufUsed], std::min(maxLen, _buf.size() - _bufUsed));
-        _bufUsed += result.len;
+        _bufUsed += result.size();
         RETURN result;
     }
 

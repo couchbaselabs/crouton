@@ -12,7 +12,6 @@ GCC_TREAT_WARNINGS_AS_ERRORS                    = YES
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION             = NO
 CLANG_WARN__EXIT_TIME_DESTRUCTORS               = NO
 GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS       = NO
-GCC_WARN_SIGN_COMPARE                           = NO
 
 RUN_CLANG_STATIC_ANALYZER                       = NO    // Is annoying during everyday builds :(
 //CLANG_STATIC_ANALYZER_MODE                      = shallow

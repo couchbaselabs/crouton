@@ -106,7 +106,7 @@ namespace crouton {
 
 
     /// The base read method. Reads once from the uv_stream and returns the result as a
-    /// uv_buf_t. Caller must free it.
+    /// BufferRef. Caller must free it.
     Future<BufferRef> Stream::readBuf() {
         assert(isOpen());
         assert(!_futureBuf);
@@ -170,12 +170,18 @@ namespace crouton {
         return _stream && _stream->is_writable();
     }
 
-    Future<void> Stream::write(const ConstBuf buffers[], size_t nBuffers) {
+    Future<void> Stream::write(const ConstBuf bufs[], size_t nbufs) {
         NotReentrant nr(_writeBusy);
         assert(isOpen());
+
+        static constexpr size_t kMaxBufs = 8;
+        if (nbufs > kMaxBufs) throw invalid_argument("too many bufs");
+        uv_buf_t uvbufs[kMaxBufs];
+        for (size_t i = 0; i < nbufs; ++i)
+            uvbufs[i] = uv_buf_t(bufs[i]);
+
         write_request req;
-        check(_stream->write(&req, (uv_buf_t*)buffers, unsigned(nBuffers),
-                             req.callbackWithStatus),
+        check(_stream->write(&req, uvbufs, unsigned(nbufs), req.callbackWithStatus),
               "sending to the network");
         check( AWAIT req, "sending to the network");
 
@@ -189,7 +195,8 @@ namespace crouton {
 
 
     size_t Stream::tryWrite(ConstBuf buf) {
-        int result = _stream->try_write((uv_buf_t*)&buf, 1);
+        uv_buf_t uvbuf(buf);
+        int result = _stream->try_write(&uvbuf, 1);
         if (result == UV_EAGAIN)
             return 0;
         else

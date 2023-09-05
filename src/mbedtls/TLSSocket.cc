@@ -116,22 +116,21 @@ namespace crouton::mbed {
 
         // TLSSocket wants to write.
         Future<void> write(ConstBuf buf) {
-            //cerr << "TLSStream write(" << buf.len << ") ...\n";
-            if (buf.len == 0)
+            //cerr << "TLSStream write(" << buf.size() << ") ...\n";
+            if (buf.size() == 0)
                 RETURN;
             while (true) {
-                int result = mbedtls_ssl_write(&_ssl,  (const uint8_t*)buf.base, buf.len);
+                int result = mbedtls_ssl_write(&_ssl,  (const uint8_t*)buf.data(), buf.size());
                 if (result == MBEDTLS_ERR_SSL_WANT_READ || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
                     // Need to complete some async I/O:
                     AWAIT processIO();
                 } else if (result < 0) {
                     // Error!
                     check(result, "write");
-                } else if (size_t(result) < buf.len) {
+                } else if (size_t(result) < buf.size()) {
                     // Incomplete write; update the buffer and repeat:
                     //cerr << "\tTLSStream.write wrote " << result << "; continuing..." << endl;
-                    buf.base = (char*)buf.base + result;
-                    buf.len -= result;
+                    buf = buf.last(buf.size() - result);
                 } else {
                     // Done!
                     //cerr << "\tTLSStream.write done" << endl;
@@ -218,18 +217,17 @@ namespace crouton::mbed {
             } else if (_pendingRead) {
                 // waiting for a read to complete
                 result = MBEDTLS_ERR_SSL_WANT_READ;
-            } else if (_readBuf.len > 0) {
+            } else if (_readBuf.size() > 0) {
                 // Copy bytes to the mbed buffer:
-                size_t length = std::min(_readBuf.len, maxLength);
-                ::memcpy(dst, _readBuf.base, length);
-                _readBuf.base = (char*)_readBuf.base + length;
-                _readBuf.len -= length;
+                size_t length = std::min(_readBuf.size(), maxLength);
+                ::memcpy(dst, _readBuf.data(), length);
+                _readBuf = _readBuf.last(_readBuf.size() - length);
                 result = int(length);
             } else if (!_readEOF) {
                 // We've read the entire buffer; time to read again:
                 //cerr << "[async read] " << endl;
                 _pendingRead.emplace(_stream->readNoCopy(100000));
-                _readBuf = {};
+                _readBuf = ConstBuf{};
                 result = MBEDTLS_ERR_SSL_WANT_READ;
             } else {
                 // At EOF:
@@ -252,8 +250,8 @@ namespace crouton::mbed {
                 } else if (_pendingRead) {
                     //cerr << "processIO reading...\n";
                     _readBuf = AWAIT *_pendingRead;
-                    //cerr << "processIO read " << _readBuf.len << " bytes\n";
-                    if (_readBuf.len == 0)
+                    //cerr << "processIO read " << _readBuf.size() << " bytes\n";
+                    if (_readBuf.size() == 0)
                         _readEOF = true;
                     _pendingRead.reset();
                 }
@@ -307,7 +305,7 @@ namespace crouton::mbed {
         NotReentrant nr(_busy);
         if (_inputBuf->empty()) {
             auto len = AWAIT _impl->read(_inputBuf->data, _inputBuf->kCapacity);
-            _inputBuf->length = uint32_t(len);
+            _inputBuf->size = uint32_t(len);
             _inputBuf->used = 0;
             if (_inputBuf->empty())
                 RETURN {};  // Reached EOF

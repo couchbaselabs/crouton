@@ -125,8 +125,8 @@ namespace crouton {
     bool HTTPParser::parseData(ConstBuf data) {
         _parser->data = this;
         llhttp_errno_t err;
-        if (data.len > 0)
-            err = llhttp_execute(_parser.get(), (const char*)data.base, data.len);
+        if (data.size() > 0)
+            err = llhttp_execute(_parser.get(), (const char*)data.data(), data.size());
         else
             err = llhttp_finish(_parser.get());
 
@@ -136,8 +136,8 @@ namespace crouton {
                 assert(llhttp_get_upgrade(_parser.get()) != 0);
                 _upgraded = true;
                 const char* end = llhttp_get_error_pos(_parser.get());
-                assert(end >= data.base && end <= (char*)data.base + data.len);
-                _body = string(end, (char*)data.base + data.len - end);
+                assert((byte*)end >= data.data() && (byte*)end <= data.data() + data.size());
+                _body = string(end, (char*)data.data() + data.size() - end);
             } else {
                 throw Error(err, llhttp_get_error_reason(_parser.get()));
             }

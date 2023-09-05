@@ -67,8 +67,14 @@ namespace crouton {
     // This is FileStream's primitive read operation.
     Future<size_t> FileStream::_preadv(const MutableBuf bufs[], size_t nbufs, int64_t offset) {
         assert(isOpen());
+        static constexpr size_t kMaxBufs = 8;
+        if (nbufs > kMaxBufs) throw invalid_argument("too many bufs");
+        uv_buf_t uvbufs[kMaxBufs];
+        for (size_t i = 0; i < nbufs; ++i)
+            uvbufs[i] = uv_buf_t(bufs[i]);
+
         fs_request req;
-        check(uv_fs_read(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
+        check(uv_fs_read(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
                          req.callback),
                   "reading from a file");
         AWAIT req;
@@ -86,8 +92,7 @@ namespace crouton {
 
     // We also override this IStream method, because it's more efficient to do it with preadv;
     // it saves a memcpy.
-    Future<size_t> FileStream::read(size_t len, void* dst) {
-        MutableBuf buf(dst, len);
+    Future<size_t> FileStream::read(MutableBuf buf) {
         return preadv(&buf, 1, -1);
     }
 
@@ -99,7 +104,7 @@ namespace crouton {
             _readBuf = make_unique<Buffer>();
         if (_readBuf->empty()) {
             MutableBuf buf(_readBuf->data, Buffer::kCapacity);
-            _readBuf->length = uint32_t(AWAIT _preadv(&buf, 1, -1));
+            _readBuf->size = uint32_t(AWAIT _preadv(&buf, 1, -1));
             _readBuf->used = 0;
         }
         RETURN _readBuf->read(maxLen);
@@ -110,9 +115,16 @@ namespace crouton {
     Future<void> FileStream::pwritev(const ConstBuf bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
         assert(isOpen());
+
+        static constexpr size_t kMaxBufs = 8;
+        if (nbufs > kMaxBufs) throw invalid_argument("too many bufs");
+        uv_buf_t uvbufs[kMaxBufs];
+        for (size_t i = 0; i < nbufs; ++i)
+            uvbufs[i] = uv_buf_t(bufs[i]);
+
         _readBuf = nullptr; // because this write might invalidate it
         fs_request req;
-        check(uv_fs_write(curLoop(), &req, _fd, (uv_buf_t*)bufs, unsigned(nbufs), offset,
+        check(uv_fs_write(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
                           req.callback),
               "writing to a file");
         AWAIT req;

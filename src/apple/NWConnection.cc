@@ -134,17 +134,17 @@ namespace crouton::apple {
             dispatch_release(_content);
             _content = nullptr;
         }
-        _contentBuf = {};
+        _contentBuf = ConstBuf{};
         _contentUsed = 0;
     }
 
 
     Future<ConstBuf> NWConnection::_readNoCopy(size_t maxLen) {
         assert(!_onRead);
-        if (_content && _contentUsed < _contentBuf.len) {
+        if (_content && _contentUsed < _contentBuf.size()) {
             // I can return some unRead data from the buffer:
-            auto len = std::min(maxLen, _contentBuf.len - _contentUsed);
-            ConstBuf result((char*)_contentBuf.base + _contentUsed, len);
+            auto len = std::min(maxLen, _contentBuf.size() - _contentUsed);
+            ConstBuf result(_contentBuf.data() + _contentUsed, len);
             _contentUsed += len;
             return result;
 
@@ -166,11 +166,13 @@ namespace crouton::apple {
                         _eof = true;
                     }
                     if (content) {
-                        ConstBuf buf;
-                        _content = dispatch_data_create_map(content, &buf.base, &buf.len);
-                        _contentUsed = buf.len;
+                        const void* data;
+                        size_t size;
+                        _content = dispatch_data_create_map(content, &data, &size);
+                        ConstBuf buf(data, size);
+                        _contentUsed = buf.size();
                         _contentBuf = buf;
-                        cerr << "NWConnection read " << buf.len << " bytes\n";
+                        cerr << "NWConnection read " << buf.size() << " bytes\n";
                         _onRead->setResult(std::move(buf));
                     } else if (error) {
                         _onRead->setResult(NWError(error));
@@ -190,7 +192,7 @@ namespace crouton::apple {
         clearReadBuf();
         dispatch_sync(_queue, ^{
             __block __unused bool released = false;
-            dispatch_data_t content = dispatch_data_create(src.base, src.len, _queue,
+            dispatch_data_t content = dispatch_data_create(src.data(), src.size(), _queue,
                                                            ^{ released = true; });
             _onWrite.emplace();
             nw_connection_send(_conn, content, NW_CONNECTION_DEFAULT_STREAM_CONTEXT, shutdown,

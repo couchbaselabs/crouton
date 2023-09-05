@@ -141,10 +141,10 @@ namespace crouton {
         while (true) {
             while (_incoming.empty()) {
                 ConstBuf data = AWAIT _stream->readNoCopy(100000);
-                if (data.len == 0)
+                if (data.size() == 0)
                     RETURN Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
                 // Pass the data to the 3rd-party WebSocket parser, which will call handleFragment.
-                _parser->consume((std::byte*)data.base, data.len, this);
+                _parser->consume((std::byte*)data.data(), data.size(), this);
             }
 
             Message msg = std::move(_incoming.front());

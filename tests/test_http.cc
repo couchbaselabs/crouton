@@ -171,10 +171,10 @@ TEST_CASE("HTTPs GET Streaming", "[uv][http]") {
         size_t len = 0;
         while(true) {
             ConstBuf chunk = AWAIT resp.readNoCopy();
-            cout << "\t...read " << chunk.len << " bytes\n";
-            if (chunk.len == 0)
+            cout << "\t...read " << chunk.size() << " bytes\n";
+            if (chunk.size() == 0)
                 break;
-            len += chunk.len;
+            len += chunk.size();
         }
         cout << "Total bytes read: " << len << endl;
         CHECK(len == 4086469);

@@ -28,14 +28,14 @@ namespace crouton {
 
     /** A data buffer used by stream_wrapper and Stream. */
     struct Buffer {
-        static constexpr size_t kCapacity = 65536 - 2 *sizeof(uint32_t);
+        static constexpr size_t kCapacity = 65536 - 2 * sizeof(uint32_t);
 
-        uint32_t    length = 0;             ///< Length of valid data
+        uint32_t    size = 0;               ///< Length of valid data
         uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
-        char        data[kCapacity];        ///< The data itself
+        std::byte   data[kCapacity];        ///< The data itself
 
-        size_t available() const {return length - used;}
-        bool empty() const       {return length == used;}
+        size_t available() const {return size - used;}
+        bool empty() const       {return size == used;}
 
         ConstBuf read(size_t maxLen) {
             size_t n = std::min(maxLen, available());
@@ -100,7 +100,7 @@ namespace crouton {
     private:
         void alloc(size_t suggested, uv_buf_t* uvbuf) {
             _readingBuf = _allocCallback(suggested);
-            uvbuf->base = _readingBuf->data;
+            uvbuf->base = (char*)_readingBuf->data;
             uvbuf->len = Buffer::kCapacity;
         }
 
@@ -108,8 +108,8 @@ namespace crouton {
             assert(nread != 0);
             if (nread > 0) {
                 assert(size_t(nread) <= Buffer::kCapacity);
-                assert(uvbuf->base == _readingBuf->data);
-                _readingBuf->length = uint32_t(nread);
+                assert(uvbuf->base == (char*)_readingBuf->data);
+                _readingBuf->size = uint32_t(nread);
                 _readingBuf->used = 0;
                 nread = 0;
             }

@@ -58,7 +58,7 @@ static Future<string> readFile(string const& path) {
     AWAIT f.open();
     char buffer[100];
     while (true) {
-        int64_t len = AWAIT f.read(sizeof(buffer), &buffer[0]);
+        int64_t len = AWAIT f.read({&buffer[0], sizeof(buffer)});
         if (len < 0)
             cerr << "File read error " << len << endl;
         if (len <= 0)

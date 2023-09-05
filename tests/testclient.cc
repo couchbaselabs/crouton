@@ -50,7 +50,7 @@ static Future<int> run() {
     HTTPConnection client{string(url.value())};
     HTTPRequest req;
     HTTPResponse resp = AWAIT client.send(req);
- 
+
     // Display result:
     bool ok = (resp.status() == HTTPStatus::OK);
     if (!ok) {
@@ -68,8 +68,8 @@ static Future<int> run() {
         ConstBuf data;
         do {
             data = AWAIT resp.readNoCopy();
-            cout << string_view(data);
-        } while (data.len > 0);
+            cout << string_view((char*)data.data(), data.size());
+        } while (data.size() > 0);
         cout << endl;
     }
 

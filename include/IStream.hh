@@ -19,45 +19,52 @@
 #pragma once
 #include "Future.hh"
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 
+struct uv_buf_t;
+
 namespace crouton {
 
-    /** Low-level struct pointing to mutable data.
-        Usually serves as the destination of a read.
-        Binary compatible with uv_buf_t. */
-    struct MutableBuf {
-        void*   base = nullptr;
-        size_t  len = 0;
+    /** Low-level struct pointing to mutable data. Usually serves as the destination of a read. */
+    class MutableBuf : public std::span<std::byte> {
+    public:
+        using span::span;
+        using span::operator=;
+        MutableBuf(std::string& str) :span((std::byte*)str.data(), str.size()) { }
+        MutableBuf(uv_buf_t);
 
-        MutableBuf() = default;
-        MutableBuf(void* b, size_t ln) :base(b), len(ln) { }
-        MutableBuf(std::string& str) :base(str.data()), len(str.size()) { }
+        template <typename T>
+        MutableBuf(T* begin, size_t n)  :span((std::byte*)begin, n * sizeof(T)) { }
+        template <>
+        MutableBuf(void* begin, size_t n) :span((std::byte*)begin, n) { }
 
         explicit operator std::string_view() const {
-            return std::string_view((const char*)base, len);
+            return std::string_view((const char*)data(), size());
         }
+        explicit operator uv_buf_t() const;
     };
 
     
-    /** Low-level struct pointing to immutable data.
-        Usually serves as the source of a write.
-        Binary compatible with uv_buf_t. */
-    struct ConstBuf {
-        const void* base = nullptr;
-        size_t      len = 0;
+    /** Low-level struct pointing to immutable data. Usually serves as the source of a write. */
+    class ConstBuf : public std::span<const std::byte> {
+    public:
+        using span::span;
+        using span::operator=;
+        ConstBuf(std::string_view str) :span((const std::byte*)str.data(), str.size()) { }
+        ConstBuf(uv_buf_t);
 
-        ConstBuf() = default;
-        ConstBuf(const void* b, size_t ln) :base(b), len(ln) { }
-        ConstBuf(std::string_view str) :base(str.data()), len(str.size()) { }
+        template <typename T>
+        ConstBuf(const T* begin, size_t n)  :span((const std::byte*)begin, n * sizeof(T)) { }
+        template <>
+        ConstBuf(const void* begin, size_t n) :span((const std::byte*)begin, n) { }
 
         explicit operator std::string_view() const {
-            return std::string_view((const char*)base, len);
+            return std::string_view((const char*)data(), size());
         }
+        explicit operator uv_buf_t() const;
     };
-    //TODO //FIXME: uv_buf_t's fields are in the opposite order on Windows. Deal with that.
-
 
 
     /** Abstract interface of an asynchronous bidirectional stream.
@@ -94,16 +101,14 @@ namespace crouton {
 
         /// Reads `len` bytes, copying into memory starting at `dst` (which must remain valid.)
         /// Will always read the full number of bytes unless it hits EOF.
-        [[nodiscard]] virtual Future<size_t> read(size_t len, void* dst);
-        [[nodiscard]] Future<size_t> read(MutableBuf buf)            {return read(buf.len, buf.base);}
+        [[nodiscard]] virtual Future<size_t> read(MutableBuf buf);
 
         /// Reads `len` bytes, returning them as a string.
         /// Will always read the full number of bytes unless it hits EOF.
         [[nodiscard]] Future<std::string> readString(size_t maxLen);
 
         /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
-        [[nodiscard]] Future<void> readExactly(size_t len, void* dst);
-        [[nodiscard]] Future<void> readExactly(MutableBuf buf) {return readExactly(buf.len, buf.base);}
+        [[nodiscard]] Future<void> readExactly(MutableBuf);
 
         /// Reads up through the first occurrence of the string `end`,
         /// or when `maxLen` bytes have been read, whichever comes first.
@@ -118,7 +123,6 @@ namespace crouton {
         /// Writes the entire buffer.
         /// The buffer must remain valid until this call completes.
         [[nodiscard]] Future<void> write(ConstBuf);
-        [[nodiscard]] Future<void> write(size_t len, const void *src) {return write(ConstBuf{src,len});}
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
         [[nodiscard]] Future<void> write(std::string);
@@ -140,7 +144,7 @@ namespace crouton {
 
     private:
         [[nodiscard]] Future<ConstBuf> i_readNoCopy(size_t maxLen);
-        Future<size_t> i_read(size_t len, void* dst);
+        Future<size_t> i_read(MutableBuf);
 
         ConstBuf _readBuf;
         size_t _readUsed = 0;
