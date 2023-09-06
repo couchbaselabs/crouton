@@ -18,7 +18,6 @@
 
 #include "FileStream.hh"
 #include "UVInternal.hh"
-#include "stream_wrapper.hh"
 #include <unistd.h>
 
 namespace crouton {
@@ -34,8 +33,9 @@ namespace crouton {
 
     class fs_request : public Request<uv_fs_s> {
     public:
+        fs_request(const char* what) :Request(what) { }
         ~fs_request()       {if (await_ready()) uv_fs_req_cleanup(this);}
-        int await_resume()  {return int(result);}
+        void await_resume() {check(result, _what);}
     private:
     };
 
@@ -54,7 +54,7 @@ namespace crouton {
 
 
     Future<void> FileStream::open() {
-        fs_request req;
+        fs_request req("opening file");
         check(uv_fs_open(curLoop(), &req, _path.c_str(), _flags, _mode, req.callback),
                   "opening file");
         AWAIT req;
@@ -73,13 +73,11 @@ namespace crouton {
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
 
-        fs_request req;
+        fs_request req("reading from a file");
         check(uv_fs_read(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
                          req.callback),
                   "reading from a file");
         AWAIT req;
-
-        check(req.result, "reading from a file");
         RETURN req.result;
     }
 
@@ -123,13 +121,11 @@ namespace crouton {
             uvbufs[i] = uv_buf_t(bufs[i]);
 
         _readBuf = nullptr; // because this write might invalidate it
-        fs_request req;
+        fs_request req("writing to a file");
         check(uv_fs_write(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
                           req.callback),
               "writing to a file");
         AWAIT req;
-
-        check(req.result, "writing to a file");
         RETURN;
     }
 

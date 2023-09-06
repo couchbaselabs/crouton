@@ -61,6 +61,7 @@ namespace crouton {
     template <class UV_REQUEST_T>
     class Request : public UV_REQUEST_T, public CoCondition<int> {
     public:
+        explicit Request(const char* what)  :_what(what) { }
 
         /// Pass this as the callback to a UV call on this request.
         static void callback(UV_REQUEST_T *req) {
@@ -72,8 +73,15 @@ namespace crouton {
         static void callbackWithStatus(UV_REQUEST_T *req, int status) {
             static_cast<Request*>(req)->notify(status);
         }
-    };
 
+        int await_resume() noexcept {
+            int status = value();
+            check(status, _what);
+            return status;
+        }
+
+        const char* _what;
+    };
 
     using connect_request = Request<uv_connect_s>;
     using write_request   = Request<uv_write_s>;

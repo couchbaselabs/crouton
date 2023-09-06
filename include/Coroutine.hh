@@ -245,6 +245,9 @@ namespace crouton {
             }
         }
 
+    protected:
+        T const& value() const  {return _value.value();}
+        
     private:
         coro_handle _waiter;
         std::optional<T> _value;

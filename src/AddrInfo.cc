@@ -30,6 +30,7 @@ namespace crouton {
 
     class getaddrinfo_request : public Request<uv_getaddrinfo_s> {
     public:
+        explicit getaddrinfo_request(const char* what) :Request(what) { }
         static void callback(uv_getaddrinfo_s *req, int status, struct addrinfo *res) {
             auto self = static_cast<getaddrinfo_request*>(req);
             self->info = res;
@@ -67,11 +68,11 @@ namespace crouton {
             service = portStr;  // This causes the 'port' fields of the addrinfos to be filled in
         }
 
-        getaddrinfo_request req;
+        getaddrinfo_request req("looking up hostname");
         check(uv_getaddrinfo(curLoop(), &req, req.callback,
                                  hostName.c_str(), service, &hints),
                   "looking up hostname");
-        check( AWAIT req, "looking up hostname" );
+        AWAIT req;
 
         RETURN AddrInfo(req.info);
     }
