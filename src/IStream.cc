@@ -30,24 +30,6 @@ namespace crouton {
     MutableBytes::operator uv_buf_t() const { return {.base = (char*)data(), .len = size()}; }
     ConstBytes::operator uv_buf_t() const   { return {.base = (char*)data(), .len = size()}; }
 
-#if 0
-    Future<ConstBytes> IStream::readNoCopy(size_t maxLen) {
-        if (_readUsed >= _readBuf.size()) {
-            _readBuf = AWAIT _readNoCopy(maxLen);
-            _readUsed = 0;
-        }
-        ConstBytes result((byte*)_readBuf.data() + _readUsed,
-                          std::min(maxLen, _readBuf.size() - _readUsed));
-        _readUsed += result.size();
-        RETURN result;
-    }
-
-    void IStream::unRead(size_t len) {
-        assert(len <= _readUsed);
-        _readUsed -= len;
-    }
-#endif
-
     Future<size_t> IStream::read(MutableBytes buf) {
         size_t bytesRead = 0;
         while (bytesRead < buf.size()) {

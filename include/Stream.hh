@@ -28,7 +28,6 @@ struct uv_stream_s;
 
 namespace crouton {
     struct Buffer;
-    struct uv_stream_wrapper;
 
     /** An asynchronous bidirectional stream. Abstract base class of Pipe and TCPSocket. */
     class Stream : public IStream {
@@ -75,11 +74,8 @@ namespace crouton {
 
         void opened(uv_stream_s*);
 
-        std::unique_ptr<uv_stream_wrapper> _stream;  // Handle for stream operations
-
     private:
         using BufferRef = std::unique_ptr<Buffer>;
-
 
         Stream(Stream const&) = delete;
         Stream& operator=(Stream const&) = delete;
@@ -89,15 +85,20 @@ namespace crouton {
         [[nodiscard]] Future<std::unique_ptr<Buffer>> readBuf();
         [[nodiscard]] Future<ConstBytes> fillInputBuf();
 
-        BufferRef _allocCallback(size_t);
-        void _readCallback(BufferRef,int);
+        void read_start();
+        void _allocCallback(size_t suggested, uv_buf_t*);
+        void _readCallback(ssize_t nread, const uv_buf_t*);
 
-        std::vector<BufferRef> _input, _spare;
-        std::optional<FutureProvider<BufferRef>> _futureBuf;
-        int _readError = 0;
-        std::unique_ptr<Buffer> _inputBuf;       // The last data read from the stream
-        bool            _readBusy = false;  // Detects re-entrant calls
-        bool            _writeBusy = false; // Detects re-entrant calls
+        uv_stream_s*            _stream = nullptr;  // The libuv stream
+        std::vector<BufferRef>  _input;             // Buffers of already-read data
+        std::vector<BufferRef>  _spare;             // Recycled buffers waiting to be reused
+        BufferRef               _readingBuf;        // Buffer currently being filled by libuv
+        std::optional<FutureProvider<BufferRef>> _futureBuf;  // Client data request
+        int                     _readError = 0;     // Error read from stream
+        std::unique_ptr<Buffer> _inputBuf;          // The last data read from the stream
+        bool                    _reading = false;   // True after uv_read_start
+        bool                    _readBusy = false;  // Detects re-entrant calls
+        bool                    _writeBusy = false; // Detects re-entrant calls
     };
 
 }
