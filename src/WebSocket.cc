@@ -140,7 +140,7 @@ namespace crouton {
             RETURN runtime_error("WebSocket is closed");
         while (true) {
             while (_incoming.empty()) {
-                ConstBuf data = AWAIT _stream->readNoCopy(100000);
+                ConstBytes data = AWAIT _stream->readNoCopy(100000);
                 if (data.size() == 0)
                     RETURN Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
                 // Pass the data to the 3rd-party WebSocket parser, which will call handleFragment.

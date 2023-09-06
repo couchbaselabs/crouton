@@ -24,30 +24,30 @@ namespace crouton {
     using namespace std;
 
 
-    MutableBuf::MutableBuf(uv_buf_t buf) :span((byte*)buf.base, buf.len) { }
-    ConstBuf::ConstBuf(uv_buf_t buf)     :span((const byte*)buf.base, buf.len) { }
+    MutableBytes::MutableBytes(uv_buf_t buf) :span((byte*)buf.base, buf.len) { }
+    ConstBytes::ConstBytes(uv_buf_t buf)     :span((const byte*)buf.base, buf.len) { }
 
-    MutableBuf::operator uv_buf_t() const { return {.base = (char*)data(), .len = size()}; }
-    ConstBuf::operator uv_buf_t() const   { return {.base = (char*)data(), .len = size()}; }
+    MutableBytes::operator uv_buf_t() const { return {.base = (char*)data(), .len = size()}; }
+    ConstBytes::operator uv_buf_t() const   { return {.base = (char*)data(), .len = size()}; }
 
 
 
-    Future<ConstBuf> IStream::i_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> IStream::i_readNoCopy(size_t maxLen) {
         if (_readUsed >= _readBuf.size()) {
             _readBuf = AWAIT _readNoCopy(maxLen);
             _readUsed = 0;
         }
-        ConstBuf result((byte*)_readBuf.data() + _readUsed,
+        ConstBytes result((byte*)_readBuf.data() + _readUsed,
                         std::min(maxLen, _readBuf.size() - _readUsed));
         _readUsed += result.size();
         RETURN result;
     }
 
 
-    Future<size_t> IStream::i_read(MutableBuf buf) {
+    Future<size_t> IStream::i_read(MutableBytes buf) {
         size_t bytesRead = 0;
         while (bytesRead < buf.size()) {
-            ConstBuf bytes = AWAIT i_readNoCopy(buf.size() - bytesRead);
+            ConstBytes bytes = AWAIT i_readNoCopy(buf.size() - bytesRead);
             if (bytes.size() == 0)
                 break;
             ::memcpy(buf.data() + bytesRead, bytes.data(), bytes.size());
@@ -57,7 +57,7 @@ namespace crouton {
     }
 
 
-    Future<ConstBuf> IStream::readNoCopy(size_t maxLen) {
+    Future<ConstBytes> IStream::readNoCopy(size_t maxLen) {
         NotReentrant nr(_readBusy);
         return i_readNoCopy(maxLen);
     }
@@ -69,13 +69,13 @@ namespace crouton {
     }
 
 
-    Future<size_t> IStream::read(MutableBuf buf) {
+    Future<size_t> IStream::read(MutableBytes buf) {
         NotReentrant nr(_readBusy);
         return i_read(buf);
     }
 
 
-    Future<void> IStream::readExactly(MutableBuf buf) {
+    Future<void> IStream::readExactly(MutableBytes buf) {
         size_t bytesRead = AWAIT read(buf);
         if (bytesRead < buf.size())
             check(int(UV_EOF), "reading from the network");
@@ -110,7 +110,7 @@ namespace crouton {
         string data;
         while (data.size() < maxLen) {
             auto dataLen = data.size();
-            ConstBuf peek = AWAIT i_readNoCopy(maxLen - dataLen);
+            ConstBytes peek = AWAIT i_readNoCopy(maxLen - dataLen);
 
             // Check for a match that's split between the old and new data:
             if (!data.empty()) {
@@ -146,7 +146,7 @@ namespace crouton {
     }
 
 
-    Future<void> IStream::write(ConstBuf buf) {
+    Future<void> IStream::write(ConstBytes buf) {
         NotReentrant nr(_writeBusy);
         return _write(buf);
     }
@@ -154,12 +154,12 @@ namespace crouton {
 
     Future<void> IStream::write(std::string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
-        AWAIT write(ConstBuf(str));
+        AWAIT write(ConstBytes(str));
         RETURN;
     }
 
 
-    Future<void> IStream::write(const ConstBuf buffers[], size_t nBuffers) {
+    Future<void> IStream::write(const ConstBytes buffers[], size_t nBuffers) {
         NotReentrant nr(_writeBusy);
         for (size_t i = 0; i < nBuffers; ++i) {
             AWAIT _write(buffers[i]);
@@ -167,7 +167,7 @@ namespace crouton {
     }
 
 
-    Future<void> IStream::write(std::initializer_list<ConstBuf> buffers) {
+    Future<void> IStream::write(std::initializer_list<ConstBytes> buffers) {
         return write(buffers.begin(), buffers.size());
     }
 

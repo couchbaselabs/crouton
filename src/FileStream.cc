@@ -65,7 +65,7 @@ namespace crouton {
 
 
     // This is FileStream's primitive read operation.
-    Future<size_t> FileStream::_preadv(const MutableBuf bufs[], size_t nbufs, int64_t offset) {
+    Future<size_t> FileStream::_preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset) {
         assert(isOpen());
         static constexpr size_t kMaxBufs = 8;
         if (nbufs > kMaxBufs) throw invalid_argument("too many bufs");
@@ -82,7 +82,7 @@ namespace crouton {
     }
 
 
-    Future<size_t> FileStream::preadv(const MutableBuf bufs[], size_t nbufs, int64_t offset) {
+    Future<size_t> FileStream::preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
         return _preadv(bufs, nbufs, offset);
     }
@@ -90,18 +90,18 @@ namespace crouton {
 
     // We also override this IStream method, because it's more efficient to do it with preadv;
     // it saves a memcpy.
-    Future<size_t> FileStream::read(MutableBuf buf) {
+    Future<size_t> FileStream::read(MutableBytes buf) {
         return preadv(&buf, 1, -1);
     }
 
 
     // IStream's primitive read operation.
-    [[nodiscard]] Future<ConstBuf> FileStream::_readNoCopy(size_t maxLen) {
+    [[nodiscard]] Future<ConstBytes> FileStream::_readNoCopy(size_t maxLen) {
         NotReentrant nr(_busy);
         if (!_readBuf)
             _readBuf = make_unique<Buffer>();
         if (_readBuf->empty()) {
-            MutableBuf buf(_readBuf->data, Buffer::kCapacity);
+            MutableBytes buf(_readBuf->data, Buffer::kCapacity);
             _readBuf->size = uint32_t(AWAIT _preadv(&buf, 1, -1));
             _readBuf->used = 0;
         }
@@ -110,7 +110,7 @@ namespace crouton {
 
 
     // This is FileStream's primitive write operation.
-    Future<void> FileStream::pwritev(const ConstBuf bufs[], size_t nbufs, int64_t offset) {
+    Future<void> FileStream::pwritev(const ConstBytes bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
         assert(isOpen());
 
@@ -131,14 +131,14 @@ namespace crouton {
 
 
     // IStream's primitive write operation.
-    Future<void> FileStream::_write(ConstBuf buf) {
+    Future<void> FileStream::_write(ConstBytes buf) {
         return pwritev(&buf, 1, -1);
     }
 
 
     // We also override this IStream method, because it's more efficient to do it with pwritev
     // than the overridden method's multiple calls to _write.
-    Future<void> FileStream::write(const ConstBuf buffers[], size_t nBuffers) {
+    Future<void> FileStream::write(const ConstBytes buffers[], size_t nBuffers) {
         return pwritev(buffers, nBuffers, -1);
     }
 

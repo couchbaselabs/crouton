@@ -149,7 +149,7 @@ namespace crouton {
     }
 
     
-    Future<ConstBuf> Stream::_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> Stream::_readNoCopy(size_t maxLen) {
         assert(isOpen());
         NotReentrant nr(_readBusy);
         if (!_inputBuf || _inputBuf->empty()) {
@@ -242,7 +242,7 @@ namespace crouton {
         return _stream && _stream->is_writable();
     }
 
-    Future<void> Stream::write(const ConstBuf bufs[], size_t nbufs) {
+    Future<void> Stream::write(const ConstBytes bufs[], size_t nbufs) {
         NotReentrant nr(_writeBusy);
         assert(isOpen());
 
@@ -259,12 +259,12 @@ namespace crouton {
     }
 
 
-    Future<void> Stream::_write(ConstBuf buf) {
+    Future<void> Stream::_write(ConstBytes buf) {
         return write(&buf, 1);
     }
 
 
-    size_t Stream::tryWrite(ConstBuf buf) {
+    size_t Stream::tryWrite(ConstBytes buf) {
         uv_buf_t uvbuf(buf);
         int result = _stream->try_write(&uvbuf, 1);
         if (result == UV_EAGAIN)

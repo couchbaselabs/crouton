@@ -119,7 +119,7 @@ namespace crouton {
 
         /// Low-level method, mostly for testing, that feeds data to the parser.
         /// Returns true if the status and headers are available.
-        bool parseData(ConstBuf);
+        bool parseData(ConstBytes);
 
         /// Returns true if the entire request has been read.
         bool complete() const           {return _messageComplete;}

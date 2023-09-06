@@ -61,7 +61,7 @@ namespace crouton {
 
         /// Writes as much as possible immediately, without blocking.
         /// @return  Number of bytes written, which may be 0 if the write buffer is full.
-        size_t tryWrite(ConstBuf);
+        size_t tryWrite(ConstBytes);
 
         using IStream::write;
 
@@ -81,9 +81,9 @@ namespace crouton {
         void _close();
  
         // IStream methods:
-        [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        [[nodiscard]] Future<void> _write(ConstBuf) override;
-        [[nodiscard]] Future<void> write(const ConstBuf buffers[], size_t nBuffers) override;
+        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
+        [[nodiscard]] Future<void> _write(ConstBytes) override;
+        [[nodiscard]] Future<void> write(const ConstBytes buffers[], size_t nBuffers) override;
 
         [[nodiscard]] Future<int64_t> _read(size_t len, void* dst);
         [[nodiscard]] Future<std::unique_ptr<Buffer>> readBuf();

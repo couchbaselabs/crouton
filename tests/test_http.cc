@@ -170,7 +170,7 @@ TEST_CASE("HTTPs GET Streaming", "[uv][http]") {
         cout << "BODY:\n";
         size_t len = 0;
         while(true) {
-            ConstBuf chunk = AWAIT resp.readNoCopy();
+            ConstBytes chunk = AWAIT resp.readNoCopy();
             cout << "\t...read " << chunk.size() << " bytes\n";
             if (chunk.size() == 0)
                 break;

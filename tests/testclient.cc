@@ -65,7 +65,7 @@ static Future<int> run() {
     }
 
     if (ok || verbose) {
-        ConstBuf data;
+        ConstBytes data;
         do {
             data = AWAIT resp.readNoCopy();
             cout << string_view((char*)data.data(), data.size());

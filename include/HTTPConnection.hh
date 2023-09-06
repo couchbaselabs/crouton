@@ -103,8 +103,8 @@ namespace crouton {
         IStream& upgradedStream();
 
     private:
-        [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        Future<void> _write(ConstBuf) override;
+        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
+        Future<void> _write(ConstBytes) override;
 
         HTTPConnection* _connection;
         HTTPParser _parser;

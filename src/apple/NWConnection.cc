@@ -114,25 +114,25 @@ namespace crouton::apple {
             dispatch_release(_content);
             _content = nullptr;
         }
-        _contentBuf = ConstBuf{};
+        _contentBuf = ConstBytes{};
         _contentUsed = 0;
     }
 
 
-    Future<ConstBuf> NWConnection::_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> NWConnection::_readNoCopy(size_t maxLen) {
         if (_content && _contentUsed < _contentBuf.size()) {
             // I can return some unRead data from the buffer:
             auto len = std::min(maxLen, _contentBuf.size() - _contentUsed);
-            ConstBuf result(_contentBuf.data() + _contentUsed, len);
+            ConstBytes result(_contentBuf.data() + _contentUsed, len);
             _contentUsed += len;
             return result;
 
         } else if (_eof) {
-            return ConstBuf{};
+            return ConstBytes{};
             
         } else {
             // Read from the stream:
-            FutureProvider<ConstBuf> onRead;
+            FutureProvider<ConstBytes> onRead;
             dispatch_sync(_queue, ^{
                 clearReadBuf();
                 nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
@@ -148,7 +148,7 @@ namespace crouton::apple {
                         const void* data;
                         size_t size;
                         _content = dispatch_data_create_map(content, &data, &size);
-                        ConstBuf buf(data, size);
+                        ConstBytes buf(data, size);
                         _contentUsed = buf.size();
                         _contentBuf = buf;
                         cerr << "NWConnection read " << buf.size() << " bytes\n";
@@ -156,7 +156,7 @@ namespace crouton::apple {
                     } else if (error) {
                         onRead.setResult(NWError(error));
                     } else if (is_complete) {
-                        onRead.setResult(ConstBuf{});
+                        onRead.setResult(ConstBytes{});
                     }
                 });
             });
@@ -165,7 +165,7 @@ namespace crouton::apple {
     }
 
 
-    Future<void> NWConnection::_writeOrShutdown(ConstBuf src, bool shutdown) {
+    Future<void> NWConnection::_writeOrShutdown(ConstBytes src, bool shutdown) {
         clearReadBuf();
         FutureProvider<void> onWrite;
         dispatch_sync(_queue, ^{

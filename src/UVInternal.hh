@@ -98,9 +98,9 @@ namespace crouton {
         size_t available() const {return size - used;}
         bool empty() const       {return size == used;}
 
-        ConstBuf read(size_t maxLen) {
+        ConstBytes read(size_t maxLen) {
             size_t n = std::min(maxLen, available());
-            ConstBuf result(data + used, n);
+            ConstBytes result(data + used, n);
             used += n;
             return result;
         }

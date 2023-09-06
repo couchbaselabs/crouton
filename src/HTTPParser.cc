@@ -96,7 +96,7 @@ namespace crouton {
         if (!_stream->isOpen())
             AWAIT _stream->open();
 
-        ConstBuf data;
+        ConstBytes data;
         do {
             data = AWAIT _stream->readNoCopy();
         } while (!parseData(data));
@@ -105,7 +105,7 @@ namespace crouton {
 
     Future<std::string> HTTPParser::readBody() {
         assert(_stream);
-        ConstBuf data;
+        ConstBytes data;
         while (_body.empty() && !complete()) {
             data = AWAIT _stream->readNoCopy();
             parseData(data);
@@ -122,7 +122,7 @@ namespace crouton {
     }
 
 
-    bool HTTPParser::parseData(ConstBuf data) {
+    bool HTTPParser::parseData(ConstBytes data) {
         _parser->data = this;
         llhttp_errno_t err;
         if (data.size() > 0)

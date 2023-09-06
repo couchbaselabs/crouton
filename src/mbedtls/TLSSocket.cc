@@ -115,7 +115,7 @@ namespace crouton::mbed {
 
 
         // TLSSocket wants to write.
-        Future<void> write(ConstBuf buf) {
+        Future<void> write(ConstBytes buf) {
             //cerr << "TLSStream write(" << buf.size() << ") ...\n";
             if (buf.size() == 0)
                 RETURN;
@@ -227,7 +227,7 @@ namespace crouton::mbed {
                 // We've read the entire buffer; time to read again:
                 //cerr << "[async read] " << endl;
                 _pendingRead.emplace(_stream->readNoCopy(100000));
-                _readBuf = ConstBuf{};
+                _readBuf = ConstBytes{};
                 result = MBEDTLS_ERR_SSL_WANT_READ;
             } else {
                 // At EOF:
@@ -264,8 +264,8 @@ namespace crouton::mbed {
         TLSContext&                 _context;           // The shared mbedTLS context
         mbedtls_ssl_context         _ssl;               // The mbedTLS SSL object
         optional<Future<void>>      _pendingWrite;      // In-progress write operation, if any
-        optional<Future<ConstBuf>>  _pendingRead;       // In-progress read operation, if any
-        ConstBuf                    _readBuf;           // The (remaining) data read from _stream
+        optional<Future<ConstBytes>>  _pendingRead;       // In-progress read operation, if any
+        ConstBytes                    _readBuf;           // The (remaining) data read from _stream
         bool                        _readEOF = false;   // True when TCP read stream reaches EOF
         bool                        _tcpOpen = false;   // True when the TCP stream is open
         bool                        _tlsOpen = false;   // True when the TLS connection is open
@@ -301,7 +301,7 @@ namespace crouton::mbed {
         return _impl->handshake();
     }
 
-    Future<ConstBuf> TLSSocket::_readNoCopy(size_t maxLen)  {
+    Future<ConstBytes> TLSSocket::_readNoCopy(size_t maxLen)  {
         NotReentrant nr(_busy);
         if (_inputBuf->empty()) {
             auto len = AWAIT _impl->read(_inputBuf->data, _inputBuf->kCapacity);
@@ -315,7 +315,7 @@ namespace crouton::mbed {
 
     }
 
-    Future<void> TLSSocket::_write(ConstBuf buf)  {
+    Future<void> TLSSocket::_write(ConstBytes buf)  {
         NotReentrant nr(_busy);
         return _impl->write(buf);
     }

@@ -42,8 +42,8 @@ namespace crouton::mbed {
         IStream const& stream() const override  {return *this;}
 
     protected:
-        [[nodiscard]] Future<ConstBuf> _readNoCopy(size_t maxLen) override;
-        [[nodiscard]] Future<void> _write(ConstBuf) override;
+        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
+        [[nodiscard]] Future<void> _write(ConstBytes) override;
 
     private:
         class Impl;
