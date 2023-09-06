@@ -149,12 +149,12 @@ namespace crouton {
     }
 
     
-    Future<ConstBytes> Stream::_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> Stream::readNoCopy(size_t maxLen) {
         assert(isOpen());
         NotReentrant nr(_readBusy);
         if (!_inputBuf || _inputBuf->empty()) {
-            AWAIT fillInputBuf();
-            if (!_inputBuf || _inputBuf->empty())
+            (void) AWAIT fillInputBuf();
+            if (!_inputBuf)
                 RETURN {};  // Reached EOF
         }
 
@@ -163,17 +163,28 @@ namespace crouton {
     }
 
 
+    Future<ConstBytes> Stream::peekNoCopy() {
+        assert(isOpen());
+        if (!_inputBuf || _inputBuf->empty())
+            return fillInputBuf();
+        else
+            return _inputBuf->bytes();
+    }
+
+
     /// Low-level read method that ensures there is data to read in `_inputBuf`.
-    Future<void> Stream::fillInputBuf() {
+    Future<ConstBytes> Stream::fillInputBuf() {
         assert(isOpen());
         assert(_readBusy);
-        if (_inputBuf && _inputBuf->available() == 0)
+        if (_inputBuf && _inputBuf->available() == 0) {
             _spare.emplace_back(std::move(_inputBuf));
-
+            _inputBuf.reset();
+        }
         if (!_inputBuf) {
             // Reload the input buffer from the socket:
             _inputBuf = AWAIT readBuf();
         }
+        RETURN _inputBuf ? _inputBuf->bytes() : ConstBytes{};
     }
 
 
@@ -259,7 +270,7 @@ namespace crouton {
     }
 
 
-    Future<void> Stream::_write(ConstBytes buf) {
+    Future<void> Stream::write(ConstBytes buf) {
         return write(&buf, 1);
     }
 

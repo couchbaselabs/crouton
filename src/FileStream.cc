@@ -88,24 +88,34 @@ namespace crouton {
     }
 
 
-    // We also override this IStream method, because it's more efficient to do it with preadv;
-    // it saves a memcpy.
-    Future<size_t> FileStream::read(MutableBytes buf) {
-        return preadv(&buf, 1, -1);
+    Future<ConstBytes> FileStream::_fillBuffer() {
+        if (!_readBuf)
+            _readBuf = make_unique<Buffer>();
+        assert(_readBuf->empty());
+        MutableBytes buf(_readBuf->data, Buffer::kCapacity);
+        size_t n = AWAIT _preadv(&buf, 1, -1);
+
+        _readBuf->size = uint32_t(n);
+        _readBuf->used = 0;
+        RETURN _readBuf->bytes();
     }
 
 
     // IStream's primitive read operation.
-    [[nodiscard]] Future<ConstBytes> FileStream::_readNoCopy(size_t maxLen) {
+    [[nodiscard]] Future<ConstBytes> FileStream::readNoCopy(size_t maxLen) {
         NotReentrant nr(_busy);
-        if (!_readBuf)
-            _readBuf = make_unique<Buffer>();
-        if (_readBuf->empty()) {
-            MutableBytes buf(_readBuf->data, Buffer::kCapacity);
-            _readBuf->size = uint32_t(AWAIT _preadv(&buf, 1, -1));
-            _readBuf->used = 0;
-        }
+        if (!_readBuf || _readBuf->empty())
+            (void) AWAIT _fillBuffer();
         RETURN _readBuf->read(maxLen);
+    }
+
+
+    [[nodiscard]] Future<ConstBytes> FileStream::peekNoCopy() {
+        NotReentrant nr(_busy);
+        if (!_readBuf || _readBuf->empty())
+            return _fillBuffer();
+        else
+            return _readBuf->bytes();
     }
 
 
@@ -131,7 +141,7 @@ namespace crouton {
 
 
     // IStream's primitive write operation.
-    Future<void> FileStream::_write(ConstBytes buf) {
+    Future<void> FileStream::write(ConstBytes buf) {
         return pwritev(&buf, 1, -1);
     }
 

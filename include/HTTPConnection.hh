@@ -98,14 +98,16 @@ namespace crouton {
         [[nodiscard]] Future<void> close() override;
         [[nodiscard]] Future<void> closeWrite() override;
 
+        // IStream API:
+        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
+        [[nodiscard]] Future<void> write(ConstBytes) override;
+
         /// The HTTPConnection's raw socket stream.
         /// Only for use when upgrading protocols (i.e. to WebSocket.)
         IStream& upgradedStream();
 
     private:
-        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
-        Future<void> _write(ConstBytes) override;
-
         HTTPConnection* _connection;
         HTTPParser _parser;
         std::string _buf;

@@ -41,11 +41,14 @@ namespace crouton::mbed {
         IStream& stream() override              {return *this;}
         IStream const& stream() const override  {return *this;}
 
-    protected:
-        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
-        [[nodiscard]] Future<void> _write(ConstBytes) override;
+        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
+        [[nodiscard]] Future<void> write(ConstBytes) override;
+        using IStream::write;
 
     private:
+        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
+
         class Impl;
         std::unique_ptr<Impl>   _impl;
         std::unique_ptr<Buffer> _inputBuf;

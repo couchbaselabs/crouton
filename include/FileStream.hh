@@ -54,27 +54,27 @@ namespace crouton {
         /// Closes the write side, but not the read side. (Like a socket's `shutdown`.)
         [[nodiscard]] Future<void> closeWrite() override    {return Future<void>();}
 
-        [[nodiscard]] Future<size_t> read(MutableBytes) override;
+        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
 
+        [[nodiscard]] Future<void> write(ConstBytes) override;
         [[nodiscard]] Future<void> write(const ConstBytes buffers[], size_t nBuffers) override;
+        using IStream::write;
 
+        /// Ignores the current stream position and reads from an absolute offset in the file
+        /// into one or more buffers.
         Future<size_t> preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
+
+        /// Ignores the current stream position and writes to an absolute offset in the file
+        /// from one or more buffers.
         Future<void> pwritev(const ConstBytes bufs[], size_t nbufs, int64_t offset);
-
-    protected:
-        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen) override;
-
-        /// Abstract write method subclasses must implement.
-        /// @note  If a subclass natively supports multi-buffer write ("writev"),
-        ///     it can override the virtual multi-buffer write method too, and implement
-        ///     this one to simply call it with one buffer.
-        [[nodiscard]] Future<void> _write(ConstBytes) override;
 
     private:
         explicit FileStream(int fd);
         FileStream(FileStream const&) = delete;
         FileStream& operator=(FileStream const& fs) = delete;
         Future<size_t> _preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
+        Future<ConstBytes> _fillBuffer();
         void _close();
 
         std::string _path;

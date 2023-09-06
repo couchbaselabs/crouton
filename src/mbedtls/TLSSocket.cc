@@ -301,7 +301,15 @@ namespace crouton::mbed {
         return _impl->handshake();
     }
 
-    Future<ConstBytes> TLSSocket::_readNoCopy(size_t maxLen)  {
+    Future<ConstBytes> TLSSocket::readNoCopy(size_t maxLen)  {
+        return _readNoCopy(maxLen, false);
+    }
+    
+    Future<ConstBytes> TLSSocket::peekNoCopy()  {
+        return _readNoCopy(0, true);
+    }
+
+    Future<ConstBytes> TLSSocket::_readNoCopy(size_t maxLen, bool peek)  {
         NotReentrant nr(_busy);
         if (_inputBuf->empty()) {
             auto len = AWAIT _impl->read(_inputBuf->data, _inputBuf->kCapacity);
@@ -310,12 +318,10 @@ namespace crouton::mbed {
             if (_inputBuf->empty())
                 RETURN {};  // Reached EOF
         }
-        // Advance _inputBuf->used and return the pointer:
-        RETURN _inputBuf->read(maxLen);
-
+        RETURN peek ? _inputBuf->data : _inputBuf->read(maxLen);
     }
 
-    Future<void> TLSSocket::_write(ConstBytes buf)  {
+    Future<void> TLSSocket::write(ConstBytes buf)  {
         NotReentrant nr(_busy);
         return _impl->write(buf);
     }

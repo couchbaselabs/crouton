@@ -92,14 +92,21 @@ namespace crouton {
 
         //---- Reading:
 
-        /// Lowest level read method.  Reads at least 1 byte, except at EOF.
-        /// Returned buffer belongs to the stream, and is valid until the next read or close call.
-        [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536);
+        /// Reads at least 1 byte, except at EOF, and no more than `maxLen`.
+        /// The bytes are read into an internal buffer that's returned to the caller.
+        /// @warning The returned buffer belongs to the stream, and is only valid until the next
+        ///          read or close call.
+        /// @note This is an abstract method that subclasses must implement.
+        [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536) =0;
 
-        /// Makes the last `len` read bytes unread again.
-        /// The last read call must have been `readNoCopy`.
-        /// `len` may not be greater than the number of bytes returned by `readNoCopy`.
-        virtual void unRead(size_t len);
+        /// Returns the next available unread bytes, always at least 1 byte except at EOF.
+        /// Unlike `readNoCopy`, the returned bytes are _not consumed_ -- they will
+        /// be returned again by the next read operation.
+        /// To consume _n_ bytes after peeking, call `readNoCopy(n)`.
+        /// @warning The returned buffer belongs to the stream, and is only valid until the next
+        ///          read or close call.
+        /// @note This is an abstract method that subclasses must implement.
+        [[nodiscard]] virtual Future<ConstBytes> peekNoCopy() =0;
 
         /// Reads `len` bytes, copying into memory starting at `dst` (which must remain valid.)
         /// Will always read the full number of bytes unless it hits EOF.
@@ -123,35 +130,21 @@ namespace crouton {
         //---- Writing:
 
         /// Writes the entire buffer.
-        /// The buffer must remain valid until this call completes.
-        [[nodiscard]] Future<void> write(ConstBytes);
+        /// @warning The buffer must remain valid until this call completes.
+        /// @note This is the abstract write method that subclasses must implement.
+        [[nodiscard]] virtual Future<void> write(ConstBytes) =0;
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
         [[nodiscard]] Future<void> write(std::string);
 
         /// Writes data, fully, from multiple input buffers.
         /// @warning The data pointed to by the buffers must remain valid until completion.
+        /// @note  The default implementation makes `nBuffers` calls to `write(ConstBytes)`.
+        ///        A subclass that natively supports multi-buffer write ("writev") may override
+        ///        this method as an optimization.
         [[nodiscard]] virtual Future<void> write(const ConstBytes buffers[], size_t nBuffers);
+        
         [[nodiscard]] Future<void> write(std::initializer_list<ConstBytes> buffers);
-
-    protected:
-        /// The abstract read method that subclasses must implement.
-        [[nodiscard]] virtual Future<ConstBytes> _readNoCopy(size_t maxLen) =0;
-
-        /// Abstract write method subclasses must implement.
-        /// @note  If a subclass natively supports multi-buffer write ("writev"),
-        ///     it can override the virtual multi-buffer write method too, and implement
-        ///     this one to simply call it with one buffer.
-        [[nodiscard]] virtual Future<void> _write(ConstBytes) =0;
-
-    private:
-        [[nodiscard]] Future<ConstBytes> i_readNoCopy(size_t maxLen);
-        Future<size_t> i_read(MutableBytes);
-
-        ConstBytes _readBuf;
-        size_t _readUsed = 0;
-        bool _readBusy = false;
-        bool _writeBusy = false;
     };
 
 }

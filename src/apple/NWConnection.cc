@@ -119,7 +119,17 @@ namespace crouton::apple {
     }
 
 
-    Future<ConstBytes> NWConnection::_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> NWConnection::readNoCopy(size_t maxLen) {
+        return _readNoCopy(maxLen, false);
+    }
+
+
+    Future<ConstBytes> NWConnection::peekNoCopy() {
+        return _readNoCopy(65536, true);
+    }
+
+
+    Future<ConstBytes> NWConnection::_readNoCopy(size_t maxLen, bool peek) {
         if (_content && _contentUsed < _contentBuf.size()) {
             // I can return some unRead data from the buffer:
             auto len = std::min(maxLen, _contentBuf.size() - _contentUsed);
@@ -148,11 +158,10 @@ namespace crouton::apple {
                         const void* data;
                         size_t size;
                         _content = dispatch_data_create_map(content, &data, &size);
-                        ConstBytes buf(data, size);
-                        _contentUsed = buf.size();
-                        _contentBuf = buf;
-                        cerr << "NWConnection read " << buf.size() << " bytes\n";
-                        onRead.setResult(std::move(buf));
+                        _contentBuf = ConstBytes(data, size);
+                        _contentUsed = peek ? 0 : size;
+                        cerr << "NWConnection read " << size << " bytes\n";
+                        onRead.setResult(_contentBuf);
                     } else if (error) {
                         onRead.setResult(NWError(error));
                     } else if (is_complete) {

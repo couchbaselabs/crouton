@@ -165,7 +165,7 @@ namespace crouton {
         throw logic_error("HTTPReponse is not writeable");
     }
 
-    Future<ConstBytes> HTTPResponse::_readNoCopy(size_t maxLen) {
+    Future<ConstBytes> HTTPResponse::readNoCopy(size_t maxLen) {
         if (_bufUsed >= _buf.size()) {
             _buf = AWAIT _parser.readBody();
             _bufUsed = 0;
@@ -175,7 +175,15 @@ namespace crouton {
         RETURN result;
     }
 
-    Future<void> HTTPResponse::_write(ConstBytes) {
+    Future<ConstBytes> HTTPResponse::peekNoCopy() {
+        if (_bufUsed >= _buf.size()) {
+            _buf = AWAIT _parser.readBody();
+            _bufUsed = 0;
+        }
+        RETURN ConstBytes(&_buf[_bufUsed], _buf.size() - _bufUsed);
+    }
+
+    Future<void> HTTPResponse::write(ConstBytes) {
         throw logic_error("HTTPReponse is not writeable");
     }
 
