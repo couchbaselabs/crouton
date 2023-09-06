@@ -20,7 +20,6 @@
 #include "AddrInfo.hh"
 #include "Defer.hh"
 #include "UVInternal.hh"
-#include "stream_wrapper.hh"
 #include <mutex>
 #include <unistd.h>
 #include <iostream>
@@ -37,15 +36,13 @@ namespace crouton {
         uv_tcp_init(curLoop(), tcpHandle);
         check(uv_accept((uv_stream_t*)server, (uv_stream_t*)tcpHandle),
               "accepting client connection");
-        opened(make_unique<uv_stream_wrapper>((uv_stream_t*)tcpHandle));
+        opened((uv_stream_t*)tcpHandle);
     }
 
 
     Future<void> TCPSocket::open() {
         assert(!isOpen());
         assert(_binding);
-        std::unique_ptr<uv_stream_wrapper> stream;
-        connect_request req;
         int err;
 
         // Resolve the address/hostname:
@@ -58,19 +55,21 @@ namespace crouton {
 
         auto tcpHandle = new uv_tcp_t;
         uv_tcp_init(curLoop(), tcpHandle);
-        stream = make_unique<uv_stream_wrapper>((uv_stream_t*)tcpHandle);
-        err = uv_tcp_connect(&req, tcpHandle, &addr,
-                             req.callbackWithStatus);
-
         uv_tcp_nodelay(tcpHandle, _binding->noDelay);
         uv_tcp_keepalive(tcpHandle, (_binding->keepAlive > 0), _binding->keepAlive);
         _binding = nullptr;
 
-        check(err, "opening connection");
-        check( AWAIT req, "opening connection" );
+        connect_request req("opening connection");
+        err = uv_tcp_connect(&req, tcpHandle, &addr,
+                             req.callbackWithStatus);
+        if (err < 0) {
+            closeHandle(tcpHandle);
+            check(err, "opening connection");
+        }
 
-        opened(std::move(stream));
-        RETURN;
+        AWAIT req;
+
+        opened((uv_stream_t*)tcpHandle);
     }
 
 }

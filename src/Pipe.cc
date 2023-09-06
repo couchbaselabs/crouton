@@ -18,7 +18,6 @@
 
 #include "Pipe.hh"
 #include "UVInternal.hh"
-#include "stream_wrapper.hh"
 
 namespace crouton {
     using namespace std;
@@ -37,7 +36,7 @@ namespace crouton {
         if (err == 0)
             err = uv_pipe_open(pipe, fd);
         if (err == 0) {
-            opened(make_unique<uv_stream_wrapper>(pipe));
+            opened((uv_stream_t*)pipe);
         } else {
             closeHandle(pipe);
             check(err, "opening a pipe");

@@ -18,8 +18,9 @@
 
 #pragma once
 #include "Coroutine.hh"
-#include "UVBase.hh"
+#include "IStream.hh"
 #include "Scheduler.hh"
+#include "UVBase.hh"
 #include <uv.h>
 #include <concepts>
 #include <iostream>
@@ -76,5 +77,33 @@ namespace crouton {
 
     using connect_request = Request<uv_connect_s>;
     using write_request   = Request<uv_write_s>;
+
+
+    /** A data buffer used by stream_wrapper and Stream. */
+    struct Buffer {
+        static constexpr size_t kCapacity = 65536 - 2 * sizeof(uint32_t);
+
+        uint32_t    size = 0;               ///< Length of valid data
+        uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
+        std::byte   data[kCapacity];        ///< The data itself
+
+        size_t available() const {return size - used;}
+        bool empty() const       {return size == used;}
+
+        ConstBuf read(size_t maxLen) {
+            size_t n = std::min(maxLen, available());
+            ConstBuf result(data + used, n);
+            used += n;
+            return result;
+        }
+
+        void unRead(size_t len) {
+            assert(len <= used);
+            used -= len;
+        }
+    };
+
+    using BufferRef = std::unique_ptr<Buffer>;
+
 
 }

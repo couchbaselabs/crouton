@@ -18,21 +18,94 @@
 
 #include "Stream.hh"
 #include "UVInternal.hh"
-#include "stream_wrapper.hh"
 #include <unistd.h>
 
 namespace crouton {
     using namespace std;
 
 
+    // Wrapper around a uv_stream_t.
+    // TODO: Merge this into the Stream class; it's not useful on its own anymore.
+    struct uv_stream_wrapper {
+        explicit uv_stream_wrapper(uv_stream_t *stream) :_stream(stream) {_stream->data = this;}
+
+        ~uv_stream_wrapper() {closeHandle(_stream);}
+
+        using AllocCallback = std::function<BufferRef(size_t suggestedSize)>;
+        using ReadCallback = std::function<void(BufferRef, int err)>;
+
+        AllocCallback _allocCallback;
+        ReadCallback  _readCallback;
+
+        int read_start() {
+            auto alloc = [](uv_handle_t* h, size_t suggested, uv_buf_t* uvbuf) {
+                auto stream = (uv_stream_wrapper*)h->data;
+                stream->alloc(suggested, uvbuf);
+            };
+            auto read = [](uv_stream_t* h, ssize_t nread, const uv_buf_t* uvbuf) {
+                auto stream = (uv_stream_wrapper*)h->data;
+                stream->read(nread, uvbuf);
+            };
+            return uv_read_start(_stream, alloc, read);
+        }
+
+        int read_stop() {
+            return uv_read_stop(_stream);
+        }
+
+        int write(uv_write_t *req, const uv_buf_t bufs[], unsigned nbufs, uv_write_cb cb) {
+            return uv_write(req, _stream, bufs, nbufs, cb);
+        }
+
+        int try_write(const uv_buf_t bufs[], unsigned nbufs) {
+            return uv_try_write(_stream, bufs, nbufs);
+        }
+
+        bool is_readable() {return uv_is_readable(_stream);}
+        bool is_writable() {return uv_is_writable(_stream);}
+
+        int shutdown(uv_shutdown_t* req, uv_shutdown_cb cb) {
+            return uv_shutdown(req, _stream, cb);
+        }
+
+    private:
+        void alloc(size_t suggested, uv_buf_t* uvbuf) {
+            _readingBuf = _allocCallback(suggested);
+            uvbuf->base = (char*)_readingBuf->data;
+            uvbuf->len = Buffer::kCapacity;
+        }
+
+        void read(ssize_t nread, const uv_buf_t* uvbuf) {
+            assert(nread != 0);
+            if (nread > 0) {
+                assert(size_t(nread) <= Buffer::kCapacity);
+                assert(uvbuf->base == (char*)_readingBuf->data);
+                _readingBuf->size = uint32_t(nread);
+                _readingBuf->used = 0;
+                nread = 0;
+            }
+            _readCallback(std::move(_readingBuf), int(nread));
+        }
+
+        std::vector<BufferRef> _input, _spare;
+        BufferRef _readingBuf;
+        uv_stream_t* _stream;
+    };
+
+
+#pragma mark - STREAM:
+    
+
+    Stream::Stream() = default;
+
     Stream::~Stream() {
         close();
     }
 
 
-    void Stream::opened(std::unique_ptr<uv_stream_wrapper> s) {
-        assert(!_stream); 
-        _stream = std::move(s);
+    void Stream::opened(uv_stream_t *stream) {
+        assert(!_stream);
+        _stream = make_unique<uv_stream_wrapper>(stream);
         _stream->_allocCallback = [this](size_t suggested) {
             return this->_allocCallback(suggested);
         };
@@ -45,10 +118,9 @@ namespace crouton {
     Future<void> Stream::closeWrite() {
         assert(isOpen());
 
-        Request<uv_shutdown_t> req;
+        Request<uv_shutdown_t> req("closing connection");
         check( _stream->shutdown(&req, req.callbackWithStatus), "closing connection");
-        check( AWAIT req, "closing connection" );
-        RETURN;
+        AWAIT req;
     }
 
 
@@ -180,12 +252,10 @@ namespace crouton {
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
 
-        write_request req;
+        write_request req("sending to the network");
         check(_stream->write(&req, uvbufs, unsigned(nbufs), req.callbackWithStatus),
               "sending to the network");
-        check( AWAIT req, "sending to the network");
-
-        RETURN;
+        AWAIT req;
     }
 
 

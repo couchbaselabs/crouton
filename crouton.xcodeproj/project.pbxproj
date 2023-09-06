@@ -359,7 +359,6 @@
 		279D5D642A952DD1005C3066 /* Pipe.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Pipe.cc; sourceTree = "<group>"; };
 		279D5E302A954627005C3066 /* libllhttp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libllhttp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D5E442A9546CC005C3066 /* llhttp.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = llhttp.xcconfig; sourceTree = "<group>"; };
-		279D5E562A956CC3005C3066 /* stream_wrapper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = stream_wrapper.hh; sourceTree = "<group>"; };
 		27BA40742AA502DD0011BB86 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
 		27F49CCD2A9D007D00BFB24C /* Actor.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Actor.hh; sourceTree = "<group>"; };
 		27F49CCE2A9D011B00BFB24C /* test_io.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = test_io.cc; sourceTree = "<group>"; };
@@ -516,7 +515,6 @@
 				279D5D642A952DD1005C3066 /* Pipe.cc */,
 				278F7E522AA7D1BC005B12F2 /* Process.cc */,
 				272730472A8D8A73000CCA22 /* Scheduler.cc */,
-				279D5E562A956CC3005C3066 /* stream_wrapper.hh */,
 				279D5D602A952986005C3066 /* Stream.cc */,
 				279D5D462A902588005C3066 /* TCPServer.cc */,
 				2727303F2A8D6F35000CCA22 /* TCPSocket.cc */,

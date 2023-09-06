@@ -18,8 +18,8 @@
 
 #include "TLSSocket.hh"
 #include "TLSContext.hh"
-#include "stream_wrapper.hh" // for Buffer
 #include "TCPSocket.hh"
+#include "UVInternal.hh"
 
 // Code adapted from Couchbase's fork of sockpp:
 // https://github.com/couchbasedeps/sockpp/blob/couchbase-master/src/mbedtls_context.cpp

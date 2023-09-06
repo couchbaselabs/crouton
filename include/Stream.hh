@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+struct uv_stream_s;
+
 namespace crouton {
     struct Buffer;
     struct uv_stream_wrapper;
@@ -64,9 +66,9 @@ namespace crouton {
         using IStream::write;
 
     protected:
-        Stream() = default;
+        Stream();
 
-        void opened(std::unique_ptr<uv_stream_wrapper> s);
+        void opened(uv_stream_s*);
 
         std::unique_ptr<uv_stream_wrapper> _stream;  // Handle for stream operations
 
