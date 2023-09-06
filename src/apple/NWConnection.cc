@@ -25,21 +25,6 @@
 namespace crouton::apple {
     using namespace std;
 
-    template <typename T>
-    struct NWAutoreleaser {
-        NWAutoreleaser(T* t)  :_ref(t) { }
-        NWAutoreleaser(NWAutoreleaser&& other) :_ref(other._ref) {other._ref = nullptr;}
-        ~NWAutoreleaser()   {nw_release(_ref);}
-
-        operator T*()       {return _ref;}
-    private:
-        T* _ref;
-    };
-
-    template <typename T>
-    NWAutoreleaser<T> autorelease(T* t)   {return NWAutoreleaser<T>(t);}
-
-
 
     static string to_string(nw_error_t err) {
         const char* kDomains[4] = {"invalid", "POSIX", "DNS", "TLS"};
@@ -55,10 +40,10 @@ namespace crouton::apple {
 
 
     NWConnection::~NWConnection() {
-        nw_release(_conn);
-        if (_queue) {
+        if (_conn)
+            nw_release(_conn);
+        if (_queue)
             dispatch_release(_queue);
-        }
     }
 
     Future<void> NWConnection::open() {
@@ -70,10 +55,11 @@ namespace crouton::apple {
             tlsConfig = NW_PARAMETERS_DEFAULT_CONFIGURATION;
         else
             tlsConfig = NW_PARAMETERS_DISABLE_PROTOCOL;
-        auto params = autorelease(nw_parameters_create_secure_tcp(tlsConfig,
-                                                            NW_PARAMETERS_DEFAULT_CONFIGURATION));
+        auto params = nw_parameters_create_secure_tcp(tlsConfig,
+                                                      NW_PARAMETERS_DEFAULT_CONFIGURATION);
         //TODO: Set nodelay, keepalive based on _binding
         _conn = nw_connection_create(endpoint, params);
+        nw_release(params);
 
         _queue = dispatch_queue_create("NWConnection", DISPATCH_QUEUE_SERIAL);
         nw_connection_set_queue(_conn, _queue);
@@ -88,22 +74,16 @@ namespace crouton::apple {
                     onOpen.setResult();
                     break;
                 case nw_connection_state_cancelled:
-                    x = make_exception_ptr(runtime_error("cancelled"));
+                    if (!onOpen.hasValue())
+                        onOpen.setResult(runtime_error("cancelled"));
                     _onClose.setResult();
                     break;
                 case nw_connection_state_failed:
-                    x = make_exception_ptr(NWError(error));
+                    if (!onOpen.hasValue())
+                        onOpen.setResult(NWError(error));
                     break;
                 default:
                     break;
-            }
-            if (x) {
-                if (!onOpen.hasValue())
-                    onOpen.setResult(x);
-                if (auto read = std::move(_onRead))
-                    read->setResult(x);
-                if (auto write = std::move(_onWrite))
-                    write->setResult(x);
             }
         });
         nw_connection_start(_conn);
@@ -114,7 +94,7 @@ namespace crouton::apple {
     Future<void> NWConnection::close() {
         if (_conn)
             nw_connection_cancel(_conn);
-        else if (_onClose.hasValue())
+        else if (!_onClose.hasValue())
             _onClose.setResult();
         return _onClose;
     }
@@ -140,7 +120,6 @@ namespace crouton::apple {
 
 
     Future<ConstBuf> NWConnection::_readNoCopy(size_t maxLen) {
-        assert(!_onRead);
         if (_content && _contentUsed < _contentBuf.size()) {
             // I can return some unRead data from the buffer:
             auto len = std::min(maxLen, _contentBuf.size() - _contentUsed);
@@ -153,8 +132,8 @@ namespace crouton::apple {
             
         } else {
             // Read from the stream:
+            FutureProvider<ConstBuf> onRead;
             dispatch_sync(_queue, ^{
-                _onRead.emplace();
                 clearReadBuf();
                 nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
                                       ^(dispatch_data_t content,
@@ -173,40 +152,37 @@ namespace crouton::apple {
                         _contentUsed = buf.size();
                         _contentBuf = buf;
                         cerr << "NWConnection read " << buf.size() << " bytes\n";
-                        _onRead->setResult(std::move(buf));
+                        onRead.setResult(std::move(buf));
                     } else if (error) {
-                        _onRead->setResult(NWError(error));
+                        onRead.setResult(NWError(error));
                     } else if (is_complete) {
-                        _onRead->setResult(ConstBuf{});
+                        onRead.setResult(ConstBuf{});
                     }
-                    _onRead.reset();
                 });
             });
-            return _onRead.value();
+            return onRead;
         }
     }
 
 
     Future<void> NWConnection::_writeOrShutdown(ConstBuf src, bool shutdown) {
-        assert(!_onWrite);
         clearReadBuf();
+        FutureProvider<void> onWrite;
         dispatch_sync(_queue, ^{
             __block __unused bool released = false;
             dispatch_data_t content = dispatch_data_create(src.data(), src.size(), _queue,
                                                            ^{ released = true; });
-            _onWrite.emplace();
             nw_connection_send(_conn, content, NW_CONNECTION_DEFAULT_STREAM_CONTEXT, shutdown,
                                ^(nw_error_t error) {
                 assert(released);
                 if (error)
-                    _onWrite->setResult(NWError(error));
+                    onWrite.setResult(NWError(error));
                 else
-                    _onWrite->setResult();
-                _onWrite.reset();
+                    onWrite.setResult();
             });
             dispatch_release(content);
         });
-        return _onWrite.value();
+        return onWrite;
     }
 
 }

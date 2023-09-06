@@ -82,11 +82,13 @@ TEST_CASE("Read a file", "[uv]") {
 
 
 TEST_CASE("DNS lookup", "[uv]") {
-    AddrInfo addr = AddrInfo::lookup("example.com").waitForValue();
-    cerr << "Addr = " << addr.primaryAddressString() << endl;
-    auto ip4addr = addr.primaryAddress(4);
-    CHECK(ip4addr.sa_family == AF_INET);
-    CHECK(addr.primaryAddressString() == "93.184.216.34");
+    RunCoroutine([]() -> Future<void> {
+        AddrInfo addr = AWAIT AddrInfo::lookup("example.com");
+        cerr << "Addr = " << addr.primaryAddressString() << endl;
+        auto ip4addr = addr.primaryAddress(4);
+        CHECK(ip4addr.sa_family == AF_INET);
+        CHECK(addr.primaryAddressString() == "93.184.216.34");
+    });
     REQUIRE(Scheduler::current().assertEmpty());
 }
 

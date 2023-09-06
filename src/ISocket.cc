@@ -37,4 +37,11 @@ namespace crouton {
 #endif
     }
 
+
+    Task ISocket::closeAndFree(std::unique_ptr<ISocket> sock) {
+        AWAIT sock->close();
+        // unique_ptr destructor will free ISocket
+    }
+
+
 }

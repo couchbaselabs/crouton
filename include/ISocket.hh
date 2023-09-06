@@ -16,6 +16,7 @@
 
 #pragma once
 #include "Future.hh"
+#include "Task.hh"
 #include <memory>
 #include <string>
 #include <cassert>
@@ -59,6 +60,10 @@ namespace crouton {
 
         /// The socket's data stream.
         virtual IStream const& stream() const =0;
+
+        [[nodiscard]] virtual Future<void> close() =0;
+
+        static Task closeAndFree(std::unique_ptr<ISocket>);
 
         virtual ~ISocket() = default;
 

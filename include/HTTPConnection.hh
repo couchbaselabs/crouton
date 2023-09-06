@@ -58,7 +58,7 @@ namespace crouton {
 
         URL                      _url;
         std::unique_ptr<ISocket> _socket;
-        IStream*                 _stream;
+        IStream*                 _stream = nullptr;
         bool                     _sent = false;
     };
 

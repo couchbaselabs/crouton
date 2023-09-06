@@ -134,7 +134,7 @@ namespace crouton {
 
 
     void HTTPConnection::close() {
-        (void) _stream->close();
+        ISocket::closeAndFree(std::move(_socket));
     }
 
 

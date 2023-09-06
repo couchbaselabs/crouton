@@ -68,8 +68,6 @@ namespace crouton::apple {
 
         nw_connection*      _conn = nullptr;
         dispatch_queue_s*   _queue = nullptr;
-        std::optional<FutureProvider<ConstBuf>> _onRead;
-        std::optional<FutureProvider<void>> _onWrite;
         FutureProvider<void> _onClose;
         dispatch_data_s*    _content = nullptr;
         ConstBuf            _contentBuf;

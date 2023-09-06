@@ -191,9 +191,9 @@ namespace crouton {
         FutureProvider()                        {reset();}
         Future<void> future();
         bool hasValue() const                   {return _state->hasValue();}
-        void setResult() const                   {_state->setResult();}
+        void setResult() const                  {_state->setResult();}
         template <typename U>
-            void setResult(U&& value) const      {_state->setResult(std::forward<U>(value));}
+            void setResult(U&& value) const     {_state->setResult(std::forward<U>(value));}
         void value() const                      {return _state->value();}
         void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:

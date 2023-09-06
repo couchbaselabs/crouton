@@ -58,40 +58,19 @@ namespace crouton {
 
     /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
     template <class UV_REQUEST_T>
-    class Request : public UV_REQUEST_T {
+    class Request : public UV_REQUEST_T, public CoCondition<int> {
     public:
 
         /// Pass this as the callback to a UV call on this request.
         static void callback(UV_REQUEST_T *req) {
             auto self = static_cast<Request*>(req);
-            self->completed(0);
+            self->notify(0);
         }
 
         /// Pass this as the callback to a UV call on this request.
         static void callbackWithStatus(UV_REQUEST_T *req, int status) {
-            static_cast<Request*>(req)->completed(status);
+            static_cast<Request*>(req)->notify(status);
         }
-
-        // Coroutine awaiter methods:
-        bool await_ready()      {return _status.has_value();}
-        coro_handle await_suspend(coro_handle coro) noexcept {
-            _suspension = Scheduler::current().suspend(coro);
-            return Scheduler::current().next();
-        }
-        [[nodiscard]] int await_resume()      {return _status.value();}
-
-    protected:
-        void completed(int status) {
-            if (status < 0)
-                std::cerr << "ERROR " << status << " in callback\n";
-            _status = status;
-            if (_suspension)
-                _suspension->wakeUp();
-        }
-        std::optional<int> _status;
-
-    private:
-        Suspension* _suspension = nullptr;
     };
 
 
