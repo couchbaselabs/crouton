@@ -56,11 +56,13 @@ namespace crouton {
 
         [[nodiscard]] Future<void> sleep(double delaySecs);
 
+        void ensureWaits();
         uv_loop_s* uvLoop() {return _loop.get();}
     private:
         bool _run(int mode);
 
         std::unique_ptr<uv_loop_s> _loop;
+        std::unique_ptr<uv_timer_s> _distantFutureTimer;
     };
 
 

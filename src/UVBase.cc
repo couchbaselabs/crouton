@@ -27,7 +27,9 @@ namespace crouton {
     using namespace std;
 
     EventLoop* Scheduler::newEventLoop() {
-        return new UVEventLoop();
+        auto loop = new UVEventLoop();
+        loop->ensureWaits();
+        return loop;
     }
 
     UVError::UVError(const char* what, int status)
@@ -53,6 +55,15 @@ namespace crouton {
     {
         check(uv_loop_init(_loop.get()), "initializing the event loop");
         _loop->data = this;
+    }
+
+    void UVEventLoop::ensureWaits() {
+        // Create a timer with an extremely long period,
+        // so the event loop always has something to wait on.
+        _distantFutureTimer = make_unique<uv_timer_t>();
+        uv_timer_init(uvLoop(), _distantFutureTimer.get());
+        auto callback = [](uv_timer_t *handle){ };
+        uv_timer_start(_distantFutureTimer.get(), callback, 1'000'000'000, 1'000'000'000);
     }
 
     bool UVEventLoop::_run(int mode)  {
