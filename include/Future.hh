@@ -20,9 +20,9 @@
 #include "Coroutine.hh"
 #include "Result.hh"
 #include "Scheduler.hh"
+#include <atomic>
 #include <exception>
 #include <memory>
-#include <mutex>
 #include <utility>
 #include <cassert>
 

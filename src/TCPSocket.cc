@@ -18,26 +18,13 @@
 
 #include "TCPSocket.hh"
 #include "AddrInfo.hh"
-#include "Defer.hh"
 #include "UVInternal.hh"
-#include <mutex>
-#include <unistd.h>
-#include <iostream>
 
 namespace crouton {
     using namespace std;
 
 
     TCPSocket::TCPSocket() = default;
-
-
-    void TCPSocket::acceptFrom(uv_tcp_s* server) {
-        auto tcpHandle = new uv_tcp_t;
-        uv_tcp_init(curLoop(), tcpHandle);
-        check(uv_accept((uv_stream_t*)server, (uv_stream_t*)tcpHandle),
-              "accepting client connection");
-        opened((uv_stream_t*)tcpHandle);
-    }
 
 
     Future<void> TCPSocket::open() {
@@ -57,7 +44,7 @@ namespace crouton {
         uv_tcp_init(curLoop(), tcpHandle);
         uv_tcp_nodelay(tcpHandle, _binding->noDelay);
         uv_tcp_keepalive(tcpHandle, (_binding->keepAlive > 0), _binding->keepAlive);
-        _binding = nullptr;
+        _binding.reset();
 
         connect_request req("opening connection");
         err = uv_tcp_connect(&req, tcpHandle, &addr,

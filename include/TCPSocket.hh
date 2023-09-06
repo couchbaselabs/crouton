@@ -33,20 +33,14 @@ namespace crouton {
         /// Opens the socket to the bound address. Resolves once opened.
         [[nodiscard]] Future<void> open() override;
 
-        bool isOpen() const override            {return Stream::isOpen();}
-        IStream& stream() override              {return *this;}
-        IStream const& stream() const override  {return *this;}
-        [[nodiscard]] Future<void> close() override  {return Stream::close();}
+        bool isOpen() const override                {return Stream::isOpen();}
+        IStream& stream() override                  {return *this;}
+        [[nodiscard]] Future<void> close() override {return Stream::close();}
 
-    private:
+    protected:
         friend class TCPServer;
 
-        struct binding {
-            std::string address;
-            uint16_t port;
-            bool withTLS;
-        };
-
-        virtual void acceptFrom(uv_tcp_s* server);
+        /// Called by TCPServer to create a TCPSocket for a new client connection.
+        virtual void accept(uv_tcp_s* handle)       {opened((uv_stream_s*)handle);}
     };
 }

@@ -43,10 +43,12 @@ namespace crouton {
                 // There's a value now, so continue:
                 return coro;
         }
+        // unreachable
+        throw std::logic_error("invalid state");
     }
 
     void FutureStateBase::_notify() {
-        switch (State prev = _state.exchange(Ready)) {
+        switch (_state.exchange(Ready)) {
             case Empty:
                 // No one waiting yet
                 break;

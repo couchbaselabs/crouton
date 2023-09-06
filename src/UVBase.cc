@@ -20,6 +20,7 @@
 #include "Backtrace.hh"
 #include "Task.hh"
 #include "UVInternal.hh"
+#include <charconv>
 #include <cmath>
 
 namespace crouton {

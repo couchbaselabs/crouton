@@ -38,7 +38,6 @@ namespace crouton {
 
         template <typename T>
         MutableBytes(T* begin, size_t n)  :span((std::byte*)begin, n * sizeof(T)) { }
-        template <>
         MutableBytes(void* begin, size_t n) :span((std::byte*)begin, n) { }
 
         explicit operator std::string_view() const {
@@ -59,7 +58,6 @@ namespace crouton {
 
         template <typename T>
         ConstBytes(const T* begin, size_t n)  :span((const std::byte*)begin, n * sizeof(T)) { }
-        template <>
         ConstBytes(const void* begin, size_t n) :span((const std::byte*)begin, n) { }
 
         explicit operator std::string_view() const {
@@ -72,8 +70,8 @@ namespace crouton {
     /** Abstract interface of an asynchronous bidirectional stream.
         It has concrete read/write methods, which are merely conveniences that call the
         abstract ones.
-        Re-entrant reads or writes are not allowed: no read call may be issued until the
-        previous one has completed, and equivalently for writes. */
+        @warning Re-entrant reads or writes are not allowed: no read call may be issued until the
+                 previous one has completed, and equivalently for writes. */
     class IStream {
     public:
         virtual ~IStream() = default;
@@ -129,8 +127,8 @@ namespace crouton {
 
         //---- Writing:
 
-        /// Writes the entire buffer.
-        /// @warning The buffer must remain valid until this call completes.
+        /// Writes all the bytes.
+        /// @warning The memory must remain valid until this call completes.
         /// @note This is the abstract write method that subclasses must implement.
         [[nodiscard]] virtual Future<void> write(ConstBytes) =0;
 
@@ -143,7 +141,7 @@ namespace crouton {
         ///        A subclass that natively supports multi-buffer write ("writev") may override
         ///        this method as an optimization.
         [[nodiscard]] virtual Future<void> write(const ConstBytes buffers[], size_t nBuffers);
-        
+
         [[nodiscard]] Future<void> write(std::initializer_list<ConstBytes> buffers);
     };
 

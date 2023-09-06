@@ -57,7 +57,6 @@ namespace crouton::apple {
         [[nodiscard]] Future<void> closeWrite() override    {return _writeOrShutdown({}, true);}
 
         IStream& stream() override               {return *this;}
-        IStream const& stream() const override   {return *this;}
 
         [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
         [[nodiscard]] virtual Future<ConstBytes> peekNoCopy() override;

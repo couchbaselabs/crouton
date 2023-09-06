@@ -39,7 +39,6 @@ namespace crouton::mbed {
         [[nodiscard]] Future<void> closeWrite() override;
 
         IStream& stream() override              {return *this;}
-        IStream const& stream() const override  {return *this;}
 
         [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
         [[nodiscard]] Future<ConstBytes> peekNoCopy() override;

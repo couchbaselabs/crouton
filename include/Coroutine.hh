@@ -22,6 +22,9 @@
 #include <iosfwd>
 #include <stdexcept>
 #include <iostream>//TEMP
+#include <optional>
+#include <utility>
+#include <vector>
 
 #if defined(__has_include)
 #   if __has_include(<coroutine>)

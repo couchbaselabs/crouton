@@ -62,11 +62,13 @@ namespace crouton {
             fprintf(stderr, "TCPServer::listen failed: error %d", status);
             //TODO: Notify the app somehow
         } else {
-            //OnEventLoop([&]{
-                auto client = make_shared<TCPSocket>();
-                client->acceptFrom(_tcpHandle);
-                _acceptor(std::move(client));
-            //});
+            auto clientHandle = new uv_tcp_t;
+            uv_tcp_init(curLoop(), clientHandle);
+            check(uv_accept((uv_stream_t*)_tcpHandle, (uv_stream_t*)clientHandle),
+                  "accepting client connection");
+            auto client = make_shared<TCPSocket>();
+            client->accept(clientHandle);
+            _acceptor(std::move(client));
         }
     }
 

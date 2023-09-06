@@ -22,8 +22,11 @@
 #include "Scheduler.hh"
 #include "UVBase.hh"
 #include <uv.h>
+
+#include <algorithm>
 #include <concepts>
 #include <iostream>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 

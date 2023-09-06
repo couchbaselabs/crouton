@@ -20,6 +20,7 @@
 #include "Defer.hh"
 #include "UVInternal.hh"
 #include <uv.h>
+#include <cstring>
 
 namespace crouton::fs {
     using namespace std;
@@ -68,7 +69,13 @@ namespace crouton::fs {
         else
             err = uv_fs_lstat(curLoop(), &req, path, nullptr);
         check(err, "stat");
-        return *(statBuf*)&req.statbuf;
+
+        // memcpy from result.statbuf to a statBuf struct is unnecessary, but avoids
+        // breaking strict aliasing rules.
+        statBuf result;
+        static_assert(sizeof(result) == sizeof(req.statbuf));
+        memcpy(&result, &req.statbuf, sizeof(result));
+        return result;
     }
 
 

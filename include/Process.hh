@@ -7,6 +7,7 @@
 #pragma once
 #include "Future.hh"
 #include <string_view>
+#include <optional>
 #include <vector>
 
 namespace crouton {

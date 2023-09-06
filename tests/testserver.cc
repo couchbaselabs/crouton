@@ -41,7 +41,7 @@ static Task connectionTask(std::shared_ptr<TCPSocket> client) {
     AWAIT client->closeWrite();
 
     cout << "Shutdown stream.\n";
-    client->close();
+    AWAIT client->close();
     cout << "Done!\n\n";
 }
 

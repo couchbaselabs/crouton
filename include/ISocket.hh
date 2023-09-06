@@ -37,10 +37,10 @@ namespace crouton {
             _binding.reset(new binding{address, port});
         }
 
-        /// Sets the TCP nodelay option.
+        /// Sets the TCP nodelay option. Call this after `bind`.
         virtual void setNoDelay(bool b)                 {_binding->noDelay = b;}
 
-        /// Enables TCP keep-alive with the given ping interval.
+        /// Enables TCP keep-alive with the given ping interval. Call this after `bind`.
         virtual void keepAlive(unsigned intervalSecs)   {_binding->keepAlive = intervalSecs;}
 
         /// Opens the socket to the bound address. Resolves once opened.
@@ -58,11 +58,9 @@ namespace crouton {
         /// The socket's data stream.
         virtual IStream& stream() =0;
 
-        /// The socket's data stream.
-        virtual IStream const& stream() const =0;
-
         [[nodiscard]] virtual Future<void> close() =0;
 
+        /// Convenience function that calls `close`, waits for completion, then deletes.
         static Task closeAndFree(std::unique_ptr<ISocket>);
 
         virtual ~ISocket() = default;

@@ -33,7 +33,6 @@ namespace crouton {
     class Suspension;
     class Task;
 
-    static bool kLogScheduler = false;
 
     /** Schedules coroutines on a single thread. Each thread has an instance of this.
         @warning The API is *not* thread-safe, except as noted. */
