@@ -53,6 +53,15 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
+
+#if defined(_WIN32)
+#   if !defined(_CRT_SECURE_NO_DEPRECATE)
+#       define _CRT_SECURE_NO_DEPRECATE
+#   endif
+#   include <winsock2.h>
+#   include <ws2tcpip.h>
+#endif
+
 #include <mbedtls/base64.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/debug.h>

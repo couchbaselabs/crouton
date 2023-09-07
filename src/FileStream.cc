@@ -18,7 +18,6 @@
 
 #include "FileStream.hh"
 #include "UVInternal.hh"
-#include <unistd.h>
 
 namespace crouton {
     using namespace std;

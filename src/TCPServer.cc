@@ -19,7 +19,6 @@
 #include "TCPServer.hh"
 #include "TCPSocket.hh"
 #include "UVInternal.hh"
-#include <unistd.h>
 
 namespace crouton {
     using namespace std;

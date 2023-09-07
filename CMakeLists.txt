@@ -42,8 +42,13 @@ add_subdirectory(vendor/mbedtls)
 
 if (MSVC)
     # MSVC:
-    add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
-    add_compile_options(/W4) # TODO: Add /WX
+    add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00 -DNOMINMAX)
+    add_compile_options(
+        /W4         # I think this means 'turn on lots of warnings'
+        /wd4068     # ignore unknown pragma
+        /wd4100     # ignore unused fn parameters
+        /wd4267     # ignore implicit integer truncation
+    )
 else()
     # Clang & GCC:
     add_compile_options(
@@ -130,6 +135,11 @@ if(APPLE)
     )
 endif()
 
+if (MSVC)
+    target_sources( LibCrouton PRIVATE
+        src/support/asprintf.c
+    )
+endif()
 
 #### DEMO TOOLS
 

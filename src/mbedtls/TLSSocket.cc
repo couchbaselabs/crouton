@@ -141,7 +141,7 @@ namespace crouton::mbed {
 
 
         // TLSSocket wants to read.
-        Future<ssize_t> read(void *buf, size_t maxLen) {
+        Future<intptr_t> read(void *buf, size_t maxLen) {
             //cerr << "TLSStream read(" << maxLen << ") ...\n";
             if (_readEOF) {
                 std::cerr << "WARNING: Client is reading from TLSSocket that's already at EOF\n";

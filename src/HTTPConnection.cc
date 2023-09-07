@@ -23,7 +23,6 @@
 #include "UVInternal.hh"
 #include "llhttp.h"
 #include <sstream>
-#include <strings.h>
 
 namespace crouton {
     using namespace std;

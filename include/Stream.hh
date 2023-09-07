@@ -87,7 +87,7 @@ namespace crouton {
 
         void read_start();
         void _allocCallback(size_t suggested, uv_buf_t*);
-        void _readCallback(ssize_t nread, const uv_buf_t*);
+        void _readCallback(intptr_t nread, const uv_buf_t*);
 
         uv_stream_s*            _stream = nullptr;  // The libuv stream
         std::vector<BufferRef>  _input;             // Buffers of already-read data

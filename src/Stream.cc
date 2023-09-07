@@ -18,7 +18,6 @@
 
 #include "Stream.hh"
 #include "UVInternal.hh"
-#include <unistd.h>
 
 namespace crouton {
     using namespace std;
@@ -146,7 +145,7 @@ namespace crouton {
             auto alloc = [](uv_handle_t* h, size_t suggested, uv_buf_t* uvbuf) {
                 static_cast<Stream*>(h->data)->_allocCallback(suggested, uvbuf);
             };
-            auto read = [](uv_stream_t* h, ssize_t nread, const uv_buf_t* uvbuf) {
+            auto read = [](uv_stream_t* h, intptr_t nread, const uv_buf_t* uvbuf) {
                 static_cast<Stream*>(h->data)->_readCallback(nread, uvbuf);
             };
             check(uv_read_start(_stream, alloc, read), "reading from the network");
@@ -171,7 +170,7 @@ namespace crouton {
 
 
     /// libuv is notifying me that it put data into an allocated buffer.
-    void Stream::_readCallback(ssize_t nread, const uv_buf_t* uvbuf) {
+    void Stream::_readCallback(intptr_t nread, const uv_buf_t* uvbuf) {
         int err;
         if (nread > 0) {
             // A successful read into _readingBuf:
