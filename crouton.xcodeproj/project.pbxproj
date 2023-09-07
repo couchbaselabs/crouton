@@ -45,6 +45,8 @@
 		278F7E542AA7D1BC005B12F2 /* Process.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F7E522AA7D1BC005B12F2 /* Process.cc */; };
 		278F7E552AA7EC66005B12F2 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27F6030B2A9FBA5E006FA1D0 /* Network.framework */; };
 		278F7E572AA7EDBF005B12F2 /* ISocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F7E562AA7EDBF005B12F2 /* ISocket.cc */; };
+		278F7E5A2AA93D5A005B12F2 /* HTTPHandler.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */; };
+		278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */; };
 		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
 		279D5D472A902588005C3066 /* TCPServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* TCPServer.hh */; };
@@ -342,6 +344,8 @@
 		278F7E512AA7D1BC005B12F2 /* Process.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Process.hh; sourceTree = "<group>"; };
 		278F7E522AA7D1BC005B12F2 /* Process.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Process.cc; sourceTree = "<group>"; };
 		278F7E562AA7EDBF005B12F2 /* ISocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ISocket.cc; sourceTree = "<group>"; };
+		278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPHandler.hh; sourceTree = "<group>"; };
+		278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPHandler.cc; sourceTree = "<group>"; };
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* Crouton.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Crouton.hh; sourceTree = "<group>"; };
@@ -438,6 +442,7 @@
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				272A85282A97B2090083D947 /* HTTPConnection.hh */,
+				278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */,
 				27F6030A2A9FA4C2006FA1D0 /* ISocket.hh */,
 				27F603022A9EB826006FA1D0 /* IStream.hh */,
 				279D5D632A952DD1005C3066 /* Pipe.hh */,
@@ -508,6 +513,7 @@
 				278F7E4E2AA2ADFD005B12F2 /* Filesystem.cc */,
 				272730542A8ED3D1000CCA22 /* Future.cc */,
 				272A85292A97B2090083D947 /* HTTPConnection.cc */,
+				278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */,
 				278F7E382AA1489B005B12F2 /* HTTPParser.hh */,
 				278F7E392AA1489B005B12F2 /* HTTPParser.cc */,
 				278F7E562AA7EDBF005B12F2 /* ISocket.cc */,
@@ -929,6 +935,7 @@
 				272A852A2A97B2090083D947 /* HTTPConnection.hh in Headers */,
 				279D5D612A952986005C3066 /* Stream.hh in Headers */,
 				272A85262A96DCB30083D947 /* URL.hh in Headers */,
+				278F7E5A2AA93D5A005B12F2 /* HTTPHandler.hh in Headers */,
 				278F7E4C2AA28642005B12F2 /* WebSocketProtocol.hh in Headers */,
 				27F603042A9EB826006FA1D0 /* IStream.hh in Headers */,
 				278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */,
@@ -1105,6 +1112,7 @@
 				27F49CD72A9E4E8E00BFB24C /* Backtrace.cc in Sources */,
 				278F767B2A9FEF54005B12F2 /* TLSSocket.cc in Sources */,
 				278F7E572AA7EDBF005B12F2 /* ISocket.cc in Sources */,
+				278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */,
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				27F603092A9FA366006FA1D0 /* NWConnection.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,

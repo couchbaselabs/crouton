@@ -19,6 +19,7 @@
 #pragma once
 #include "IStream.hh"
 #include "URL.hh"
+#include <iosfwd>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -37,6 +38,7 @@ namespace crouton {
         OK = 200,
         MovedPermanently = 301,
         NotFound = 404,
+        MethodNotAllowed = 405,
         ServerError = 500,
     };
 
@@ -50,6 +52,9 @@ namespace crouton {
         CONNECT,
         OPTIONS,
     };
+
+    std::ostream& operator<< (std::ostream&, HTTPStatus);
+    std::ostream& operator<< (std::ostream&, HTTPMethod);
 
 
     /// A map of HTTP header names->values. Inherits from `unordered_map`.

@@ -17,38 +17,38 @@
 //
 
 #include "Crouton.hh"
-#include "Task.hh"
+#include "HTTPHandler.hh"
+#include <functional>
 #include <iostream>
 #include <memory>
 
 using namespace std;
 using namespace crouton;
 
-#define CRLF  "\r\n"
 
+static vector<HTTPHandler::Route> sRoutes = {
+    {
+        HTTPMethod::GET,
+        regex("/"),
+        [](auto &request, auto &response) -> Future<void> {
+            response.writeHeader("Content-Type", "text/plain");
+            AWAIT response.writeToBody("Hi!\r\n");
+        }
+    }
+};
 
 static Task connectionTask(std::shared_ptr<TCPSocket> client) {
-    cout << "Accepted connection!\n";
-    string request;
-    request = AWAIT client->readUntil(CRLF CRLF);
-
-    cout << "Request: " << request << endl;
-    AWAIT client->write("HTTP/1.1 200 OK" CRLF
-                        "Content-Type: text/plain; charset=utf-8" CRLF CRLF
-                        "Hello, world!" CRLF);
-
-    cout << "Sent response.\n";
-    AWAIT client->closeWrite();
-
-    cout << "Shutdown stream.\n";
-    AWAIT client->close();
-    cout << "Done!\n\n";
+    cout << "-- Accepted connection\n";
+    HTTPHandler handler(client, sRoutes);
+    AWAIT handler.run();
+    cout << "-- Done!\n\n";
+    RETURN;
 }
 
 
 static Task run() {
     static TCPServer server(34567);
-    cout << "Listening on port 34567\n";
+    cout << "Listening at http://localhost:34567/\n";
     server.listen([](std::shared_ptr<TCPSocket> client) {
         connectionTask(std::move(client));
     });

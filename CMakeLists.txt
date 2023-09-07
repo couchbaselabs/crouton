@@ -95,6 +95,7 @@ add_library( LibCrouton STATIC
     src/Filesystem.cc
     src/Future.cc
     src/HTTPConnection.cc
+    src/HTTPHandler.cc
     src/HTTPParser.cc
     src/ISocket.cc
     src/IStream.cc

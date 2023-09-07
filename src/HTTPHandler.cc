@@ -1,0 +1,125 @@
+//
+// HTTPHandler.cc
+//
+// 
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#include "HTTPHandler.hh"
+#include <llhttp.h>
+#include <sstream>
+
+namespace crouton {
+    using namespace std;
+
+    HTTPHandler::HTTPHandler(std::shared_ptr<ISocket> socket, vector<Route> const& routes)
+    :_socket(std::move(socket))
+    ,_stream(_socket->stream())
+    ,_parser(_stream, HTTPParser::Request)
+    ,_routes(routes)
+    { }
+
+
+    Future<void> HTTPHandler::run() {
+        // Read the request:
+        AWAIT _parser.readHeaders();
+
+        auto uri = _parser.requestURI.value();
+        string path(uri.path);
+        cerr << "HTTPHandler: Request is " << _parser.requestMethod << " " << string(uri) << endl;
+
+        HTTPHeaders responseHeaders;
+        responseHeaders.set("User-Agent", "Crouton");
+        responseHeaders.set("Connection", "close");
+
+        // Find a matching route:
+        auto status = HTTPStatus::MethodNotAllowed;
+        for (auto &route : _routes) {
+            if (std::get<0>(route) == _parser.requestMethod) {
+                status = HTTPStatus::NotFound;
+                if (regex_match(path, std::get<1>(route))) {
+                    // Call the handler:
+                    _request = Request {
+                        _parser.requestMethod,
+                        uri,
+                        _parser.headers,
+                        AWAIT _parser.entireBody()
+                    };
+                    _response = Response(this, std::move(responseHeaders));
+                    AWAIT std::get<2>(route)(*_request, *_response);
+                    AWAIT _response->finish();
+                    AWAIT endBody();
+                    RETURN;
+                }
+            }
+        }
+
+        // No matching route; return an error:
+        AWAIT writeHeaders(status, "", responseHeaders);
+        AWAIT endBody();
+    }
+
+
+    Future<void> HTTPHandler::writeHeaders(HTTPStatus status,
+                                           string_view statusMsg,
+                                           HTTPHeaders const& headers)
+    {
+        if (statusMsg.empty())
+            statusMsg = llhttp_status_name(llhttp_status_t(status));
+        stringstream out;
+        out << "HTTP/1.1 " << int(status) << ' ' << statusMsg << "\r\n";
+        for (auto &h : headers)
+            out << h.first << ": " << h.second << "\r\n";
+        out << "\r\n";
+        return _stream.write(out.str());
+    }
+
+
+    Future<void> HTTPHandler::writeToBody(std::string str) {
+        return _stream.write(std::move(str));
+    }
+
+
+    Future<void> HTTPHandler::endBody() {
+        return _stream.close();
+    }
+
+
+#pragma mark - RESPONSE:
+
+
+    HTTPHandler::Response::Response(HTTPHandler* h, HTTPHeaders&& headers)
+    :_handler(h)
+    ,_headers(std::move(headers))
+    { }
+
+    void HTTPHandler::Response::writeHeader(string_view name, string_view value) {
+        assert(!_sentHeaders);
+        _headers.set(string(name), string(value));
+    }
+
+    Future<void> HTTPHandler::Response::writeToBody(string str) {
+        if (!_sentHeaders) {
+            cerr << "HTTPHandler: Sending " << int(status) << " response\n";
+            AWAIT _handler->writeHeaders(status, statusMessage, _headers);
+            _sentHeaders = true;
+        }
+        AWAIT _handler->writeToBody(std::move(str));
+    }
+
+    Future<void> HTTPHandler::Response::finish() {
+        if (!_sentHeaders)
+            AWAIT _handler->writeHeaders(status, statusMessage, _headers);
+    }
+}

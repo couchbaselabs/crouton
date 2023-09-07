@@ -31,7 +31,7 @@ namespace crouton {
     struct HTTPRequest;
     class HTTPResponse;
 
-    /** An HTTP connection to a server, from which multiple requests can be made.
+    /** An HTTP client connection to a server, from which multiple requests can be made.
         This object must remain valid as long as any HTTPRequest created from it exists. */
     class HTTPConnection {
     public:
@@ -66,7 +66,7 @@ namespace crouton {
 
     /** An HTTP request to send on an HTTPConnection. */
     struct HTTPRequest {
-        HTTPMethod method = HTTPMethod::GET;    ///< The request method
+        HTTPMethod  method = HTTPMethod::GET;   ///< The request method
         std::string uri;                        ///< The request URI (path + query.)
         HTTPHeaders headers;                    ///< The request headers.
         std::string body;                       ///< The request body.
@@ -78,7 +78,7 @@ namespace crouton {
     };
 
 
-    /** The response to an HTTPRequest. */
+    /** The response received from an outgoing HTTPRequest. */
     class HTTPResponse : public IStream {
     public:
         explicit HTTPResponse(HTTPConnection&);

@@ -24,6 +24,15 @@ namespace crouton {
     using namespace std;
 
 
+    std::ostream& operator<< (std::ostream& out, HTTPStatus status) {
+        return out << llhttp_status_name(llhttp_status_t(status));
+    }
+
+    std::ostream& operator<< (std::ostream& out, HTTPMethod method) {
+        return out << llhttp_method_name(llhttp_method_t(method));
+    }
+
+
     HTTPParser::Error::Error(int code, const char* reason)
     :runtime_error(reason)
     ,code(code)
