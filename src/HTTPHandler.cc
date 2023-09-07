@@ -43,23 +43,14 @@ namespace crouton {
         responseHeaders.set("User-Agent", "Crouton");
         responseHeaders.set("Connection", "close");
 
-        // Find a matching route:       //TODO: This is obviously inefficient.
+        // Find a matching route:
         auto status = HTTPStatus::MethodNotAllowed;
         for (auto &route : _routes) {
-            if (std::get<0>(route) == _parser.requestMethod) {
+            if (route.method == _parser.requestMethod) {
                 status = HTTPStatus::NotFound;
-                if (regex_match(path, std::get<1>(route))) {
+                if (regex_match(path, route.pathPattern)) {
                     // Call the handler:
-                    _request = Request {
-                        _parser.requestMethod,
-                        uri,
-                        _parser.headers,
-                        AWAIT _parser.entireBody()
-                    };
-                    _response = Response(this, std::move(responseHeaders));
-                    AWAIT std::get<2>(route)(*_request, *_response);
-                    AWAIT _response->finishHeaders();
-                    AWAIT endBody();
+                    AWAIT handleRequest(std::move(responseHeaders), route.handler);
                     RETURN;
                 }
             }
@@ -68,6 +59,23 @@ namespace crouton {
         // No matching route; return an error:
         AWAIT writeHeaders(status, "", responseHeaders);
         AWAIT endBody();
+    }
+
+
+    Future<void> HTTPHandler::handleRequest(HTTPHeaders responseHeaders,
+                                            HandlerFunction const& handler)
+    {
+        Request request {
+            _parser.requestMethod,
+            _parser.requestURI.value(),
+            _parser.headers,
+            AWAIT _parser.entireBody()
+        };
+        Response response(this, std::move(responseHeaders));
+        AWAIT handler(request, response);
+        AWAIT response.finishHeaders();
+        AWAIT endBody();
+        RETURN;
     }
 
 

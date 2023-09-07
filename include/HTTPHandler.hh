@@ -75,8 +75,12 @@ namespace crouton {
         /// A function that handles a request, writing a response.
         using HandlerFunction = std::function<Future<void>(Request const&, Response&)>;
 
-        /// An HTTP method and path pattern, with the function that should be called.
-        using Route = std::tuple<HTTPMethod,std::regex,HandlerFunction>;
+        /// An HTTP method and path regex, with the function that should be called.
+        struct Route {
+            HTTPMethod      method = HTTPMethod::GET;
+            std::regex      pathPattern;
+            HandlerFunction handler;
+        };
 
         /// Constructs an HTTPHandler on a socket, given its routing table.
         explicit HTTPHandler(std::shared_ptr<ISocket>, std::vector<Route> const&);
@@ -85,9 +89,11 @@ namespace crouton {
         ASYNC<void> run();
 
     private:
+        ASYNC<void> handleRequest(HTTPHeaders responseHeaders,
+                                  HandlerFunction const& handler);
         ASYNC<void> writeHeaders(HTTPStatus status,
-                                                std::string_view statusMsg,
-                                                HTTPHeaders const& headers);
+                                 std::string_view statusMsg,
+                                 HTTPHeaders const& headers);
         ASYNC<void> writeToBody(std::string);
         ASYNC<void> endBody();
 
@@ -95,8 +101,6 @@ namespace crouton {
         IStream&                 _stream;
         HTTPParser               _parser;
         std::vector<Route> const&_routes;
-        std::optional<Request>   _request;
-        std::optional<Response>  _response;
     };
 
 }
