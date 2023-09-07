@@ -44,6 +44,7 @@ find_package(ZLIB REQUIRED)
 
 if (MSVC)
     # MSVC:
+    add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     add_compile_options(/W4) # TODO: Add /WX
 else()
     # Clang & GCC:
