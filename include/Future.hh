@@ -26,6 +26,12 @@
 #include <utility>
 #include <cassert>
 
+/// Macro for declaring a function that returns a Future, e.g. `ASYNC<void> close();`
+/// It's surprisingly easy to forget to await the Future, especially `Future<void>`,
+/// hence the `[[nodiscard]]` annotation.
+#define ASYNC [[nodiscard]] Future
+
+
 namespace crouton {
     template <typename T> class FutureImpl;
     template <typename T> class FutureProvider;

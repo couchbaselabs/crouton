@@ -121,7 +121,7 @@ namespace crouton {
 
         /// Reads from the stream until the request headers are parsed.
         /// The `status`, `statusMessage`, `headers` fields are not populated until this occurs.
-        Future<void> readHeaders();
+        ASYNC<void> readHeaders();
 
         /// Low-level method, mostly for testing, that feeds data to the parser.
         /// Returns true if the status and headers are available.
@@ -158,11 +158,11 @@ namespace crouton {
         /// Reads from the response body and returns some more data.
         /// `readHeaders` MUST have completed before you call this.
         /// On EOF returns an empty string.
-        Future<std::string> readBody();
+        ASYNC<std::string> readBody();
 
         /// Reads and returns the entire body.
         /// If readBody() has already been called, this will return the remainder.
-        Future<std::string> entireBody();
+        ASYNC<std::string> entireBody();
 
         /// After a call to parseData, returns body bytes that were read by the call.
         std::string latestBodyData()    {return std::move(_body);}

@@ -46,35 +46,35 @@ namespace crouton {
         bool isOpen() const override                {return _fd >= 0;}
 
         /// Resolves once the stream has opened.
-        [[nodiscard]] Future<void> open() override;
+        ASYNC<void> open() override;
 
         /// Closes the stream; resolves when it's closed.
-        [[nodiscard]] Future<void> close() override;
+        ASYNC<void> close() override;
 
         /// Closes the write side, but not the read side. (Like a socket's `shutdown`.)
-        [[nodiscard]] Future<void> closeWrite() override    {return Future<void>();}
+        ASYNC<void> closeWrite() override    {return Future<void>();}
 
-        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
-        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
+        ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        ASYNC<ConstBytes> peekNoCopy() override;
 
-        [[nodiscard]] Future<void> write(ConstBytes) override;
-        [[nodiscard]] Future<void> write(const ConstBytes buffers[], size_t nBuffers) override;
+        ASYNC<void> write(ConstBytes) override;
+        ASYNC<void> write(const ConstBytes buffers[], size_t nBuffers) override;
         using IStream::write;
 
         /// Ignores the current stream position and reads from an absolute offset in the file
         /// into one or more buffers.
-        Future<size_t> preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
+        ASYNC<size_t> preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
 
         /// Ignores the current stream position and writes to an absolute offset in the file
         /// from one or more buffers.
-        Future<void> pwritev(const ConstBytes bufs[], size_t nbufs, int64_t offset);
+        ASYNC<void> pwritev(const ConstBytes bufs[], size_t nbufs, int64_t offset);
 
     private:
         explicit FileStream(int fd);
         FileStream(FileStream const&) = delete;
         FileStream& operator=(FileStream const& fs) = delete;
-        Future<size_t> _preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
-        Future<ConstBytes> _fillBuffer();
+        ASYNC<size_t> _preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset);
+        ASYNC<ConstBytes> _fillBuffer();
         void _close();
 
         std::string _path;

@@ -102,7 +102,7 @@ namespace crouton {
 
 
     // IStream's primitive read operation.
-    [[nodiscard]] Future<ConstBytes> FileStream::readNoCopy(size_t maxLen) {
+    Future<ConstBytes> FileStream::readNoCopy(size_t maxLen) {
         NotReentrant nr(_busy);
         if (!_readBuf || _readBuf->empty())
             (void) AWAIT _fillBuffer();
@@ -110,7 +110,7 @@ namespace crouton {
     }
 
 
-    [[nodiscard]] Future<ConstBytes> FileStream::peekNoCopy() {
+    Future<ConstBytes> FileStream::peekNoCopy() {
         NotReentrant nr(_busy);
         if (!_readBuf || _readBuf->empty())
             return _fillBuffer();

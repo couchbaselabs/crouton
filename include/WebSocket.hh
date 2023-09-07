@@ -87,19 +87,19 @@ namespace crouton {
         /// - If there's a connection error, the Future will hold it (and throw when resolved.)
         /// - If the peer decides to close the socket, or after you call `close`, a message of
         ///   type `Close` will arrive. No further messages will arrive; don't call receive again.
-        [[nodiscard]] Future<Message> receive();
+        ASYNC<Message> receive();
 
         /// Sends a binary message, asynchronously.
         /// @note The data is copied and does not need to remain valid after the call.
-        [[nodiscard]] Future<void> send(ConstBytes, MessageType = Binary);
-        [[nodiscard]] Future<void> send(Message const& m)   {return send(ConstBytes(m), m.type);}
+        ASYNC<void> send(ConstBytes, MessageType = Binary);
+        ASYNC<void> send(Message const& m)   {return send(ConstBytes(m), m.type);}
 
         /// Returns true once each side has sent a Close message.
         bool readyToClose() const       {return _closeSent && _closeReceived;}
 
         /// Closes the socket without sending a Close message or waiting to receive a response.
         /// This should only be called after `readyToClose` has returned `true`.
-        Future<void> close();
+        ASYNC<void> close();
 
         /// Closes the connection immediately.
         virtual void disconnect();
@@ -118,7 +118,7 @@ namespace crouton {
 
         bool handleFragment(std::byte*, size_t, size_t,uint8_t, bool);
         void protocolError();
-        [[nodiscard]] Future<void> handleCloseMessage(Message const& msg);
+        ASYNC<void> handleCloseMessage(Message const& msg);
 
         IStream*                    _stream = nullptr;
         std::deque<Message>         _incoming;
@@ -139,7 +139,7 @@ namespace crouton {
         void setHeader(const char* name, const char* value);
 
         /// Connects to the server.
-        [[nodiscard]] Future<void> connect();
+        ASYNC<void> connect();
 
         /// The HTTP response headers.
         HTTPHeaders const& responseHeaders()    {return _responseHeaders;}
@@ -172,9 +172,9 @@ namespace crouton {
         /// - If it's a valid WebSocket request, it sends the HTTP 101 response and returns true.
         ///   Caller should then call `receive` in a loop and handle messages until client closes.
         /// - If it's not valid, it returns a 400 response and returns false.
-        Future<bool> connect(HTTPHandler::Request const&,
-                             HTTPHandler::Response&,
-                             std::string_view subprotocol = "");
+        ASYNC<bool> connect(HTTPHandler::Request const&,
+                            HTTPHandler::Response&,
+                            std::string_view subprotocol = "");
 
     private:
         size_t formatMessage(void* dst, ConstBytes message, MessageType) override;

@@ -33,7 +33,7 @@ namespace crouton {
         /// Creates a Pipe on an open file descriptor, which must be a pipe or Unix domain socket.
         explicit Pipe(int fd);
 
-        Future<void> open() override;
+        ASYNC<void> open() override;
     };
 
 }

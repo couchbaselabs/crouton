@@ -46,15 +46,15 @@ namespace crouton {
 
         /// Sends a request, returning the response.
         /// @note Currently, an HTTPConnection can only send a single request.
-        Future<HTTPResponse> send(HTTPRequest&);
+        ASYNC<HTTPResponse> send(HTTPRequest&);
 
         /// Sends a default GET request to the URI given by the constructor.
         /// @note Currently, an HTTPConnection can only send a single request.
-        Future<HTTPResponse> send();
+        ASYNC<HTTPResponse> send();
 
     private:
         friend class HTTPResponse;
-        Future<void> closeResponse();
+        ASYNC<void> closeResponse();
 
         URL                      _url;
         std::unique_ptr<ISocket> _socket;
@@ -93,15 +93,15 @@ namespace crouton {
         /// The response headers.
         HTTPHeaders const& headers() const      {return _parser.headers;}
 
-        Future<void> open() override            {return _parser.readHeaders();}
+        ASYNC<void> open() override             {return _parser.readHeaders();}
         bool isOpen() const override            {return _parser.status != HTTPStatus::Unknown;}
-        [[nodiscard]] Future<void> close() override;
-        [[nodiscard]] Future<void> closeWrite() override;
+        ASYNC<void> close() override;
+        ASYNC<void> closeWrite() override;
 
         // IStream API:
-        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
-        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
-        [[nodiscard]] Future<void> write(ConstBytes) override;
+        ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        ASYNC<ConstBytes> peekNoCopy() override;
+        ASYNC<void> write(ConstBytes) override;
 
         /// The HTTPConnection's raw socket stream.
         /// Only for use when upgrading protocols (i.e. to WebSocket.)

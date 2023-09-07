@@ -112,18 +112,18 @@ namespace crouton {
 
         /// Reads `len` bytes, returning them as a string.
         /// Will always read the full number of bytes unless it hits EOF.
-        [[nodiscard]] Future<std::string> readString(size_t maxLen);
+        ASYNC<std::string> readString(size_t maxLen);
 
         /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
-        [[nodiscard]] Future<void> readExactly(MutableBytes);
+        ASYNC<void> readExactly(MutableBytes);
 
         /// Reads up through the first occurrence of the string `end`,
         /// or when `maxLen` bytes have been read, whichever comes first.
         /// Throws `UV_EOF` if it hits EOF first.
-        [[nodiscard]] Future<std::string> readUntil(std::string end, size_t maxLen = SIZE_MAX);
+        ASYNC<std::string> readUntil(std::string end, size_t maxLen = SIZE_MAX);
 
         /// Reads until EOF.
-        [[nodiscard]] Future<std::string> readAll() {return readString(SIZE_MAX);}
+        ASYNC<std::string> readAll() {return readString(SIZE_MAX);}
 
         //---- Writing:
 
@@ -133,7 +133,7 @@ namespace crouton {
         [[nodiscard]] virtual Future<void> write(ConstBytes) =0;
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
-        [[nodiscard]] Future<void> write(std::string);
+        ASYNC<void> write(std::string);
 
         /// Writes data, fully, from multiple input buffers.
         /// @warning The data pointed to by the buffers must remain valid until completion.
@@ -142,7 +142,7 @@ namespace crouton {
         ///        this method as an optimization.
         [[nodiscard]] virtual Future<void> write(const ConstBytes buffers[], size_t nBuffers);
 
-        [[nodiscard]] Future<void> write(std::initializer_list<ConstBytes> buffers);
+        ASYNC<void> write(std::initializer_list<ConstBytes> buffers);
     };
 
 }

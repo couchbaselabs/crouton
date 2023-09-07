@@ -52,20 +52,20 @@ namespace crouton::apple {
 
         bool isOpen() const override                        {return _isOpen;}
 
-        [[nodiscard]] Future<void> close() override;
+        ASYNC<void> close() override;
 
-        [[nodiscard]] Future<void> closeWrite() override    {return _writeOrShutdown({}, true);}
+        ASYNC<void> closeWrite() override    {return _writeOrShutdown({}, true);}
 
         IStream& stream() override               {return *this;}
 
         [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
         [[nodiscard]] virtual Future<ConstBytes> peekNoCopy() override;
-        [[nodiscard]] Future<void> write(ConstBytes b) override {return _writeOrShutdown(b, false);}
+        ASYNC<void> write(ConstBytes b) override {return _writeOrShutdown(b, false);}
         using IStream::write;
         
     private:
         [[nodiscard]] virtual Future<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
-        [[nodiscard]] Future<void> _writeOrShutdown(ConstBytes, bool shutdown);
+        ASYNC<void> _writeOrShutdown(ConstBytes, bool shutdown);
         void _close();
         void clearReadBuf();
 

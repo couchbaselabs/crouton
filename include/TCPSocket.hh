@@ -31,11 +31,11 @@ namespace crouton {
         TCPSocket();
 
         /// Opens the socket to the bound address. Resolves once opened.
-        [[nodiscard]] Future<void> open() override;
+        ASYNC<void> open() override;
 
         bool isOpen() const override                {return Stream::isOpen();}
         IStream& stream() override                  {return *this;}
-        [[nodiscard]] Future<void> close() override {return Stream::close();}
+        ASYNC<void> close() override {return Stream::close();}
 
     protected:
         friend class TCPServer;

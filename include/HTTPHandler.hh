@@ -56,15 +56,15 @@ namespace crouton {
             void writeHeader(std::string_view name, std::string_view value);
 
             /// Writes to the body. After this you can't call writeHeader any more.
-            [[nodiscard]] Future<void> writeToBody(std::string);
+            ASYNC<void> writeToBody(std::string);
 
             /// The socket's stream. Only use this when bypassing HTTP, e.g. for WebSockets.
-            [[nodiscard]] Future<IStream*> rawStream();
+            ASYNC<IStream*> rawStream();
 
         private:
             friend class HTTPHandler;
             Response(HTTPHandler*, HTTPHeaders&&);
-            [[nodiscard]] Future<void> finishHeaders();
+            ASYNC<void> finishHeaders();
 
             HTTPHandler* _handler;
             HTTPHeaders  _headers;
@@ -82,14 +82,14 @@ namespace crouton {
         explicit HTTPHandler(std::shared_ptr<ISocket>, std::vector<Route> const&);
 
         /// Reads the request, calls the handler (or writes an error) and closes the socket.
-        [[nodiscard]] Future<void> run();
+        ASYNC<void> run();
 
     private:
-        [[nodiscard]] Future<void> writeHeaders(HTTPStatus status,
+        ASYNC<void> writeHeaders(HTTPStatus status,
                                                 std::string_view statusMsg,
                                                 HTTPHeaders const& headers);
-        [[nodiscard]] Future<void> writeToBody(std::string);
-        [[nodiscard]] Future<void> endBody();
+        ASYNC<void> writeToBody(std::string);
+        ASYNC<void> endBody();
 
         std::shared_ptr<ISocket> _socket;
         IStream&                 _stream;

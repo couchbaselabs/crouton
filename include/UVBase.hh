@@ -54,7 +54,7 @@ namespace crouton {
         void stop() override;
         void perform(std::function<void()>) override;
 
-        [[nodiscard]] Future<void> sleep(double delaySecs);
+        ASYNC<void> sleep(double delaySecs);
 
         void ensureWaits();
         uv_loop_s* uvLoop() {return _loop.get();}
@@ -100,13 +100,13 @@ namespace crouton {
 
 
     /// Calls the given function on a background thread managed by libuv.
-    [[nodiscard]] Future<void> OnBackgroundThread(std::function<void()> fn);
+    ASYNC<void> OnBackgroundThread(std::function<void()> fn);
 
 
     /// Calls the given function on a background thread managed by libuv,
     /// returning its value (or exception) asynchronously.
     template <typename T>
-    [[nodiscard]] Future<T> OnBackgroundThread(std::function<T()> fn) {
+    ASYNC<T> OnBackgroundThread(std::function<T()> fn) {
         std::optional<T> result;
         AWAIT OnBackgroundThread([&]() -> void {
             result = fn();

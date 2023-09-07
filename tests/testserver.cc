@@ -58,7 +58,7 @@ static Future<void> serveWebSocket(HTTPHandler::Request const& req, HTTPHandler:
         }
     }
     cerr << "-- Closing WebSocket\n";
-    ws.close();
+    AWAIT ws.close();
 }
 
 

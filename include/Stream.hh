@@ -38,7 +38,7 @@ namespace crouton {
         bool isOpen() const override {return _stream != nullptr;}
 
         /// Closes the write stream, leaving the read stream open until the peer closes it.
-        [[nodiscard]] Future<void> closeWrite() override;
+        ASYNC<void> closeWrite() override;
 
         /// Closes the stream entirely. (Called by the destructor.)
         virtual Future<void> close() override;
@@ -51,8 +51,8 @@ namespace crouton {
         /// The number of bytes known to be available without blocking.
         size_t bytesAvailable() const;
 
-        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
-        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
+        ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        ASYNC<ConstBytes> peekNoCopy() override;
 
         using IStream::read;
 
@@ -66,8 +66,8 @@ namespace crouton {
         size_t tryWrite(ConstBytes);
 
         using IStream::write;
-        [[nodiscard]] Future<void> write(ConstBytes) override;
-        [[nodiscard]] Future<void> write(const ConstBytes buffers[], size_t nBuffers) override;
+        ASYNC<void> write(ConstBytes) override;
+        ASYNC<void> write(const ConstBytes buffers[], size_t nBuffers) override;
 
     protected:
         Stream();
@@ -81,9 +81,9 @@ namespace crouton {
         Stream& operator=(Stream const&) = delete;
         void _close();
 
-        [[nodiscard]] Future<int64_t> _read(size_t len, void* dst);
-        [[nodiscard]] Future<std::unique_ptr<Buffer>> readBuf();
-        [[nodiscard]] Future<ConstBytes> fillInputBuf();
+        ASYNC<int64_t> _read(size_t len, void* dst);
+        ASYNC<std::unique_ptr<Buffer>> readBuf();
+        ASYNC<ConstBytes> fillInputBuf();
 
         void read_start();
         void _allocCallback(size_t suggested, uv_buf_t*);

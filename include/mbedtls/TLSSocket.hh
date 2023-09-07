@@ -34,19 +34,19 @@ namespace crouton::mbed {
         ~TLSSocket();
 
         bool isOpen() const override;
-        [[nodiscard]] Future<void> open() override;
-        [[nodiscard]] Future<void> close() override;
-        [[nodiscard]] Future<void> closeWrite() override;
+        ASYNC<void> open() override;
+        ASYNC<void> close() override;
+        ASYNC<void> closeWrite() override;
 
         IStream& stream() override              {return *this;}
 
-        [[nodiscard]] Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
-        [[nodiscard]] Future<ConstBytes> peekNoCopy() override;
-        [[nodiscard]] Future<void> write(ConstBytes) override;
+        ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        ASYNC<ConstBytes> peekNoCopy() override;
+        ASYNC<void> write(ConstBytes) override;
         using IStream::write;
 
     private:
-        [[nodiscard]] Future<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
+        ASYNC<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
 
         class Impl;
         std::unique_ptr<Impl>   _impl;
