@@ -65,14 +65,16 @@ namespace crouton {
     Future<void> HTTPHandler::handleRequest(HTTPHeaders responseHeaders,
                                             HandlerFunction const& handler)
     {
+        string body = AWAIT _parser.entireBody();   //TODO: Let handler fn read at its own pace
         Request request {
             _parser.requestMethod,
             _parser.requestURI.value(),
             _parser.headers,
-            AWAIT _parser.entireBody()
+            std::move(body)
         };
         Response response(this, std::move(responseHeaders));
-        AWAIT handler(request, response);
+        Future<void> handled = handler(request, response); // split in 2 lines bc MSVC bug
+        AWAIT handled;
         AWAIT response.finishHeaders();
         AWAIT endBody();
         RETURN;
