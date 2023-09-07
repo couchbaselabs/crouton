@@ -138,6 +138,7 @@ endif()
 if (MSVC)
     target_sources( LibCrouton PRIVATE
         src/support/asprintf.c
+        src/support/vasprintf-msvc.c
     )
 endif()
 
