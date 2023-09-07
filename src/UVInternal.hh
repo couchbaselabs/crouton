@@ -21,7 +21,6 @@
 #include "IStream.hh"
 #include "Scheduler.hh"
 #include "UVBase.hh"
-#include <uv.h>
 
 #include <algorithm>
 #include <concepts>
@@ -29,6 +28,14 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+
+#include <uv.h>
+// On Windows <uv.h> drags in <windows.h>, which defines `min` and `max` as macros,
+// which creates crazy syntax errors when calling std::min/max...
+#undef min
+#undef max
+
+
 
 namespace crouton {
 

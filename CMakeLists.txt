@@ -36,8 +36,6 @@ add_subdirectory(vendor/libuv)
 add_subdirectory(vendor/llhttp)
 add_subdirectory(vendor/mbedtls)
 
-find_package(ZLIB REQUIRED)
-
 
 #### CROUTON CONFIG
 

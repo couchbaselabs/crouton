@@ -347,6 +347,7 @@
 		278F7E562AA7EDBF005B12F2 /* ISocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ISocket.cc; sourceTree = "<group>"; };
 		278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPHandler.hh; sourceTree = "<group>"; };
 		278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPHandler.cc; sourceTree = "<group>"; };
+		278F7E5D2AAA69B5005B12F2 /* Base.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Base.hh; sourceTree = "<group>"; };
 		279D5D402A8FE08D005C3066 /* AddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AddrInfo.hh; sourceTree = "<group>"; };
 		279D5D412A8FE08D005C3066 /* AddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AddrInfo.cc; sourceTree = "<group>"; };
 		279D5D442A8FE174005C3066 /* Crouton.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Crouton.hh; sourceTree = "<group>"; };
@@ -437,6 +438,7 @@
 				27F49CCD2A9D007D00BFB24C /* Actor.hh */,
 				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
+				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
 				279D5D442A8FE174005C3066 /* Crouton.hh */,
 				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
 				272730502A8EC61D000CCA22 /* FileStream.hh */,

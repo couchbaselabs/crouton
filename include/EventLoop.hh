@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Base.hh"
 #include <functional>
 
 namespace crouton {

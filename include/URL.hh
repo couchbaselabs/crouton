@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Base.hh"
 #include <string>
 #include <string_view>
 #include <utility>

@@ -138,7 +138,7 @@ namespace crouton {
 
         using SuspensionMap = std::unordered_map<const void*,Suspension>;
 
-        static inline __thread Scheduler* sCurSched;        // Current thread's instance
+        static inline thread_local Scheduler* sCurSched;    // Current thread's instance
 
         std::deque<coro_handle> _ready;                     // Coroutines that are ready to run
         SuspensionMap           _suspended;                 // Suspended/sleeping coroutines

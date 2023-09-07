@@ -136,7 +136,7 @@ namespace crouton {
 // Magic glue that specifies that methods of an Actor subclass which return Future will be
 // implemented with ActorMethodImpl.
 template <typename T, typename ACTOR, typename... ArgTypes>
-    requires(is_type_complete_v<ACTOR> &&
+    requires(crouton::is_type_complete_v<ACTOR> &&
              std::derived_from<ACTOR, crouton::Actor>)
 struct CORO_NS::coroutine_traits<crouton::Future<T>, ACTOR&, ArgTypes...> {
     using promise_type = crouton::ActorMethodImpl<T>;
@@ -144,7 +144,7 @@ struct CORO_NS::coroutine_traits<crouton::Future<T>, ACTOR&, ArgTypes...> {
 
 // same as above, but for a const Actor method
 template <typename T, typename ACTOR, typename... ArgTypes>
-    requires(is_type_complete_v<ACTOR> &&
+    requires(crouton::is_type_complete_v<ACTOR> &&
              std::derived_from<ACTOR, crouton::Actor>)
 struct CORO_NS::coroutine_traits<crouton::Future<T>, ACTOR const&, ArgTypes...> {
     using promise_type = crouton::ActorMethodImpl<T>;

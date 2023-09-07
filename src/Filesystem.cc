@@ -19,7 +19,7 @@
 #include "Filesystem.hh"
 #include "Defer.hh"
 #include "UVInternal.hh"
-#include <uv.h>
+
 #include <cstring>
 
 namespace crouton::fs {

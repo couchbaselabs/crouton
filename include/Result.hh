@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Base.hh"
 #include <stdexcept>
 #include <cassert>
 #include <exception>    
