@@ -23,59 +23,14 @@
 #include <mbedtls/base64.h>
 #include <mbedtls/sha1.h>
 
+#include <iomanip>
+#include <iostream>
+
 namespace crouton {
     using namespace std;
 
 
-    WebSocket::WebSocket(std::string urlStr)
-    :_connection(urlStr)
-    ,_parser(make_unique<ClientProtocol>())
-    {
-        _request.headers.set("Connection", "Upgrade");
-        _request.headers.set("Upgrade", "WebSocket");
-        _request.headers.set("Sec-WebSocket-Version", "13");
-
-        // Generate a base64-encoded 16-byte random `Sec-WebSocket-Key`:
-        uint8_t rawKey[16];
-        Randomize(&rawKey, sizeof(rawKey));
-        char key[100];
-        size_t len;
-        mbedtls_base64_encode((uint8_t*)key, sizeof(key), &len, rawKey, sizeof(rawKey));
-        key[len] = '\0';
-        _request.headers.set("Sec-WebSocket-Key", string(key));
-
-        // Compute the `Sec-WebSocket-Accept` response the server should generate from the key:
-        strcat(key, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-        uint8_t digest[20];
-        mbedtls_sha1((const uint8_t*)key, strlen(key), digest);
-        char accept[60];
-        mbedtls_base64_encode((uint8_t*)accept, sizeof(accept), &len, digest, sizeof(digest));
-        _accept = string(accept, len);
-    }
-
-
     WebSocket::~WebSocket() {disconnect();}
-
-
-    void WebSocket::setHeader(const char* name, const char* value) {
-        _request.headers.set(name, value);
-    }
-
-
-    Future<void> WebSocket::connect() {
-        HTTPResponse response = AWAIT _connection.send(_request);
-
-        _responseHeaders = response.headers();
-        if (auto status = response.status(); status != HTTPStatus::SwitchingProtocols)
-            throw runtime_error("Server returned wrong status " + to_string(int(status)));
-        if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
-                !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
-            throw runtime_error("Server did not upgrade to WebSocket protocol");
-        if (_accept != _responseHeaders.get("Sec-WebSocket-Accept"))
-            throw runtime_error("Server returned wrong Sec-WebSocket-Accept value");
-
-        _stream = &response.upgradedStream();
-    }
 
 
     Future<void> WebSocket::close() {
@@ -95,43 +50,21 @@ namespace crouton {
         if (!_incoming.empty())
             fprintf(stderr, "WARNING: WebSocket disconnected with %zu unread incoming messages\n",
                     _incoming.size());
-        if (_stream) {
-            _connection.close();
-            _stream = nullptr;
-        }
+        _stream = nullptr;
     }
 
 
-    Future<void> WebSocket::send(const void* data, size_t len, MessageType type) {
+    Future<void> WebSocket::send(ConstBytes message, MessageType type) {
         // Note: This method is not a coroutine, and it passes the message to _stream->write
         // as a `string`, so the caller does not need to keep the data valid.
         if (_closeSent || !_stream)
             throw std::logic_error("WebSocket is already closing");
         if (type == Close)
             _closeSent = true;
-        string frame(len + 10, 0);
-        size_t frameLen = ClientProtocol::formatMessage((std::byte*)frame.data(),
-                                                        (const char*)data,
-                                                        len,
-                                                        uWS::OpCode(type),
-                                                        len,
-                                                        false);
+        string frame(message.size() + 10, 0);
+        size_t frameLen = formatMessage(frame.data(), message, type);
         frame.resize(frameLen);
         return _stream->write(frame);
-    }
-
-
-    Future<void> WebSocket::send(Message const& msg) {
-        return send(msg.data(), msg.size(), msg.type);
-    }
-
-
-    // Caller is initiating a close.
-    Future<void> WebSocket::sendClose(CloseCode code, std::string_view message) {
-        if (_closeSent)
-            return Future<void>{};
-        else
-            return send(Message(code, message));
     }
 
 
@@ -144,35 +77,33 @@ namespace crouton {
                 if (data.size() == 0)
                     RETURN Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
                 // Pass the data to the 3rd-party WebSocket parser, which will call handleFragment.
-                _parser->consume((std::byte*)data.data(), data.size(), this);
+                consume(data);
             }
 
             Message msg = std::move(_incoming.front());
             _incoming.pop_front();
             switch (msg.type) {
+                case Close:
+                    _closeReceived = true;
+                    [[fallthrough]];
                 case Text:
                 case Binary:
-                    if (_closeReceived) {
-                        fprintf(stderr, "Peer illegally sent data message after CLOSE\n");
-                        break;
-                    }
                     RETURN msg;     // Got a message!
-                case Close:
-                    (void) handleCloseMessage(msg);
-                    RETURN msg;     // Pass the CLOSE message to the peer.
                 case Ping:
-                    (void) send("", Pong);
+                    (void) send(ConstBytes{}, Pong);
                     break;
                 case Pong:
                     //TODO: Send periodic Pings and disconnect if no Pong received in time
                 default:
-                    break; // ignore
-           }
+                    fprintf(stderr, "WebSocket received unknown message type %d\n", int(msg.type));
+                    break;
+            }
         }
     }
 
 
-    // Called from inside _parser->consume(), called by receive(), above.
+
+    // Called from inside consume(), called by receive(), above.
     // A single receive might result in multiple messages, so we queue them in `_incoming`.
     bool WebSocket::handleFragment(std::byte* data,
                                    size_t dataLen,
@@ -217,11 +148,152 @@ namespace crouton {
         } else {
             // Peer is initiating a close; echo it:
             auto close = ClientProtocol::parseClosePayload((std::byte*)msg.data(), msg.size());
-            fprintf(stderr, "Client is requesting close (%d '%.*s'); echoing it\n",
+            fprintf(stderr, "Peer is requesting close (%d '%.*s'); echoing it\n",
                     close.code, (int)close.length, (char*)close.message);
-            _closeSent = true;
             return send(std::move(msg));
         }
+    }
+
+
+#pragma mark - CLIENT WEBSOCKET:
+
+
+    ClientWebSocket::ClientWebSocket(std::string urlStr)
+    :_connection(urlStr)
+    ,_clientParser(make_unique<ClientProtocol>())
+    {
+        // Generate a base64-encoded 16-byte random `Sec-WebSocket-Key`:
+        uint8_t rawKey[16];
+        Randomize(&rawKey, sizeof(rawKey));
+        char key[100];
+        size_t len;
+        mbedtls_base64_encode((uint8_t*)key, sizeof(key), &len, rawKey, sizeof(rawKey));
+        key[len] = '\0';
+        _accept = generateAcceptResponse(key);
+
+        // Create request headers:
+        _request.headers.set("Connection",            "Upgrade");
+        _request.headers.set("Upgrade",               "WebSocket");
+        _request.headers.set("Sec-WebSocket-Version", "13");
+        _request.headers.set("Sec-WebSocket-Key",     string(key));
+    }
+
+
+    // Compute the `Sec-WebSocket-Accept` response the server should generate from the key:
+    string ClientWebSocket::generateAcceptResponse(const char* key) {
+        string input = string(key) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        uint8_t digest[20];
+        mbedtls_sha1((const uint8_t*)input.data(), input.size(), digest);
+        char accept[60];
+        size_t len;
+        mbedtls_base64_encode((uint8_t*)accept, sizeof(accept), &len, digest, sizeof(digest));
+        return string(accept, len);
+    }
+
+
+    ClientWebSocket::~ClientWebSocket() = default;
+
+
+    void ClientWebSocket::setHeader(const char* name, const char* value) {
+        _request.headers.set(name, value);
+    }
+
+
+    Future<void> ClientWebSocket::connect() {
+        HTTPResponse response = AWAIT _connection.send(_request);
+
+        _responseHeaders = response.headers();
+        if (auto status = response.status(); status != HTTPStatus::SwitchingProtocols)
+            throw runtime_error("Server returned wrong status " + to_string(int(status)));
+        if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
+            !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
+            throw runtime_error("Server did not upgrade to WebSocket protocol");
+        if (_accept != _responseHeaders.get("Sec-WebSocket-Accept"))
+            throw runtime_error("Server returned wrong Sec-WebSocket-Accept value");
+
+        _stream = &response.upgradedStream();
+    }
+
+
+    void ClientWebSocket::disconnect() {
+        WebSocket::disconnect();
+        _connection.close();
+    }
+
+
+    size_t ClientWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
+        return ClientProtocol::formatMessage((std::byte*)dst,
+                                             (const char*)message.data(),
+                                             message.size(),
+                                             uWS::OpCode(type),
+                                             message.size(),
+                                             false);
+    }
+
+
+    void ClientWebSocket::consume(ConstBytes bytes) {
+        _clientParser->consume((std::byte*)bytes.data(), bytes.size(), this);
+    }
+
+
+#pragma mark - SERVER WEBSOCKET:
+
+
+    ServerWebSocket::ServerWebSocket()
+    :_serverParser(make_unique<ServerProtocol>())
+    { }
+
+    ServerWebSocket::~ServerWebSocket() = default;
+
+
+    bool ServerWebSocket::isRequestValid(HTTPHandler::Request const& request) {
+        return request.method == HTTPMethod::GET
+        && request.headers.get("Sec-WebSocket-Key").size() == 24
+        && equalIgnoringCase(request.headers.get("Connection"), "upgrade")
+        && equalIgnoringCase(request.headers.get("Upgrade"), "WebSocket")
+        && equalIgnoringCase(request.headers.get("Sec-WebSocket-Version"), "13");
+    }
+
+
+    Future<bool> ServerWebSocket::connect(HTTPHandler::Request const& request,
+                                          HTTPHandler::Response& response,
+                                          string_view subprotocol)
+    {
+        if (!isRequestValid(request)) {
+            response.status = HTTPStatus::BadRequest;
+            response.writeHeader("Sec-WebSocket-Version", "13");
+            response.statusMessage = "Invalid WebSocket handshake";
+            RETURN false;
+        }
+
+        string key = request.headers.get("Sec-WebSocket-Key");
+        string accept = ClientWebSocket::generateAcceptResponse(key.c_str());
+
+        response.status = HTTPStatus::SwitchingProtocols;
+        response.writeHeader("Connection",           "Upgrade");
+        response.writeHeader("Upgrade",              "WebSocket");
+        response.writeHeader("Sec-WebSocket-Accept", accept);
+        if (!subprotocol.empty())
+            response.writeHeader("Sec-WebSocket-Protocol", subprotocol);
+        
+        // Send the response and take over the socket stream:
+        _stream = AWAIT response.rawStream();
+        RETURN true;
+    }
+
+
+    size_t ServerWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
+        return ServerProtocol::formatMessage((std::byte*)dst,
+                                             (const char*)message.data(),
+                                             message.size(),
+                                             uWS::OpCode(type),
+                                             message.size(),
+                                             false);
+    }
+
+
+    void ServerWebSocket::consume(ConstBytes bytes) {
+        _serverParser->consume((std::byte*)bytes.data(), bytes.size(), this);
     }
 
 
@@ -241,18 +313,75 @@ namespace crouton {
 
     WebSocket::CloseCode WebSocket::Message::closeCode() const {
         if (type != Close)
-            throw std::logic_error("Not a CLOSE message");
+            throw std::invalid_argument("Not a CLOSE message");
         auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
-        return CloseCode{payload.code};
+        return payload.code ? CloseCode{payload.code} : CloseCode::NoCode;
     }
 
     string_view WebSocket::Message::closeMessage() const {
         if (type != Close)
-            throw std::logic_error("Not a CLOSE message");
+            throw std::invalid_argument("Not a CLOSE message");
         auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
         return {(char*)payload.message, payload.length};
     }
 
+
+    std::ostream& operator<< (std::ostream& out, WebSocket::Message const& msg) {
+        using enum WebSocket::MessageType;
+        out << msg.type << '[';
+        switch (msg.type) {
+            case Text:
+                out << std::quoted(msg);
+                break;
+            case Binary:
+                out << msg.size();
+                break;
+            case Close:
+                out << msg.closeCode();
+                if (auto closeMsg = msg.closeMessage(); !closeMsg.empty())
+                    out << ", " << std::quoted(closeMsg);
+                break;
+            default:
+                break;
+        }
+        return out << ']';
+    }
+
+
+    std::ostream& operator<< (std::ostream& out, WebSocket::MessageType type) {
+        using enum WebSocket::MessageType;
+        static constexpr const char* kTypeNames[] = {
+            nullptr, "Text", "Binary", nullptr, nullptr, nullptr, nullptr, nullptr,
+            "Close", "Ping", "Pong"
+        };
+        if (type >= Text && type <= Pong && kTypeNames[type])
+            return out << kTypeNames[type];
+        else
+            return out << "Op" << int(type);
+    }
+
+    
+    std::ostream& operator<< (std::ostream& out, WebSocket::CloseCode code) {
+        using enum WebSocket::CloseCode;
+        static constexpr const char* kCodeNames[] = {
+            "Normal",
+            "GoingAway",
+            "ProtocolError",
+            "DataError",
+            "1004",
+            "NoCode",
+            "Abnormal",
+            "BadMessageFormat",
+            "PolicyError",
+            "MessageTooBig",
+            "MissingExtension",
+            "CantFulfill",
+        };
+        if (code >= Normal && code <= CantFulfill)
+            return out << kCodeNames[int(code) - int(Normal)];
+        else
+            return out << int(code);
+    }
 
 }
 
@@ -297,6 +426,6 @@ namespace uWS {
 
     // Explicitly generate code for template methods:
 
-//    template class WebSocketProtocol<SERVER>;
-    template class WebSocketProtocol<CLIENT>;
+    template class WebSocketProtocol<false>;
+    template class WebSocketProtocol<true>;
 }  // namespace uWS

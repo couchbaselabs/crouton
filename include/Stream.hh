@@ -98,7 +98,6 @@ namespace crouton {
         std::unique_ptr<Buffer> _inputBuf;          // The last data read from the stream
         bool                    _reading = false;   // True after uv_read_start
         bool                    _readBusy = false;  // Detects re-entrant calls
-        bool                    _writeBusy = false; // Detects re-entrant calls
     };
 
 }

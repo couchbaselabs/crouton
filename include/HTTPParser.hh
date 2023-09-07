@@ -37,6 +37,7 @@ namespace crouton {
         SwitchingProtocols = 101,
         OK = 200,
         MovedPermanently = 301,
+        BadRequest = 400,
         NotFound = 404,
         MethodNotAllowed = 405,
         ServerError = 500,

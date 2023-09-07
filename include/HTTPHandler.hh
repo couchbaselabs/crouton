@@ -19,7 +19,7 @@ namespace crouton {
     class HTTPHandler {
     public:
 
-        /// An HTTP request as sent to a RouteHandler function.
+        /// An HTTP request as sent to a HandlerFunction function.
         struct Request {
             HTTPMethod  method = HTTPMethod::GET;   ///< The request method
             URL         uri;                        ///< The request URI (path + query.)
@@ -28,7 +28,7 @@ namespace crouton {
         };
 
 
-        /// An HTTP response for a RouteHandler function to define.
+        /// An HTTP response for a HandlerFunction function to define.
         class Response {
         public:
             HTTPStatus  status = HTTPStatus::OK;    ///< Can change this before calling writeToBody
@@ -40,10 +40,13 @@ namespace crouton {
             /// Writes to the body. After this you can't call writeHeader any more.
             [[nodiscard]] Future<void> writeToBody(std::string);
 
+            /// The socket's stream. Only use this when bypassing HTTP, e.g. for WebSockets.
+            [[nodiscard]] Future<IStream*> rawStream();
+
         private:
             friend class HTTPHandler;
             Response(HTTPHandler*, HTTPHeaders&&);
-            Future<void> finish();
+            [[nodiscard]] Future<void> finishHeaders();
 
             HTTPHandler* _handler;
             HTTPHeaders  _headers;
@@ -52,10 +55,10 @@ namespace crouton {
 
 
         /// A function that handles a request, writing a response.
-        using RouteHandler = std::function<Future<void>(Request const&, Response&)>;
+        using HandlerFunction = std::function<Future<void>(Request const&, Response&)>;
 
         /// An HTTP method and path pattern, with the function that should be called.
-        using Route = std::tuple<HTTPMethod,std::regex,RouteHandler>;
+        using Route = std::tuple<HTTPMethod,std::regex,HandlerFunction>;
 
         /// Constructs an HTTPHandler on a socket, given its routing table.
         explicit HTTPHandler(std::shared_ptr<ISocket>, std::vector<Route> const&);

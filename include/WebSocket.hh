@@ -19,6 +19,7 @@
 #pragma once
 #include "Coroutine.hh"
 #include "HTTPConnection.hh"
+#include "HTTPHandler.hh"
 #include <cstring>
 #include <deque>
 #include <memory>
@@ -76,10 +77,62 @@ namespace crouton {
             std::string_view closeMessage() const;  ///< If type==Close, this is the status message
         };
 
+        friend std::ostream& operator<< (std::ostream&, MessageType);
+        friend std::ostream& operator<< (std::ostream&, Message const&);
+        friend std::ostream& operator<< (std::ostream&, CloseCode);
 
+
+        /// Returns the next incoming WebSocket binary message, asynchronously.
+        /// - If the server has closed the connection, the message's type will be `NONE`.
+        /// - If there's a connection error, the Future will hold it (and throw when resolved.)
+        /// - If the peer decides to close the socket, or after you call `close`, a message of
+        ///   type `Close` will arrive. No further messages will arrive; don't call receive again.
+        [[nodiscard]] Future<Message> receive();
+
+        /// Sends a binary message, asynchronously.
+        /// @note The data is copied and does not need to remain valid after the call.
+        [[nodiscard]] Future<void> send(ConstBytes, MessageType = Binary);
+        [[nodiscard]] Future<void> send(Message const& m)   {return send(ConstBytes(m), m.type);}
+
+        /// Returns true once each side has sent a Close message.
+        bool readyToClose() const       {return _closeSent && _closeReceived;}
+
+        /// Closes the socket without sending a Close message or waiting to receive a response.
+        /// This should only be called after `readyToClose` has returned `true`.
+        Future<void> close();
+
+        /// Closes the connection immediately.
+        virtual void disconnect();
+
+        virtual ~WebSocket();
+
+    protected:
+        template <bool S> friend class uWS::WebSocketProtocol;
+        using ClientProtocol = uWS::WebSocketProtocol<false>;
+        using ServerProtocol = uWS::WebSocketProtocol<true>;
+
+        WebSocket() = default;
+
+        virtual size_t formatMessage(void* dst, ConstBytes message, MessageType) = 0;
+        virtual void consume(ConstBytes) = 0;
+
+        bool handleFragment(std::byte*, size_t, size_t,uint8_t, bool);
+        void protocolError();
+        [[nodiscard]] Future<void> handleCloseMessage(Message const& msg);
+
+        IStream*                    _stream = nullptr;
+        std::deque<Message>         _incoming;
+        std::optional<Message>      _curMessage;
+        bool                        _closeSent = false;
+        bool                        _closeReceived = false;
+    };
+
+
+    class ClientWebSocket final : public WebSocket {
+    public:
         /// Constructs a WebSocket, but doesn't connect yet.
-        explicit WebSocket(std::string urlStr);
-        ~WebSocket();
+        explicit ClientWebSocket(std::string urlStr);
+        ~ClientWebSocket();
 
         /// Adds an HTTP request header.
         /// @note You may need to add a `Sec-WebSocket-Protocol` header if the server requires one.
@@ -91,51 +144,42 @@ namespace crouton {
         /// The HTTP response headers.
         HTTPHeaders const& responseHeaders()    {return _responseHeaders;}
 
-        /// Returns the next incoming WebSocket binary message, asynchronously.
-        /// - If the server has closed the connection, the message's type will be `NONE`.
-        /// - If there's a connection error, the Future will hold it (and throw when resolved.)
-        /// - If the peer decides to close the socket, or after you call `close`, a message of
-        ///   type `Close` will arrive. No further messages will arrive; don't call receive again.
-        [[nodiscard]] Future<Message> receive();
+        void disconnect() override;
 
-        /// Sends a binary message, asynchronously.
-        /// @note The data is copied and does not need to remain valid after the call.
-        [[nodiscard]] Future<void> send(const void* data, size_t len, MessageType = Binary);
-        [[nodiscard]] Future<void> send(std::string_view str, MessageType type = Binary)
-            {return send(str.data(), str.size(), type);}
-        [[nodiscard]] Future<void> send(const char* str, MessageType type = Binary)
-            {return send(str, strlen(str), type);}
-        [[nodiscard]] Future<void> send(Message const&);
-
-        /// Sends a request to close the socket. Peer will respond with a Close message that
-        /// will be returned from `receive`; at that point the socket is closed.
-        Future<void> sendClose(CloseCode = CloseCode::Normal, std::string_view message = "");
-
-        /// Closes the socket without sending a Close message or waiting to receive a response.
-        /// This should only be called after you've already done the above.
-        Future<void> close();
-
-        /// Closes the connection immediately.
-        void disconnect();
+        static std::string generateAcceptResponse(const char* key);
 
     private:
-        template <bool S> friend class uWS::WebSocketProtocol;
-        using ClientProtocol = uWS::WebSocketProtocol<false>;
-
-        bool handleFragment(std::byte*, size_t, size_t,uint8_t, bool);
-        void protocolError();
-        [[nodiscard]] Future<void> handleCloseMessage(Message const& msg);
+        size_t formatMessage(void* dst, ConstBytes message, MessageType) override;
+        void consume(ConstBytes) override;
 
         HTTPConnection              _connection;
         HTTPRequest                 _request;
         std::string                 _accept;
         HTTPHeaders                 _responseHeaders;
-        IStream*                    _stream = nullptr;
-        std::unique_ptr<ClientProtocol> _parser;
-        std::deque<Message>         _incoming;
-        std::optional<Message>      _curMessage;
-        bool                        _closeSent = false;
-        bool                        _closeReceived = false;
+        std::unique_ptr<ClientProtocol> _clientParser;
     };
 
+
+    class ServerWebSocket final : public WebSocket {
+    public:
+        ServerWebSocket();
+        ~ServerWebSocket();
+
+        /// Returns true if this is a valid WebSocket client request.
+        static bool isRequestValid(HTTPHandler::Request const&);
+
+        /// Handles an HTTP request.
+        /// - If it's a valid WebSocket request, it sends the HTTP 101 response and returns true.
+        ///   Caller should then call `receive` in a loop and handle messages until client closes.
+        /// - If it's not valid, it returns a 400 response and returns false.
+        Future<bool> connect(HTTPHandler::Request const&,
+                             HTTPHandler::Response&,
+                             std::string_view subprotocol = "");
+
+    private:
+        size_t formatMessage(void* dst, ConstBytes message, MessageType) override;
+        void consume(ConstBytes) override;
+
+        std::unique_ptr<ServerProtocol> _serverParser;
+    };
 }

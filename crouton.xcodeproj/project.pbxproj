@@ -47,6 +47,7 @@
 		278F7E572AA7EDBF005B12F2 /* ISocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F7E562AA7EDBF005B12F2 /* ISocket.cc */; };
 		278F7E5A2AA93D5A005B12F2 /* HTTPHandler.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */; };
 		278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */; };
+		278F7E5C2AAA4DC1005B12F2 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27F6030B2A9FBA5E006FA1D0 /* Network.framework */; };
 		279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D402A8FE08D005C3066 /* AddrInfo.hh */; };
 		279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D412A8FE08D005C3066 /* AddrInfo.cc */; };
 		279D5D472A902588005C3066 /* TCPServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D5D452A902588005C3066 /* TCPServer.hh */; };
@@ -415,6 +416,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				278F7E5C2AAA4DC1005B12F2 /* Network.framework in Frameworks */,
 				279D5D552A90389F005C3066 /* libcrouton.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -443,6 +445,7 @@
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				272A85282A97B2090083D947 /* HTTPConnection.hh */,
 				278F7E582AA93D5A005B12F2 /* HTTPHandler.hh */,
+				278F7E382AA1489B005B12F2 /* HTTPParser.hh */,
 				27F6030A2A9FA4C2006FA1D0 /* ISocket.hh */,
 				27F603022A9EB826006FA1D0 /* IStream.hh */,
 				279D5D632A952DD1005C3066 /* Pipe.hh */,
@@ -514,7 +517,6 @@
 				272730542A8ED3D1000CCA22 /* Future.cc */,
 				272A85292A97B2090083D947 /* HTTPConnection.cc */,
 				278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */,
-				278F7E382AA1489B005B12F2 /* HTTPParser.hh */,
 				278F7E392AA1489B005B12F2 /* HTTPParser.cc */,
 				278F7E562AA7EDBF005B12F2 /* ISocket.cc */,
 				27F603032A9EB826006FA1D0 /* IStream.cc */,

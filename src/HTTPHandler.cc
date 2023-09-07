@@ -43,7 +43,7 @@ namespace crouton {
         responseHeaders.set("User-Agent", "Crouton");
         responseHeaders.set("Connection", "close");
 
-        // Find a matching route:
+        // Find a matching route:       //TODO: This is obviously inefficient.
         auto status = HTTPStatus::MethodNotAllowed;
         for (auto &route : _routes) {
             if (std::get<0>(route) == _parser.requestMethod) {
@@ -58,7 +58,7 @@ namespace crouton {
                     };
                     _response = Response(this, std::move(responseHeaders));
                     AWAIT std::get<2>(route)(*_request, *_response);
-                    AWAIT _response->finish();
+                    AWAIT _response->finishHeaders();
                     AWAIT endBody();
                     RETURN;
                 }
@@ -87,7 +87,7 @@ namespace crouton {
 
 
     Future<void> HTTPHandler::writeToBody(std::string str) {
-        return _stream.write(std::move(str));
+        return _stream.write(std::move(str));   //TODO: Write via the Parser
     }
 
 
@@ -110,16 +110,21 @@ namespace crouton {
     }
 
     Future<void> HTTPHandler::Response::writeToBody(string str) {
-        if (!_sentHeaders) {
-            cerr << "HTTPHandler: Sending " << int(status) << " response\n";
-            AWAIT _handler->writeHeaders(status, statusMessage, _headers);
-            _sentHeaders = true;
-        }
+        AWAIT finishHeaders();
         AWAIT _handler->writeToBody(std::move(str));
     }
 
-    Future<void> HTTPHandler::Response::finish() {
-        if (!_sentHeaders)
+    Future<void> HTTPHandler::Response::finishHeaders() {
+        if (!_sentHeaders) {
+            cerr << "HTTPHandler: Sending " << int(status) << " response\n";
             AWAIT _handler->writeHeaders(status, statusMessage, _headers);
+        }
+        _sentHeaders = true;
     }
+
+    Future<IStream*> HTTPHandler::Response::rawStream() {
+        AWAIT finishHeaders();
+        RETURN &_handler->_stream;
+    }
+
 }

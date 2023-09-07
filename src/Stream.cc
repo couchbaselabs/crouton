@@ -48,7 +48,7 @@ namespace crouton {
 
 
     void Stream::_close() {
-        assert(!_readBusy && !_writeBusy);
+        assert(!_readBusy);
         _inputBuf.reset();
         closeHandle(_stream);
     }
@@ -216,7 +216,6 @@ namespace crouton {
     }
 
     Future<void> Stream::write(const ConstBytes bufs[], size_t nbufs) {
-        NotReentrant nr(_writeBusy);
         assert(isOpen());
 
         static constexpr size_t kMaxBufs = 8;
