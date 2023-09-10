@@ -39,6 +39,9 @@ TEST_CASE("URLs", "[uv]") {
         CHECK(url.port == 8080);
         CHECK(url.path == "/~jens");
         CHECK(url.query == "foo=bar");
+        CHECK(url.unescapedPath() == "/~jens");
+        CHECK(url.queryValueForKey("foo") == "bar");
+        CHECK(url.queryValueForKey("baz") == "");
     }
     {
         URL url("http://example.com");
@@ -48,12 +51,25 @@ TEST_CASE("URLs", "[uv]") {
         CHECK(url.path == "");
     }
     {
-        URL url("/some/thing?foo=bar");
+        URL url("/some/%22thing%22?foo=bar&baz=17&wow");
         CHECK(url.scheme == "");
         CHECK(url.hostname == "");
         CHECK(url.port == 0);
-        CHECK(url.path == "/some/thing");
-        CHECK(url.query == "foo=bar");
+        CHECK(url.path == "/some/%22thing%22");
+        CHECK(url.query == "foo=bar&baz=17&wow");
+        CHECK(url.unescapedPath() == "/some/\"thing\"");
+        CHECK(url.queryValueForKey("foo") == "bar");
+        CHECK(url.queryValueForKey("baz") == "17");
+        CHECK(url.queryValueForKey("wow") == "wow");
+    }
+    {
+        URL url("wss", "example.com", 1234, "/path", "x=y");
+        CHECK(url.scheme == "wss");
+        CHECK(url.hostname == "example.com");
+        CHECK(url.port == 1234);
+        CHECK(url.path == "/path");
+        CHECK(url.query == "x=y");
+        CHECK(string(url) == "wss://example.com:1234/path?x=y");
     }
 }
 

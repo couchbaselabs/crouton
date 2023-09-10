@@ -63,6 +63,94 @@ namespace crouton {
     }
 
 
+    string URLRef::unescape(string_view str) {
+        size_t len = str.size();
+        string result;
+        result.reserve(len);
+        for (size_t i = 0; i < len; ++i) {
+            char c = str[i];
+            if (c == '%' && i + 2 < len && isHexDigit(str[i+1]) && isHexDigit(str[i+2])) {
+                auto unescaped = uint8_t(16 * hexDigitToInt(str[i+1]) + hexDigitToInt(str[i+2]));
+                c = char(unescaped);
+                i += 2;
+            }
+            result.append(&c, 1);
+        }
+        return result;
+    }
+
+
+    string URLRef::reencoded() const {
+        string result(scheme);
+        if (!scheme.empty())
+            result.append("://");
+        result.append(hostname);
+        if (port != 0) {
+            result.append(":");
+            result += to_string(port);
+        }
+        result += path;
+        if (!query.empty()) {
+            result.append("?");
+            result += query;
+        }
+        return result;
+    }
+
+
+    URLRef::URLRef(string_view scheme_,
+                   string_view hostname_,
+                   uint16_t port_,
+                   string_view path_,
+                   string_view query_)
+    :scheme(scheme_)
+    ,hostname(hostname_)
+    ,port(port_)
+    ,path(path_)
+    ,query(query_)
+    { }
+
+    
+    URL::URL(string_view scheme_,
+           string_view hostname_,
+           uint16_t port_,
+           string_view path_,
+           string_view query_)
+    :URLRef(scheme_, hostname_, port_, path_, query_)
+    {
+        reencode();
+    }
+
+
+    string URLRef::escape(string_view str, const char* except) {
+        size_t len = str.size();
+        string result;
+        result.reserve(len);
+        for (size_t i = 0; i < len; ++i) {
+            if (char c = str[i]; isURLSafe(c) || (except && strchr(except, c))) {
+                result.append(&c, 1);
+            } else {
+                auto n = uint8_t(c);
+                char buf[3] = {'%', asHexDigit(n >> 4), asHexDigit(n & 0x0F)};
+                result.append(buf, 3);
+            }
+        }
+        return result;
+    }
+
+
+    string_view URLRef::queryValueForKey(string_view key) {
+        string_view remaining = query;
+        while (!remaining.empty()) {
+            string_view q;
+            tie(q, remaining) = split(remaining, '&');
+            auto [k, v] = split(q, '=');
+            if (k == key)
+                return v.empty() ? k : v;
+        }
+        return "";
+    }
+
 
     //-------- Function below copied from tlsuv project, src/http.c
     //         https://github.com/openziti/tlsuv.git
