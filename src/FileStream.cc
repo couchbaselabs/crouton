@@ -33,8 +33,7 @@ namespace crouton {
     class fs_request : public Request<uv_fs_s> {
     public:
         fs_request(const char* what) :Request(what) { }
-        ~fs_request()       {if (await_ready()) uv_fs_req_cleanup(this);}
-        void await_resume() {check(result, _what);}
+        ~fs_request()                {if (await_ready()) uv_fs_req_cleanup(this);}
     private:
     };
 

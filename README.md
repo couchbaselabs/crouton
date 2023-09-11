@@ -48,9 +48,9 @@ How is that better than threads? It's safer and easier to reason about. The only
     
 ## Status: ☠️EXPERIMENTAL☠️
 
-This is very new code! So far, it builds with Clang (Xcode 14) on macOS, and GCC 12 on Ubuntu.
+This is very new code! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
 
-Test coverage is very limited.
+The tests have only been run on macOS yet. Test coverage is very limited.
 
 APIs are still in flux.
 

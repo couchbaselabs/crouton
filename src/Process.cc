@@ -17,11 +17,10 @@
 //
 
 #include "Process.hh"
+#include "Logging.hh"
 #include "Task.hh"
 #include "UVBase.hh"
 #include "UVInternal.hh"
-
-#include <iostream>
 
 namespace crouton {
     using namespace std;
@@ -71,14 +70,15 @@ namespace crouton {
     int Main(int argc, const char * argv[], Future<int>(*fn)()) {
         try {
             initArgs(argc, argv);
+            InitLogging();
             Future<int> fut = fn();
             Scheduler::current().runUntil([&]{ return fut.hasValue(); });
             return fut.value();
         } catch (std::exception const& x) {
-            cerr << "*** Unexpected exception: " << x.what() << endl;
+            spdlog::error("*** Unexpected exception: {}" , x.what());
             return 1;
         } catch (...) {
-            cerr << "*** Unexpected exception" << endl;
+            spdlog::error("*** Unexpected exception");
             return 1;
         }
     }
@@ -90,10 +90,10 @@ namespace crouton {
             Scheduler::current().run();
             return 0;
         } catch (std::exception const& x) {
-            cerr << "*** Unexpected exception: " << x.what() << endl;
+            spdlog::error("*** Unexpected exception: {}", x.what());
             return 1;
         } catch (...) {
-            cerr << "*** Unexpected exception" << endl;
+            spdlog::error("*** Unexpected exception");
             return 1;
         }
     }

@@ -18,6 +18,7 @@
 
 #include "Crouton.hh"
 #include "HTTPHandler.hh"
+#include "Logging.hh"
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -41,10 +42,10 @@ static Future<void> serveWebSocket(HTTPHandler::Request const& req, HTTPHandler:
     if (! AWAIT ws.connect(req, res))
         RETURN;
 
-    cerr << "-- Opened WebSocket\n";
+    spdlog::info("-- Opened WebSocket");
     while (!ws.readyToClose()) {
         WebSocket::Message msg = AWAIT ws.receive();
-        cerr << "\treceived " << msg << endl;
+        spdlog::info("\treceived {}", msg);
         switch (msg.type) {
             case WebSocket::Text:
             case WebSocket::Binary:
@@ -57,7 +58,7 @@ static Future<void> serveWebSocket(HTTPHandler::Request const& req, HTTPHandler:
                 break;              // WebSocket itself handles Ping and Pong
         }
     }
-    cerr << "-- Closing WebSocket\n";
+    spdlog::info("-- Closing WebSocket");
     AWAIT ws.close();
 }
 
@@ -69,16 +70,16 @@ static vector<HTTPHandler::Route> sRoutes = {
 
 
 static Task connectionTask(std::shared_ptr<TCPSocket> client) {
-    cout << "-- Accepted connection\n";
+    spdlog::info("-- Accepted connection");
     HTTPHandler handler(client, sRoutes);
     AWAIT handler.run();
-    cout << "-- Done!\n\n";
+    spdlog::info("-- Done!\n");
 }
 
 
 static Task run() {
     static TCPServer server(kPort);
-    cout << "Listening at http://localhost:" << kPort << "/ and ws://localhost:" << kPort << "/ws\n";
+    spdlog::info("Listening at http://localhost:{}/ and ws://localhost:{}/ws", kPort, kPort);
     server.listen([](std::shared_ptr<TCPSocket> client) {
         connectionTask(std::move(client));
     });

@@ -17,6 +17,7 @@
 //
 
 #include "WebSocket.hh"
+#include "Logging.hh"
 #include "StringUtils.hh"
 #include "UVInternal.hh"
 #include "WebSocketProtocol.hh"
@@ -24,7 +25,6 @@
 #include <mbedtls/sha1.h>
 
 #include <iomanip>
-#include <iostream>
 
 namespace crouton {
     using namespace std;
@@ -36,9 +36,9 @@ namespace crouton {
     Future<void> WebSocket::close() {
         if (_stream) {
             if (!_closeReceived)
-                fprintf(stderr, "WARNING: WebSocket::close called before receiving a Close msg\n");
+                LNet->warn("WebSocket::close called before receiving a Close msg");
             if (!_incoming.empty())
-                fprintf(stderr, "WARNING: WebSocket closing with %zu unread incoming messages\n",
+                LNet->warn("WebSocket closing with {} unread incoming messages",
                         _incoming.size());
             AWAIT _stream->close();
             _stream = nullptr;
@@ -48,7 +48,7 @@ namespace crouton {
 
     void WebSocket::disconnect() {
         if (!_incoming.empty())
-            fprintf(stderr, "WARNING: WebSocket disconnected with %zu unread incoming messages\n",
+            LNet->warn("WebSocket disconnected with {} unread incoming messages",
                     _incoming.size());
         _stream = nullptr;
     }
@@ -95,7 +95,7 @@ namespace crouton {
                 case Pong:
                     //TODO: Send periodic Pings and disconnect if no Pong received in time
                 default:
-                    fprintf(stderr, "WebSocket received unknown message type %d\n", int(msg.type));
+                    LNet->warn("WebSocket received unknown message type {}", int(msg.type));
                     break;
             }
         }
@@ -143,13 +143,11 @@ namespace crouton {
         _closeReceived = true;
         if ( _closeSent ) {
             // I initiated the close; the peer has confirmed, so disconnect the socket now:
-            fprintf(stderr, "Close confirmed by peer; disconnecting socket now\n");
+            LNet->warn("Close confirmed by peer; disconnecting socket now");
             return close();
         } else {
             // Peer is initiating a close; echo it:
-            auto close = ClientProtocol::parseClosePayload((std::byte*)msg.data(), msg.size());
-            fprintf(stderr, "Peer is requesting close (%d '%.*s'); echoing it\n",
-                    close.code, (int)close.length, (char*)close.message);
+            LNet->warn("Peer sent {}; echoing it", msg);
             return send(std::move(msg));
         }
     }
@@ -360,7 +358,7 @@ namespace crouton {
             return out << "Op" << int(type);
     }
 
-    
+
     std::ostream& operator<< (std::ostream& out, WebSocket::CloseCode code) {
         using enum WebSocket::CloseCode;
         static constexpr const char* kCodeNames[] = {

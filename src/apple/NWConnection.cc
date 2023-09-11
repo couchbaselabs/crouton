@@ -19,6 +19,7 @@
 #ifdef __APPLE__
 
 #include "NWConnection.hh"
+#include "Logging.hh"
 #include <Network/Network.h>
 #include <algorithm>
 
@@ -151,7 +152,7 @@ namespace crouton::apple {
                                         bool is_complete,
                                         nw_error_t error) {
                     if (is_complete) {
-                        std::cerr << "NWConnection read EOF\n";
+                        spdlog::debug("NWConnection read EOF");
                         _eof = true;
                     }
                     if (content) {
@@ -160,7 +161,7 @@ namespace crouton::apple {
                         _content = dispatch_data_create_map(content, &data, &size);
                         _contentBuf = ConstBytes(data, size);
                         _contentUsed = peek ? 0 : size;
-                        cerr << "NWConnection read " << size << " bytes\n";
+                        spdlog::debug("NWConnection read {} bytes", size);
                         onRead.setResult(_contentBuf);
                     } else if (error) {
                         onRead.setResult(NWError(error));

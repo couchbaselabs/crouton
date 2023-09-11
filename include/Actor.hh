@@ -18,9 +18,9 @@
 
 #pragma once
 #include "Future.hh"
+#include "Logging.hh"
 #include <deque>
 #include <memory>
-#include <iostream>//TEMP
 
 namespace crouton {
 
@@ -51,21 +51,21 @@ namespace crouton {
         bool startNew(coro_handle h) const {
             if (_scheduler.isCurrent()) {
                 if (_activeCoro == nullptr) {
-                    std::cerr << "Actor " << (void*)this << " immediately starting " << h << std::endl;
+                    spdlog::info("Actor {} immediately starting {}", (void*)this, logCoro{h});
                     _activeCoro = h;
                     return true;
                 } else {
-                    std::cerr << "Actor " << (void*)this << " queued " << h << std::endl;
+                    spdlog::info("Actor {} queued {}", (void*)this, logCoro{h});
                     _queue.push_back(h);
                 }
             } else {
                 _scheduler.onEventLoop([this,h]{
                     if (_activeCoro == nullptr) {
                         _activeCoro = h;
-                        std::cerr << "Actor " << (void*)this << " scheduled " << h << std::endl;
+                        spdlog::info("Actor {} scheduled ", (void*)this, logCoro{h});
                         _scheduler.schedule(h);
                     } else {
-                        std::cerr << "Actor " << (void*)this << " queued " << h << std::endl;
+                        spdlog::info("Actor {} queued ", (void*)this, logCoro{h});
                         _queue.push_back(h);
                     }
                 });
@@ -82,7 +82,7 @@ namespace crouton {
             } else {
                 _activeCoro = _queue.front();
                 _queue.pop_front();
-                std::cerr << "Actor " << (void*)this << " scheduled " << h << std::endl;
+                spdlog::info("Actor {} scheduled ", (void*)this, logCoro{h});
                 _scheduler.schedule(_activeCoro);
             }
         }
@@ -101,7 +101,7 @@ namespace crouton {
         explicit ActorMethodImpl(crouton::Actor const& actor, ...)
         :_actor(const_cast<Actor&>(actor).shared_from_this())
         {
-            std::cerr << "Created ActorMethodImpl " << (void*)this << " on const Actor " << (void*)&actor << std::endl;
+            spdlog::info("Created ActorMethodImpl {} on const Actor {}", (void*)this, (void*)&actor);
         }
 
         explicit ActorMethodImpl(crouton::Actor const* actor, ...) :ActorMethodImpl(*actor) { }
@@ -110,6 +110,9 @@ namespace crouton {
             ActorMethodImpl* self;
             bool await_ready() const noexcept {
                 return self->_actor->startNew(self->handle());
+            }
+            void await_suspend(coro_handle cur) {
+                lifecycle::suspendInitial(cur);
             }
         };
 

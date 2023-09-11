@@ -8,6 +8,8 @@
 #include <exception>
 #include <iosfwd>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <cassert>
 
@@ -15,17 +17,17 @@
 // Always use `CORO_NS` instead of `std` for coroutine types
 #if defined(__has_include)
 #   if __has_include(<coroutine>)
-#      include <coroutine>
-#      define CORO_NS std
+#       include <coroutine>
+        namespace CORO_NS = std;
 #   elif __has_include(<experimental/coroutine>)
-#      include <experimental/coroutine>
-#      define CORO_NS std::experimental
+#       include <experimental/coroutine>
+        namespace CORO_NS = std::experimental
 #   else
 #      error No coroutine header
 #   endif
 #else
 #   include <coroutine>
-#   define CORO_NS std
+    namespace CORO_NS = std;
 #endif
 
 
@@ -36,6 +38,9 @@
 
 
 namespace crouton {
+
+    using coro_handle = CORO_NS::coroutine_handle<>;
+
 
     // `is_type_complete_v<T>` evaluates to true iff T is a complete (fully-defined) type.
     // By Raymond Chen: https://devblogs.microsoft.com/oldnewthing/20190710-00/?p=102678

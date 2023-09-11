@@ -18,13 +18,14 @@
 
 #pragma once
 #include "Coroutine.hh"
+#include "Internal.hh"
 #include "IStream.hh"
+#include "Logging.hh"
 #include "Scheduler.hh"
 #include "UVBase.hh"
 
 #include <algorithm>
 #include <concepts>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -43,7 +44,7 @@ namespace crouton {
     static inline void check(std::signed_integral auto status, const char* what) {
         if (status < 0) {
             UVError x(what, int(status));
-            std::cerr << "** libuv error: " << x.what() << std::endl;
+            spdlog::info("** libuv error: {}", x.what());
             throw x;
         }
     }
@@ -85,9 +86,9 @@ namespace crouton {
         }
 
         int await_resume() noexcept {
-            int status = value();
-            check(status, _what);
-            return status;
+            int result = CoCondition<int>::await_resume();
+            check(result, _what);
+            return result;
         }
 
         const char* _what;

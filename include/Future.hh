@@ -85,10 +85,17 @@ namespace crouton {
         /// @warning Current implementation requires the Future have been returned from a coroutine.
         [[nodiscard]] T&& waitForValue() {return std::move(this->handle().promise().waitForValue());}
 
-        // These methods make Future awaitable:
-        bool await_ready()              {return _state->hasValue();}
-        [[nodiscard]] T&& await_resume(){return std::move(_state->value());}
-        auto await_suspend(coro_handle coro) noexcept {return _state->suspend(coro);}
+        //---- These methods make Future awaitable:
+        bool await_ready() {
+            return _state->hasValue();
+        }
+        auto await_suspend(coro_handle coro) noexcept {
+            auto next = _state->suspend(coro);
+            return lifecycle::suspendingTo(coro, this->handle(), next);
+        }
+        [[nodiscard]] T&& await_resume(){
+            return std::move(_state->value());
+        }
 
     private:
         friend class FutureProvider<T>;
@@ -220,8 +227,13 @@ namespace crouton {
         void value() const              {_state->value();}
         inline void waitForValue();
         bool await_ready()              {return _state->hasValue();}
-        void await_resume()             {_state->value();}
-        auto await_suspend(coro_handle coro) noexcept {return _state->suspend(coro);}
+        auto await_suspend(coro_handle coro) noexcept {
+            auto next = _state->suspend(coro);
+            return lifecycle::suspendingTo(coro, this->handle(), next);
+        }
+        void await_resume(){
+            _state->value();
+        }
     protected:
         friend class FutureProvider<void>;
         friend class FutureImpl<void>;
@@ -235,9 +247,9 @@ namespace crouton {
 
     // Implementation (promise_type) of a coroutine that returns a Future<T>.
     template <typename T>
-    class FutureImpl : public CoroutineImpl<FutureImpl<T>> {
+    class FutureImpl : public CoroutineImpl<FutureImpl<T>, true> {
     public:
-        using super = CoroutineImpl<FutureImpl<T>>;
+        using super = CoroutineImpl<FutureImpl<T>, true>;
         using handle_type = typename super::handle_type;
 
         FutureImpl() = default;
@@ -251,19 +263,28 @@ namespace crouton {
 
         Future<T> get_return_object() {
             auto f = _provider.future();
-            f.setHandle(this->handle());
+            f.setHandle(this->typedHandle());
             return f;
         }
 
-        CORO_NS::suspend_never initial_suspend(){return {};}
-        void unhandled_exception()              {_provider.setResult(std::current_exception());}
+        void unhandled_exception() {
+            this->super::unhandled_exception();
+            _provider.setResult(std::current_exception());
+        }
+
         template <class X>  // you can co_return an exception
         void return_value(X&& x) requires std::derived_from<X, std::exception> {
+            lifecycle::returning(this->handle());
             _provider.setResult(std::forward<X>(x));
         }
-        void return_value(T&& value)            {_provider.setResult(std::move(value));}
-        void return_value(T const& value)       {_provider.setResult(value);}
-        Finisher final_suspend() noexcept       {return {};}
+        void return_value(T&& value)            {
+            lifecycle::returning(this->handle());
+            _provider.setResult(std::move(value));
+        }
+        void return_value(T const& value)       {
+            lifecycle::returning(this->handle());
+            _provider.setResult(value);
+        }
 
     protected:
         FutureProvider<T> _provider;
@@ -271,19 +292,19 @@ namespace crouton {
 
 
     template <>
-    class FutureImpl<void> : public CoroutineImpl<FutureImpl<void>> {
+    class FutureImpl<void> : public CoroutineImpl<FutureImpl<void>, true> {
     public:
-        using super = CoroutineImpl<FutureImpl<void>>;
+        using super = CoroutineImpl<FutureImpl<void>, true>;
         using handle_type = super::handle_type;
         FutureImpl() = default;
         void waitForValue();
         Future<void> get_return_object();
-        CORO_NS::suspend_never initial_suspend(){return {};}
-        void unhandled_exception()              {_provider.setResult(std::current_exception());}
-        void return_void()                      {_provider.setResult();}
-        Finisher final_suspend() noexcept       {return {};}
+        void unhandled_exception() {
+            this->super::unhandled_exception();
+            _provider.setResult(std::current_exception());
+        }
+        void return_void()                      {lifecycle::returning(handle()); _provider.setResult();}
     private:
-        handle_type handle()                    {return handle_type::from_promise(*this);}
         FutureProvider<void> _provider;
     };
 

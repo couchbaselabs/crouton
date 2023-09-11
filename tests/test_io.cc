@@ -64,7 +64,8 @@ static Future<string> readFile(string const& path) {
     AWAIT f.open();
     char buffer[100];
     while (true) {
-        int64_t len = AWAIT f.read({&buffer[0], sizeof(buffer)});
+        auto readFuture = f.read({&buffer[0], sizeof(buffer)});
+        int64_t len = AWAIT readFuture;
         if (len < 0)
             cerr << "File read error " << len << endl;
         if (len <= 0)
@@ -78,11 +79,12 @@ static Future<string> readFile(string const& path) {
 
 
 TEST_CASE("Read a file", "[uv]") {
-    Future<string> cf = readFile("README.md");
-    string contents = cf.waitForValue();
-    //cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
-    CHECK(contents.size() > 500);
-    CHECK(contents.size() < 10000);
+    RunCoroutine([]() -> Future<void> {
+        string contents = AWAIT readFile("README.md");
+        //cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
+        CHECK(contents.size() > 500);
+        CHECK(contents.size() < 10000);
+    });
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
@@ -115,8 +117,8 @@ TEST_CASE("Read a socket", "[uv]") {
         CHECK(result.starts_with("HTTP/1.1 "));
         CHECK(result.size() > 1000);
         CHECK(result.size() < 2000);
-        REQUIRE(Scheduler::current().assertEmpty());
     });
+    REQUIRE(Scheduler::current().assertEmpty());
 }
 
 
@@ -205,23 +207,27 @@ static Future<string> readNWSocket(const char* hostname, bool tls) {
 
 
 TEST_CASE("NWConnection", "[nw]") {
-    Future<string> response = readNWSocket("example.com", false);
-    string contents = response.waitForValue();
-    cerr << "HTTP response:\n" << contents << endl;
-    CHECK(contents.starts_with("HTTP/1.1 "));
-    CHECK(contents.size() > 1000);
-    CHECK(contents.size() < 2000);
+    {
+        Future<string> response = readNWSocket("example.com", false);
+        string contents = response.waitForValue();
+        cerr << "HTTP response:\n" << contents << endl;
+        CHECK(contents.starts_with("HTTP/1.1 "));
+        CHECK(contents.size() > 1000);
+        CHECK(contents.size() < 2000);
+    }
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
 
 TEST_CASE("NWConnection TLS", "[nw]") {
-    Future<string> response = readNWSocket("example.com", true);
-    string contents = response.waitForValue();
-    cerr << "HTTP response:\n" << contents << endl;
-    CHECK(contents.starts_with("HTTP/1.1 "));
-    CHECK(contents.size() > 1000);
-    CHECK(contents.size() < 2000);
+    {
+        Future<string> response = readNWSocket("example.com", true);
+        string contents = response.waitForValue();
+        cerr << "HTTP response:\n" << contents << endl;
+        CHECK(contents.starts_with("HTTP/1.1 "));
+        CHECK(contents.size() > 1000);
+        CHECK(contents.size() < 2000);
+    }
     REQUIRE(Scheduler::current().assertEmpty());
 }
 

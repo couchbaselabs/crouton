@@ -22,8 +22,7 @@
 #include <atomic>
 #include <deque>
 #include <functional>
-#include <iostream>
-#include <mutex>
+#include <optional>
 #include <ranges>
 #include <unordered_map>
 #include <cassert>
@@ -83,10 +82,26 @@ namespace crouton {
 
         //---- Awaitable: `co_await`ing a Scheduler moves the current coroutine to its thread.
 
-        bool await_ready() noexcept                         {return isCurrent();}
-        coro_handle await_suspend(coro_handle h) noexcept   {suspend(h); return current().next();}
-        void await_resume() noexcept                        {assert(isCurrent());}
+        class SchedAwaiter  {
+        public:
+            SchedAwaiter(Scheduler* sched)  :_sched(sched) { }
 
+            bool await_ready() noexcept {return _sched->isCurrent();}
+
+            coro_handle await_suspend(coro_handle h) noexcept   {
+                _sched->suspend(h);
+                return lifecycle::suspendingTo(h, typeid(*_sched), _sched,
+                                               Scheduler::current().next());
+            }
+
+            void await_resume() noexcept {
+                assert(_sched->isCurrent());
+            }
+        private:
+            Scheduler* _sched;
+        };
+
+        SchedAwaiter operator co_await() {return SchedAwaiter(this);}
 
         //---- Coroutine management; mostly called from coroutine implementations
 
@@ -179,7 +194,7 @@ namespace crouton {
     struct Yielder : public CORO_NS::suspend_always {
         explicit Yielder(coro_handle myHandle) :_handle(myHandle) { }
         coro_handle await_suspend(coro_handle h) noexcept {
-            return Scheduler::current().yield(h);
+            return lifecycle::yieldingTo(h, Scheduler::current().yield(h));
         }
         void await_resume() const noexcept {
             Scheduler::current().resumed(_handle);
@@ -194,8 +209,87 @@ namespace crouton {
         It lets the Scheduler decide which coroutine should run next. */
     struct Finisher : public CORO_NS::suspend_always {
         coro_handle await_suspend(coro_handle h) noexcept {
-            return Scheduler::current().finished(h);
+            return lifecycle::finalSuspend(h, Scheduler::current().finished(h));
         }
+    };
+
+
+
+    /** A cooperative condition variable. A coroutine that `co_await`s it will block until
+        something calls `notify`, passing in a value. That wakes up the waiting coroutine and
+        returns that value as the result of `co_await`. The CoCondition is then back in its
+        empty state and can be reused, if desired.
+
+        If `notify` is called first, the `co_await` doesn't block, it just returns the value.
+
+        This is very useful as an adapter for callback-based asynchronous code like libuv.
+        Just create a `CoCondition` and call the asynchronous function with a callback that
+        will call `notify` on it. Then `co_await` the `CoCondition`. If the callback is given a
+        result value, pass it to `notify` and you'll get it as the result of `co_await`.
+
+        @note It currently doesn't support more than one waiting coroutine, but it wouldn't be hard
+        to add that capability (`_waiter` just needs to become a vector/queue.)
+
+        @warning  Not thread-safe, despite the name! */
+    template <typename T>
+    class CoCondition {
+    public:
+        bool await_ready() noexcept {
+            return _value.has_value();
+        }
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            _suspension = Scheduler::current().suspend(h);
+            return lifecycle::suspendingTo(h, typeid(*this), this);
+        }
+
+        T&& await_resume() noexcept {
+            return std::move(_value).value();
+        }
+
+        template <typename U>
+        void notify(U&& val) {
+            _value.emplace(std::forward<U>(val));
+            if (auto s = _suspension) {
+                _suspension = nullptr;
+                s->wakeUp();
+            }
+        }
+
+    protected:
+        T const& value() const  {return _value.value();}
+
+    private:
+        std::optional<T> _value;
+        Suspension* _suspension = nullptr;
+    };
+
+    template <>
+    class CoCondition<void> {
+    public:
+        bool await_ready() noexcept {return _notified;}
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            _waiter = h;
+            return lifecycle::suspendingTo(h, typeid(this), this);
+        }
+
+        void await_resume() noexcept {
+            _notified = false;
+        }
+
+        void notify() {
+            assert(!_notified);
+            _notified = true;
+            if (coro_handle w = _waiter) {
+                _waiter = nullptr;
+                lifecycle::resume(w);
+            }
+        }
+
+    private:
+        coro_handle _waiter;
+        bool _notified = false;
     };
 
 

@@ -76,7 +76,7 @@ namespace crouton {
 
     Future<void> FutureImpl<void>::get_return_object() {
         auto f = _provider.future();
-        f.setHandle(handle());
+        f.setHandle(typedHandle());
         return f;
     }
 
