@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "272728C22A8D6505000CCA22"
-               BuildableName = "Tests"
-               BlueprintName = "Tests"
+               BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
+               BuildableName = "demo_server"
+               BlueprintName = "demo_server"
                ReferencedContainer = "container:crouton.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -37,8 +37,7 @@
       enableASanStackUseAfterReturn = "YES"
       enableUBSanitizer = "YES"
       launchStyle = "0"
-      useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "$(PROJECT_DIR)"
+      useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -48,27 +47,17 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "272728C22A8D6505000CCA22"
-            BuildableName = "Tests"
-            BlueprintName = "Tests"
+            BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
+            BuildableName = "demo_server"
+            BlueprintName = "demo_server"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "--break"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--verbosity high"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "SPDLOG_LEVEL"
-            value = "info,Coro=info,Sched=info"
-            isEnabled = "YES">
+            value = "debug"
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
@@ -89,9 +78,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "272728C22A8D6505000CCA22"
-            BuildableName = "Tests"
-            BlueprintName = "Tests"
+            BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
+            BuildableName = "demo_server"
+            BlueprintName = "demo_server"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

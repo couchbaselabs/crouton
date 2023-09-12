@@ -50,4 +50,4 @@ namespace crouton {
 #    define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
 #endif
 
-}  // namespace litecore
+} 

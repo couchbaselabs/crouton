@@ -17,7 +17,8 @@
 //
 
 #pragma once
-#include "IStream.hh"
+#include "Bytes.hh"
+#include "Future.hh"
 #include "URL.hh"
 #include <iosfwd>
 #include <memory>
@@ -29,6 +30,7 @@ struct llhttp_settings_s;
 struct llhttp__internal_s;
 
 namespace crouton {
+    class IStream;
 
     /// HTTP response status codes.
     enum class HTTPStatus : int {

@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
-               BuildableName = "testserver"
-               BlueprintName = "testserver"
+               BlueprintIdentifier = "2711C17F2A99656E00361566"
+               BuildableName = "demo_client"
+               BlueprintName = "demo_client"
                ReferencedContainer = "container:crouton.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,9 +33,6 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      enableAddressSanitizer = "YES"
-      enableASanStackUseAfterReturn = "YES"
-      enableUBSanitizer = "YES"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -47,26 +44,18 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
-            BuildableName = "testserver"
-            BlueprintName = "testserver"
+            BlueprintIdentifier = "2711C17F2A99656E00361566"
+            BuildableName = "demo_client"
+            BlueprintName = "demo_client"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "SPDLOG_LEVEL"
-            value = "debug"
-            isEnabled = "NO">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
-      <AdditionalOptions>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-v https://mooseyard.com"
             isEnabled = "YES">
-         </AdditionalOption>
-      </AdditionalOptions>
+         </CommandLineArgument>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -78,9 +67,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "279D5D4C2A9031EF005C3066"
-            BuildableName = "testserver"
-            BlueprintName = "testserver"
+            BlueprintIdentifier = "2711C17F2A99656E00361566"
+            BuildableName = "demo_client"
+            BlueprintName = "demo_client"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

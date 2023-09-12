@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <cassert>
 
+#include "Logging.hh"//TEMP
+
 namespace crouton {
     class EventLoop;
     class Suspension;
@@ -103,6 +105,11 @@ namespace crouton {
 
         SchedAwaiter operator co_await() {return SchedAwaiter(this);}
 
+        /// Called from "normal" code.
+        /// Resumes the next ready coroutine and returns true.
+        /// If no coroutines are ready, returns false.
+        bool resume();
+
         //---- Coroutine management; mostly called from coroutine implementations
 
         /// Adds a coroutine handle to the end of the ready queue, where at some point it will
@@ -132,10 +139,9 @@ namespace crouton {
         /// from any thread.
         Suspension* suspend(coro_handle h);
 
-        /// Called from "normal" code.
-        /// Resumes the next ready coroutine and returns true.
-        /// If no coroutines are ready, returns false.
-        bool resume();
+        /// Tells the Scheduler a coroutine is about to be destroyed, so it can manage it
+        /// correctly if it's in the suspended set.
+        void destroying(coro_handle h);
 
     private:
         friend class Suspension;
@@ -184,7 +190,7 @@ namespace crouton {
 
         coro_handle         _handle;                    // The coroutine (not really needed)
         Scheduler*          _scheduler;                 // Scheduler that owns coroutine
-        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine is awake
+        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine wants to wake up
     };
 
 
@@ -214,25 +220,19 @@ namespace crouton {
     };
 
 
+#pragma mark - BLOCKER:
 
-    /** A cooperative condition variable. A coroutine that `co_await`s it will block until
-        something calls `notify`, passing in a value. That wakes up the waiting coroutine and
-        returns that value as the result of `co_await`. The CoCondition is then back in its
-        empty state and can be reused, if desired.
+    
+    /** A simple way to await a future event. A coroutine that `co_await`s a Blocker will block
+        until something calls the Blocker's `notify` method. This provides an easy way to turn
+        a completion-callback based API into a coroutine-based one: create a Blocker, start
+        the operation, then `co_await` the Blocker. In the completion callback, call `notify`.
 
-        If `notify` is called first, the `co_await` doesn't block, it just returns the value.
+        The value you pass to `notify` will be returned from the `co_await`.
 
-        This is very useful as an adapter for callback-based asynchronous code like libuv.
-        Just create a `CoCondition` and call the asynchronous function with a callback that
-        will call `notify` on it. Then `co_await` the `CoCondition`. If the callback is given a
-        result value, pass it to `notify` and you'll get it as the result of `co_await`.
-
-        @note It currently doesn't support more than one waiting coroutine, but it wouldn't be hard
-        to add that capability (`_waiter` just needs to become a vector/queue.)
-
-        @warning  Not thread-safe, despite the name! */
+        Blocker supports only one waiting coroutine. If you need more, use a CoCondition. */
     template <typename T>
-    class CoCondition {
+    class Blocker {
     public:
         bool await_ready() noexcept {
             return _value.has_value();
@@ -264,33 +264,79 @@ namespace crouton {
         Suspension* _suspension = nullptr;
     };
 
-    template <>
-    class CoCondition<void> {
+
+#pragma mark - CO-CONDITION:
+
+
+    /** A cooperative condition variable. A coroutine that `co_await`s it will block until
+        something calls `notify` or `notifyAll`. If there are multiple coroutines blocked,
+        `notify` wakes one, while `notifyAll` wakes all of them.
+        @warning  Not thread-safe, despite the name! */
+    class CoCondition {
     public:
-        bool await_ready() noexcept {return _notified;}
+        struct awaiter;
 
-        coro_handle await_suspend(coro_handle h) noexcept {
-            _waiter = h;
-            return lifecycle::suspendingTo(h, typeid(this), this);
+        awaiter operator co_await() {
+            return awaiter{{}, this};
         }
 
-        void await_resume() noexcept {
-            _notified = false;
+        void notifyOne() {
+            if (!_awaiters.empty()) {
+                awaiter* a = _awaiters.front();
+                _awaiters.erase(_awaiters.begin());
+                LSched->debug("CoCondition {}: waking suspension={}",
+                              (void*)this, (void*)a->_suspension);
+                a->wakeUp();
+            }
         }
-
-        void notify() {
-            assert(!_notified);
-            _notified = true;
-            if (coro_handle w = _waiter) {
-                _waiter = nullptr;
-                lifecycle::resume(w);
+        void notifyAll() {
+            auto awaiters = std::move(_awaiters);
+            for (auto a : awaiters) {
+                LSched->debug("CoCondition {}: waking suspension={}",
+                              (void*)this, (void*)a->_suspension);
+                a->wakeUp();
             }
         }
 
-    private:
-        coro_handle _waiter;
-        bool _notified = false;
-    };
+        struct awaiter : CORO_NS::suspend_always {
+            CoCondition* _cond;
+            Suspension*  _suspension;
 
+            coro_handle await_suspend(coro_handle h) noexcept {
+                _suspension = Scheduler::current().suspend(h);
+                LSched->debug("CoCondition {}: adding awaiter with h={}, suspension={}",
+                              (void*)this, logCoro{h}, (void*)_suspension);
+                _cond->_awaiters.push_back(this);
+                return lifecycle::suspendingTo(h, typeid(*_cond), _cond);
+            }
+
+            ~awaiter() {
+                assert(!_suspension);
+                if (_suspension)
+                    _cond->remove(this);
+            }
+        private:
+            friend class CoCondition;
+
+            void wakeUp() {
+                auto sus = _suspension;
+                _suspension = nullptr;
+                LSched->debug("CoCondition {}: waking suspension={}",
+                              (void*)this, (void*)sus);
+                sus->wakeUp();
+            }
+        };
+
+        ~CoCondition() {assert(_awaiters.empty());}
+
+    private:
+        void remove(awaiter* a) {
+            if (auto i = find(_awaiters.begin(), _awaiters.end(), a); i != _awaiters.end())
+                _awaiters.erase(i);
+        }
+
+        //TODO: It would be more efficient to make awaiter a doubly-linked list element.
+        std::vector<awaiter*> _awaiters;
+    };
 
 }

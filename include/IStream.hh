@@ -17,54 +17,11 @@
 //
 
 #pragma once
+#include "Bytes.hh"
 #include "Future.hh"
 #include <initializer_list>
-#include <memory>
-#include <span>
-
-struct uv_buf_t;
 
 namespace crouton {
-
-    /** Low-level struct pointing to mutable data.
-        Usually serves as the destination argument of a `read`. */
-    class MutableBytes : public std::span<std::byte> {
-    public:
-        using span::span;       // inherits all of std::span's constructors
-        using span::operator=;
-        MutableBytes(string& str) :span((std::byte*)str.data(), str.size()) { }
-        MutableBytes(uv_buf_t);
-
-        template <typename T>
-        MutableBytes(T* begin, size_t n)  :span((std::byte*)begin, n * sizeof(T)) { }
-        MutableBytes(void* begin, size_t n) :span((std::byte*)begin, n) { }
-
-        explicit operator string_view() const {
-            return string_view((const char*)data(), size());
-        }
-        explicit operator uv_buf_t() const;
-    };
-
-    
-    /** Low-level struct pointing to immutable data.
-        Usually serves as the source of a `write`, or as a returned buffer from `readNoCopy`. */
-    class ConstBytes : public std::span<const std::byte> {
-    public:
-        using span::span;       // inherits all of std::span's constructors
-        using span::operator=;
-        ConstBytes(string_view str) :span((const std::byte*)str.data(), str.size()) { }
-        ConstBytes(uv_buf_t);
-
-        template <typename T>
-        ConstBytes(const T* begin, size_t n)  :span((const std::byte*)begin, n * sizeof(T)) { }
-        ConstBytes(const void* begin, size_t n) :span((const std::byte*)begin, n) { }
-
-        explicit operator string_view() const {
-            return string_view((const char*)data(), size());
-        }
-        explicit operator uv_buf_t() const;
-    };
-
 
     /** Abstract interface of an asynchronous bidirectional stream.
         It has concrete read/write methods, which are merely conveniences that call the

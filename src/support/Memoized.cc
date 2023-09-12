@@ -35,12 +35,9 @@ namespace crouton {
     string const& GetTypeName(type_info const& info) {
         static Memoized sTypeNames([](const void* addr) -> string {
             string name = fleece::Unmangle(*(type_info*)addr);      // Get unmangled name
-            if (auto p = name.find('<'); p != string::npos)         // Strip template params
-                name = name.substr(0, p);
-            if (auto p = name.find_last_of(":"); p != string::npos) // Strip namespaces
+            auto bra = name.find('<');
+            if (auto p = name.find_last_of(":", bra); p != string::npos) // Strip namespaces
                 name = name.substr(p + 1);
-            if (name.ends_with("Impl"))                             // Strip -Impl suffix
-                name = name.substr(0, name.size() - 4);
             return name;
         });
         return sTypeNames.lookup(&info);

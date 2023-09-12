@@ -101,8 +101,10 @@ namespace crouton {
             return _state->hasResult();
         }
         auto await_suspend(coro_handle coro) noexcept {
-            auto next = _state->suspend(coro);
-            return lifecycle::suspendingTo(coro, this->handle(), next);
+            if (this->handle())
+                return lifecycle::suspendingTo(coro, this->handle(), _state->suspend(coro));
+            else
+                return lifecycle::suspendingTo(coro, typeid(this), this, _state->suspend(coro));
         }
         [[nodiscard]] T&& await_resume(){
             return std::move(_state->result());

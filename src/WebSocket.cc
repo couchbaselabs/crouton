@@ -105,7 +105,7 @@ namespace crouton {
 
     // Called from inside consume(), called by receive(), above.
     // A single receive might result in multiple messages, so we queue them in `_incoming`.
-    bool WebSocket::handleFragment(std::byte* data,
+    bool WebSocket::handleFragment(byte* data,
                                    size_t dataLen,
                                    size_t remainingBytes,
                                    uint8_t opCode,
@@ -220,7 +220,7 @@ namespace crouton {
 
 
     size_t ClientWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
-        return ClientProtocol::formatMessage((std::byte*)dst,
+        return ClientProtocol::formatMessage((byte*)dst,
                                              (const char*)message.data(),
                                              message.size(),
                                              uWS::OpCode(type),
@@ -230,7 +230,7 @@ namespace crouton {
 
 
     void ClientWebSocket::consume(ConstBytes bytes) {
-        _clientParser->consume((std::byte*)bytes.data(), bytes.size(), this);
+        _clientParser->consume((byte*)bytes.data(), bytes.size(), this);
     }
 
 
@@ -281,7 +281,7 @@ namespace crouton {
 
 
     size_t ServerWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
-        return ServerProtocol::formatMessage((std::byte*)dst,
+        return ServerProtocol::formatMessage((byte*)dst,
                                              (const char*)message.data(),
                                              message.size(),
                                              uWS::OpCode(type),
@@ -291,7 +291,7 @@ namespace crouton {
 
 
     void ServerWebSocket::consume(ConstBytes bytes) {
-        _serverParser->consume((std::byte*)bytes.data(), bytes.size(), this);
+        _serverParser->consume((byte*)bytes.data(), bytes.size(), this);
     }
 
 
@@ -312,14 +312,14 @@ namespace crouton {
     WebSocket::CloseCode WebSocket::Message::closeCode() const {
         if (type != Close)
             throw std::invalid_argument("Not a CLOSE message");
-        auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
+        auto payload = ClientProtocol::parseClosePayload((byte*)data(), size());
         return payload.code ? CloseCode{payload.code} : CloseCode::NoCode;
     }
 
     string_view WebSocket::Message::closeMessage() const {
         if (type != Close)
             throw std::invalid_argument("Not a CLOSE message");
-        auto payload = ClientProtocol::parseClosePayload((std::byte*)data(), size());
+        auto payload = ClientProtocol::parseClosePayload((byte*)data(), size());
         return {(char*)payload.message, payload.length};
     }
 

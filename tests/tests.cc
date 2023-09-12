@@ -18,6 +18,21 @@
 
 #include "tests.hh"
 
+
+TEST_CASE("Randomize") {
+    InitLogging(); //FIXME: Put this somewhere where it gets run before any test
+
+    uint8_t buf[10];
+    ::memset(buf, 0, sizeof(buf));
+    for (int pass = 0; pass < 5; ++pass) {
+        Randomize(buf, sizeof(buf));
+        for (int i = 0; i < 10; ++i)
+            printf("%02x ", buf[i]);
+        printf("\n");
+    }
+}
+
+
 void RunCoroutine(Future<void> (*test)()) {
     Future<void> f = test();
     Scheduler::current().runUntil([&]{return f.hasResult();});
@@ -56,7 +71,6 @@ static Generator<string> toString(Generator <int64_t> source) {
 
 
 TEST_CASE("Generator coroutine", "[coroutines]") {
-    InitLogging(); //FIXME: Put this somewhere where it gets run before any test
     {
         cerr << "Creating Generator...\n";
         Generator fib = toString( onlyEven( fibonacci(100000) ) );
@@ -167,15 +181,3 @@ TEST_CASE("Actor") {
 }
 
 #endif // __clang__
-
-
-TEST_CASE("Randomize") {
-    uint8_t buf[10];
-    ::memset(buf, 0, sizeof(buf));
-    for (int pass = 0; pass < 5; ++pass) {
-        Randomize(buf, sizeof(buf));
-        for (int i = 0; i < 10; ++i)
-            printf("%02x ", buf[i]);
-        printf("\n");
-    }
-}

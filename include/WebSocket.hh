@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Bytes.hh"
 #include "Coroutine.hh"
 #include "HTTPConnection.hh"
 #include "HTTPHandler.hh"
@@ -37,25 +38,29 @@ namespace crouton {
 
         /// Status code in a WebSocket Close message.
         /// Definitions are at <http://tools.ietf.org/html/rfc6455#section-7.4.1>
+        ///
+        /// Codes marked `[do not send]` in the comments are intended to be returned by a client
+        /// API and are never actually sent in a message.
         enum class CloseCode : uint16_t {
             Normal           = 1000, // Normal close
             GoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
             ProtocolError    = 1002, // Protocol violation: invalid framing data
-            DataError        = 1003, // Message payload cannot be handled
+            DataError        = 1003, // Message type (e.g. Binary) cannot be handled
             NoCode           = 1005, // No status code in close frame [do not send]
-            Abnormal         = 1006, // Peer closed socket unexpectedly w/o close frame [do not send]
+            Abnormal         = 1006, // Peer closed socket unexpectedly w/o CLOSE [do not send]
             BadMessageFormat = 1007, // Unparseable message
-            PolicyError      = 1008,
-            MessageTooBig    = 1009, // Peer doesn't provide a necessary extension
-            MissingExtension = 1010, // Client needs extension not priv
-            CantFulfill      = 1011, // Server could not fulfil request [never sent by client]
+            PolicyError      = 1008, // Message "violates policy". General purpose error.
+            MessageTooBig    = 1009, // Received a message that's too big to handle
+            MissingExtension = 1010, // Server didn't provide necessary extension [client only]
+            CantFulfill      = 1011, // Server unexpectedly could not fulfil a request [server only]
+            TLSError         = 1015, // TLS handshake failed [do not send]
             AppTransient     = 4001, // App-defined transient error
             AppPermanent     = 4002, // App-defined permanent error
             FirstAvailable   = 5000, // First unregistered code for freeform use
         };
 
 
-        /// WebSocket message types (numeric values defined by the protocol.)
+        /// WebSocket message types (the numeric values are defined by the protocol.)
         enum MessageType : uint8_t {
             Text   =  1,
             Binary =  2,
@@ -82,7 +87,6 @@ namespace crouton {
 
 
         /// Returns the next incoming WebSocket binary message, asynchronously.
-        /// - If the server has closed the connection, the message's type will be `NONE`.
         /// - If there's a connection error, the Future will hold it (and throw when resolved.)
         /// - If the peer decides to close the socket, or after you call `close`, a message of
         ///   type `Close` will arrive. No further messages will arrive; don't call receive again.
@@ -146,6 +150,8 @@ namespace crouton {
 
         void disconnect() override;
 
+    protected:
+        friend class ServerWebSocket;
         static string generateAcceptResponse(const char* key);
 
     private:

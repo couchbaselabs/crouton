@@ -17,8 +17,9 @@
 //
 
 #include "CoroLifecycle.hh"
-#include "Memoized.hh"
 #include "Logging.hh"
+#include "Memoized.hh"
+#include "Scheduler.hh"
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
@@ -41,13 +42,23 @@ namespace crouton::lifecycle {
 
     static unsigned sLastSequence = 0;
 
+    static string_view getCoroTypeName(std::type_info const& type) {
+        string const& fullName = GetTypeName(type);
+        string_view name = fullName;
+        if (auto p = name.find('<'); p != string::npos)         // Strip template params
+            name = name.substr(0, p);
+        if (name.ends_with("Impl"))                             // Strip -Impl suffix
+            name = name.substr(0, name.size() - 4);
+        return name;
+    }
+
     /// Metadata about a coroutine
     struct coroInfo {
         coroInfo(coro_handle h, std::type_info const& impl)
         :handle(h)
         ,sequence(++sLastSequence)
         ,name(CoroutineName(h))
-        ,typeName(GetTypeName(impl))
+        ,typeName(getCoroTypeName(impl))
         { }
 
         coroInfo(coroInfo const&) = delete;
@@ -73,7 +84,7 @@ namespace crouton::lifecycle {
         const type_info*    awaitingType = nullptr;     // Type of that other object
         unsigned            sequence;                   // Serial number, starting at 1
         string              name;                       // Its function name
-        string const&       typeName;                   // Its class name
+        string_view         typeName;                   // Its class name
         bool                ignoreInCount = false;      // Don't include this in `count()`
     };
 
@@ -471,5 +482,11 @@ namespace crouton::lifecycle {
     }
 
 #endif // CROUTON_LIFECYCLES
-
 }
+
+
+#if CROUTON_LIFECYCLES
+void dumpCoros() {
+    crouton::lifecycle::logAll();
+}
+#endif

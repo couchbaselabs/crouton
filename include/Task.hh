@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Scheduler.hh"
+#include <atomic>
 
 namespace crouton {
     class TaskImpl;
@@ -30,21 +31,69 @@ namespace crouton {
     public:
         ~Task()     {setHandle(nullptr);}   // don't let parent destructor destroy the coroutine
         Task(Task&&) = default;
+
+        /// Returns true as long as the task coroutine is still running.
+        bool alive()                        {return _shared->alive;}
+
+        /// Lets the task coroutine know it should stop. Its next `co_yield` will return false.
+        void interrupt()                    {_shared->interrupt = true;}
+
     protected:
         friend class Scheduler;
     private:
         friend class TaskImpl;
-        explicit Task(handle_type h) :Coroutine<TaskImpl>(h) { }
+
+        struct shared {
+            std::atomic<bool> alive = true;
+            std::atomic<bool> interrupt = false;
+        };
+
+        Task(handle_type h, std::shared_ptr<shared> s)
+        :Coroutine<TaskImpl>(h)
+        ,_shared(std::move(s))
+        { }
+
+        std::shared_ptr<shared> _shared;
     };
 
 
 
-    class TaskImpl : public CoroutineImpl<TaskImpl, true> {
+    class TaskImpl : public CoroutineImpl<TaskImpl, false> {
     public:
         ~TaskImpl() { }
-        Task get_return_object()                {return Task(typedHandle());}
-        Yielder yield_value(bool)               { return Yielder(handle()); }
-        void return_void()                      { lifecycle::returning(handle()); }
+
+        Task get_return_object() {
+            _shared = std::make_shared<shared>();
+            return Task(typedHandle(), _shared);
+        }
+
+        auto initial_suspend() {
+            struct sus : public CORO_NS::suspend_always {
+                void await_suspend(coro_handle h) {
+                    Scheduler::current().schedule(h);
+                }
+            };
+            return sus{};
+        }
+
+        // `co_yield` returns a bool: true to keep running, false if Task has been interrupted.
+        auto yield_value(bool) {
+            struct yielder : public Yielder {
+                explicit yielder(coro_handle myHandle, std::shared_ptr<shared> shared)
+                :Yielder(myHandle), _shared(std::move(shared)) { }
+                [[nodiscard]] bool await_resume() const noexcept {
+                    Yielder::await_resume();
+                    return !_shared->interrupt;
+                }
+                std::shared_ptr<shared> _shared;
+            };
+            return yielder(handle(), _shared);
+        }
+
+        void return_void() {
+            _shared->alive = false;
+            lifecycle::returning(handle());
+        }
 
         struct finalizer : public CORO_NS::suspend_always {
             void await_suspend(coro_handle cur) noexcept {
@@ -53,7 +102,13 @@ namespace crouton {
             }
         };
 
-        finalizer final_suspend() noexcept { return {}; }
+        finalizer final_suspend() noexcept {
+            _shared->alive = false;
+            return {};
+        }
+
     private:
+        using shared = Task::shared;
+        std::shared_ptr<shared> _shared;
     };
 }

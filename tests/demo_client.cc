@@ -1,5 +1,5 @@
 //
-// testclient.cc
+// demo_client.cc
 //
 // Copyright 2023-Present Couchbase, Inc. All rights reserved.
 //

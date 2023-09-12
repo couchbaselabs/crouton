@@ -17,6 +17,8 @@
 //
 
 #include "HTTPParser.hh"
+#include "Future.hh"
+#include "IStream.hh"
 #include "StringUtils.hh"
 #include "llhttp.h"
 

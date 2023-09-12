@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD            11)
 set(CMAKE_C_STANDARD_REQUIRED   ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
 #### CMAKE SUBPROJECTS
 
@@ -123,6 +124,7 @@ add_library( LibCrouton STATIC
     src/mbedtls/TLSSocket.cc
     src/support/Backtrace.cc
     src/support/Memoized.cc
+    src/support/StringUtils.cc
 )
 
 set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
@@ -157,19 +159,19 @@ endif()
 
 if (NOT CROUTON_IOS)
 
-    add_executable( testclient
-        tests/testclient.cc
+    add_executable( demo_client
+        tests/demo_client.cc
     )
 
-    target_link_libraries( testclient
+    target_link_libraries( demo_client
         LibCrouton
     )
 
-    add_executable( testserver
-        tests/testserver.cc
+    add_executable( demo_server
+        tests/demo_server.cc
     )
 
-    target_link_libraries( testserver
+    target_link_libraries( demo_server
         LibCrouton
     )
 

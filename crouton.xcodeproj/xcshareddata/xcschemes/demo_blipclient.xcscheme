@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2711C17F2A99656E00361566"
-               BuildableName = "testclient"
-               BlueprintName = "testclient"
+               BlueprintIdentifier = "27B330752AB911250066C8DA"
+               BuildableName = "demo_blipclient"
+               BlueprintName = "demo_blipclient"
                ReferencedContainer = "container:crouton.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,6 +33,9 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      enableAddressSanitizer = "YES"
+      enableASanStackUseAfterReturn = "YES"
+      enableUBSanitizer = "YES"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -44,18 +47,34 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2711C17F2A99656E00361566"
-            BuildableName = "testclient"
-            BlueprintName = "testclient"
+            BlueprintIdentifier = "27B330752AB911250066C8DA"
+            BuildableName = "demo_blipclient"
+            BlueprintName = "demo_blipclient"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-v https://mooseyard.com"
+            argument = "--protocol BLIP_3+CBMobile_2"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "ws://work.local:4985/travel-sample/_blipsync"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "SPDLOG_LEVEL"
+            value = "info,Sched=debug,Coro=trace,BLIP=debug"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SPDLOG_LEVEL"
+            value = "info,BLIP=debug"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -67,9 +86,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2711C17F2A99656E00361566"
-            BuildableName = "testclient"
-            BlueprintName = "testclient"
+            BlueprintIdentifier = "27B330752AB911250066C8DA"
+            BuildableName = "demo_blipclient"
+            BlueprintName = "demo_blipclient"
             ReferencedContainer = "container:crouton.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

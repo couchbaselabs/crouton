@@ -19,7 +19,7 @@
 #pragma once
 #include "Coroutine.hh"
 #include "Internal.hh"
-#include "IStream.hh"
+#include "Bytes.hh"
 #include "Logging.hh"
 #include "Scheduler.hh"
 #include "UVBase.hh"
@@ -70,7 +70,7 @@ namespace crouton {
 
     /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
     template <class UV_REQUEST_T>
-    class Request : public UV_REQUEST_T, public CoCondition<int> {
+    class Request : public UV_REQUEST_T, public Blocker<int> {
     public:
         explicit Request(const char* what)  :_what(what) { }
 
@@ -86,7 +86,7 @@ namespace crouton {
         }
 
         int await_resume() noexcept {
-            int result = CoCondition<int>::await_resume();
+            int result = Blocker<int>::await_resume();
             check(result, _what);
             return result;
         }

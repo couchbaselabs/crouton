@@ -46,3 +46,4 @@ inline void waitFor(Future<void>&& f) {
 }
 
 
+Future<string> readFile(string const& path);

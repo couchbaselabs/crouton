@@ -74,7 +74,7 @@ TEST_CASE("URLs", "[uv]") {
 }
 
 
-static Future<string> readFile(string const& path) {
+Future<string> readFile(string const& path) {
     string contents;
     FileStream f(path);
     AWAIT f.open();
@@ -89,7 +89,7 @@ static Future<string> readFile(string const& path) {
         cerr << "Read " << len << "bytes" << endl;
         contents.append(buffer, len);
     }
-    cerr << "Returning contents\n";
+    //cerr << "Returning contents\n";
     RETURN contents;
 }
 
