@@ -1,6 +1,6 @@
 #  Crouton
 
-Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], mbedTLS[MBEDTLS] and [llhttp][LLHTTP] libraries. (On Apple platforms it can also use the system Network.framework.)
+Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], [mbedTLS][MBEDTLS] and [llhttp][LLHTTP] libraries. (On Apple platforms it can also use the system Network.framework.)
 
 A **Coroutine** is _a function that can return partway through, and then later be resumed where it left off._ Knuth wrote about them in the 1960s and they remained a curiosity for a long time, but they've since become widely used under the hood of the "async / await" concurrency model used in languages like JavaScript, C#, Rust, Nim, and Swift. Crouton brings this to C++.
 
