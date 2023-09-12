@@ -17,7 +17,6 @@
 //
 
 #include "AddrInfo.hh"
-#include "Defer.hh"
 #include "UVInternal.hh"
 
 namespace crouton {

@@ -42,8 +42,8 @@ namespace crouton {
         virtual bool isRunning() const {return _running;}
 
         /// Stops the event loop, causing `run` to return ASAP. No-op if not running.
-        /// @note  This method is thread-safe.
-        virtual void stop() =0;
+        /// @note  This method is thread-safe if the `threadSafe` parameter is true.
+        virtual void stop(bool threadSafe =true) =0;
 
         /// Schedules a function to run on the next event loop iteration.
         /// @note  This method is thread-safe.

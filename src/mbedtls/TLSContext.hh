@@ -54,6 +54,8 @@
 
 #pragma once
 
+#include "Logging.hh"
+
 #if defined(_WIN32)
 #   if !defined(_CRT_SECURE_NO_DEPRECATE)
 #       define _CRT_SECURE_NO_DEPRECATE
@@ -99,26 +101,35 @@
 namespace crouton::mbed {
     using namespace std;
 
-#define ENABLE_MBEDTLS_LOG
-
-#ifdef ENABLE_MBEDTLS_LOG
-    #define log(LEVEL, FMT,...) do { \
-        auto ssl = &_ssl; \
-        MBEDTLS_SSL_DEBUG_MSG(LEVEL, ("Crouton: " FMT, ## __VA_ARGS__)); \
-    } while(0)
-#else
-    #define log(LEVEL, FMT,...) do { } while(0)
-#endif
+    // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
+    static shared_ptr<spdlog::logger> LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
 
 
-    // Log level values corresponding to ones used by mbedTLS
-    enum class LogLevel : int {
-        None = 0,
-        Error,
-        StateChange,
-        Info,
-        Verbose
+    // spdlog level values corresponding to ones used by mbedTLS
+    static constexpr int kSpdToMbedLogLevel[] = {
+        SPDLOG_LEVEL_OFF, SPDLOG_LEVEL_ERROR, SPDLOG_LEVEL_INFO,
+        SPDLOG_LEVEL_DEBUG, SPDLOG_LEVEL_TRACE
     };
+
+
+    static void mbedLogCallback(void *ctx, int level, const char *file, int line, const char *msg) {
+        using enum spdlog::level::level_enum;
+        static constexpr spdlog::level::level_enum kMbedToSpdLevel[] = {
+            off, err, info, debug, trace};
+
+        auto spdLevel = kMbedToSpdLevel[level];
+        if (LMbed->should_log(spdLevel)) {
+            string_view msgStr(msg);
+            if (msgStr.ends_with('\n'))
+                msgStr = msgStr.substr(0, msgStr.size() - 1);
+
+            // Strip parent directory names from filename:
+            if (auto lastSlash = strrchr(file, '/'))
+                file = lastSlash + 1;
+
+            LMbed->log(spdlog::source_loc(file, line, "?"), spdLevel, msgStr);
+        }
+    }
 
 
     /// Errors thrown by this TLS implementation.
@@ -149,7 +160,7 @@ namespace crouton::mbed {
 
     static void check(int err, const char *what) {
         if (err) {
-            cerr << "MBEDTLS EXCEPTION: " << MbedError::messageFor(err, true) << endl;
+            spdlog::error("MBEDTLS EXCEPTION: {}", MbedError::messageFor(err, true));
             throw MbedError(err, what);
         }
     }
@@ -179,7 +190,8 @@ namespace crouton::mbed {
         /// @param endpoint  Must be MBEDTLS_SSL_IS_CLIENT or MBEDTLS_SSL_IS_SERVER
         explicit TLSContext(int endpoint) {
             mbedtls_ssl_config_init(&_config);
-            mbedtls_ssl_conf_dbg(&_config, debugCallback, this);
+            mbedtls_ssl_conf_dbg(&_config, mbedLogCallback, this);
+            mbedtls_debug_set_threshold(kSpdToMbedLogLevel[LMbed->level()]);
             mbedtls_ssl_conf_rng(&_config, mbedtls_ctr_drbg_random, get_drbg_context());
             check(mbedtls_ssl_config_defaults(&_config,
                                               endpoint,
@@ -199,20 +211,7 @@ namespace crouton::mbed {
             return &_config;
         }
 
-        void setLogLevel(LogLevel level) {
-            mbedtls_debug_set_threshold(int(level));
-        }
-
     private:
-
-        static void debugCallback(void *ctx, int level, const char *file, int line, const char *msg) {
-            size_t msgLen = strlen(msg);
-            if (msgLen > 0 && msg[msgLen - 1] == '\n')
-                --msgLen;
-            if (auto lastSlash = strrchr(file, '/'))
-                file = lastSlash + 1;
-            fprintf(stderr, "MBEDTLS: [%d] %.*s  <%s:%d>\n", level, int(msgLen), msg, file, line);
-        }
 
         // Returns a shared singleton mbedTLS random-number generator context.
         static mbedtls_ctr_drbg_context* get_drbg_context() {

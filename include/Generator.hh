@@ -57,10 +57,12 @@ namespace crouton {
             auto &impl = this->impl();
             impl.clear();                       // Clear state; no value yet
             impl.returnControlTo(suspending);   // Remember to return to current coroutine
-            return impl.handle();               // Generator's coroutine takes over
+            return lifecycle::suspendingTo(suspending, typeid(this), this, impl.handle());// Generator's coroutine takes over
         }
 
-        std::optional<T> await_resume()             {return this->impl().yieldedValue();}
+        std::optional<T> await_resume() {
+            return this->impl().yieldedValue();
+        }
 
     private:
         friend class GeneratorImpl<T>;
@@ -111,7 +113,7 @@ namespace crouton {
             if(h.done())
                 return std::nullopt;
             while (!_ready)
-                h.resume();
+                lifecycle::resume(h);
             return yieldedValue();
         }
 
@@ -131,7 +133,7 @@ namespace crouton {
 
         // Invoked once when the coroutine function is called, to create its return value.
         // At this point the function hasn't done anything yet.
-        Generator<T> get_return_object()            {return Generator<T>(this->handle());}
+        Generator<T> get_return_object()            {return Generator<T>(this->typedHandle());}
 
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
         template <std::convertible_to<T> From>
@@ -144,17 +146,20 @@ namespace crouton {
         }
 
         // Invoked if the coroutine throws an exception
-        void unhandled_exception()                  {_exception = std::current_exception();}
+        void unhandled_exception() {
+            this->super::unhandled_exception();
+            _exception = std::current_exception();
+        }
 
         // Invoked when the coroutine fn returns without a result, implicitly or via co_return.
         // If co_return is to take a parameter, implement `return_value` instead:
         // `void return_value(XXX value) { ... }`
-        void return_void() { }
+        void return_void()                          {lifecycle::returning(this->handle());}
 
-        YielderTo final_suspend() noexcept {
+        SuspendFinalTo final_suspend() noexcept {
             _yielded_value = std::nullopt;
             _ready = true;
-            return YielderTo{_consumer};
+            return SuspendFinalTo{_consumer};
         }
 
     private:

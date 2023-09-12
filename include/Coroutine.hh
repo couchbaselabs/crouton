@@ -17,16 +17,14 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "CoroLifecycle.hh"
 #include <stdexcept>
 #include <optional>
 #include <vector>
 
 namespace crouton {
-    template <class SELF> class CoroutineImpl;
-
-    using coro_handle = CORO_NS::coroutine_handle<>;
-
+    class Suspension;
+    template <class SELF, bool EAGER> class CoroutineImpl;
 
     /** Base class for the public object returned by a coroutine function.
         Most of the implementation is usually in the associated CoroutineImpl subclass (IMPL). */
@@ -34,8 +32,8 @@ namespace crouton {
     class Coroutine {
     public:
         // movable, but not copyable.
-        Coroutine(Coroutine&& c)        :_handle(c._handle) {c._handle = {};}
-        ~Coroutine()                          {if (_handle) _handle.destroy();}
+        Coroutine(Coroutine&& c)                    :_handle(c._handle) {c._handle = {};}
+        ~Coroutine()                                {if (_handle) _handle.destroy();}
 
         using promise_type = IMPL;                  // The name `promise_type` is magic here
 
@@ -46,11 +44,12 @@ namespace crouton {
         using handle_type = CORO_NS::coroutine_handle<IMPL>;
 
         Coroutine() = default;
-        explicit Coroutine(handle_type h)     :_handle(h) {}
+        explicit Coroutine(handle_type h)           :_handle(h) {}
         handle_type handle()                        {return _handle;}
         void setHandle(handle_type h)               {_handle = h;}
     private:
-        friend class CoroutineImpl<IMPL>;
+        friend class CoroutineImpl<IMPL,false>;
+        friend class CoroutineImpl<IMPL,true>;
         Coroutine(Coroutine const&) = delete;
         Coroutine& operator=(Coroutine const&) = delete;
 
@@ -59,42 +58,86 @@ namespace crouton {
 
 
 
-    /** Base class for a coroutine implementation or "promise_type".
-        `SELF` must be the subclass you're defining (i.e. this uses the CRTP.) */
-    template <class SELF>
-    class CoroutineImpl {
+    template <bool SUS>
+    struct SuspendInitial : public CORO_NS::suspend_always {
+        SuspendInitial(coro_handle h) :_handle(h) { };
+        constexpr bool await_ready() const noexcept { return !SUS; }
+    private:
+        coro_handle _handle;
+    };
+
+    struct SuspendFinal : public CORO_NS::suspend_always {
     public:
-        using handle_type = CORO_NS::coroutine_handle<SELF>;
+        void await_suspend(coro_handle cur) const noexcept {
+            lifecycle::finalSuspend(cur, nullptr);
+        }
+    };
 
-        CoroutineImpl() = default;
+    struct SuspendFinalTo : public CORO_NS::suspend_always {
+    public:
+        explicit SuspendFinalTo(coro_handle t) :_target(t) { };
+        coro_handle await_suspend(coro_handle cur) const noexcept {
+            return lifecycle::finalSuspend(cur, _target);
+        }
+        coro_handle _target;
+    };
 
-        handle_type handle()                    {return handle_type::from_promise((SELF&)*this);}
+
+
+    class CoroutineImplBase {
+    public:
+        CoroutineImplBase() = default;
+        ~CoroutineImplBase()                        {lifecycle::ended(_handle);}
+
+        coro_handle handle() const                  {assert(_handle); return _handle;}
 
         //---- C++ coroutine internal API:
 
-        // unfortunately the compiler doesn't like this; subclass must implement it instead.
-        //INSTANCE get_return_object()            {return INSTANCE(handle());}
-
-        // Determines whether the coroutine starts suspended when created, or runs immediately.
-        CORO_NS::suspend_always initial_suspend()   {
-            //std::cerr << "New " << typeid(SELF).name() << " " << handle() << std::endl;
-            return {};
-        }
+        // Called if an exception is thrown from the coroutine function.
+        void unhandled_exception()                      {lifecycle::threw(_handle);}
 
         // Invoked after the coroutine terminates for any reason.
         // "You must not return a value that causes the terminated coroutine to try to continue
         // running! The only useful thing you might do in this method other than returning straight
         // to the  caller is to transfer control to a different suspended coroutine."
-        CORO_NS::suspend_always final_suspend() noexcept { return {}; }
+        SuspendFinal final_suspend() noexcept { return {}; }
 
-        // Other important methods for subclasses:
-        // XXX yield_value(YYY value) { ... }
-        // void return_value(XXX value) { ... }
-        // void return_void() { ... }
+        /* Other important methods for subclasses:
+            INSTANCE get_return_object() {return INSTANCE(handle());}
+            T yield_value(U value) { ... }
+            void return_value(V value) { ... }
+            void return_void() { ... }
+         */
 
     protected:
-        CoroutineImpl(CoroutineImpl const&) = delete;
-        CoroutineImpl(CoroutineImpl&&) = delete;
+        CoroutineImplBase(CoroutineImplBase const&) = delete;
+        CoroutineImplBase(CoroutineImplBase&&) = delete;
+
+        void registerHandle(coro_handle handle, bool ready, std::type_info const& implType) {
+            _handle = handle;
+            lifecycle::created(_handle, ready, implType);
+        }
+
+        coro_handle _handle;
+    };
+
+
+
+    /** Base class for a coroutine implementation or "promise_type".
+        `SELF` must be the subclass you're defining (i.e. this uses the CRTP.) */
+    template <class SELF, bool EAGER =false>
+    class CoroutineImpl : public CoroutineImplBase {
+    public:
+        using handle_type = CORO_NS::coroutine_handle<SELF>;
+
+        handle_type typedHandle()          {
+            auto h = handle_type::from_promise((SELF&)*this);
+            if (!_handle) registerHandle(h, EAGER, typeid(SELF));
+            return h;
+        }
+
+        // Determines whether the coroutine starts suspended when created, or runs immediately.
+        SuspendInitial<!EAGER> initial_suspend()       {return {handle()};}
     };
 
 
@@ -103,7 +146,7 @@ namespace crouton {
         It arranges for a specific 'consumer' coroutine, given in the constructor,
         to be resumed by the `co_yield` call. It can be `CORO_NS::noop_coroutine()` to instead resume
         the outer non-coro code that called `resume`. */
-    class YielderTo {
+    class YielderTo : public CORO_NS::suspend_always {
     public:
         /// Arranges for `consumer` to be returned from `await_suspend`, making it the next
         /// coroutine to run after the `co_yield`.
@@ -112,11 +155,9 @@ namespace crouton {
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
         explicit YielderTo() :YielderTo(CORO_NS::noop_coroutine()) { }
 
-        bool await_ready() noexcept { return false; }
-
-        coro_handle await_suspend(coro_handle) noexcept {return _consumer;}
-
-        void await_resume() noexcept {}
+        coro_handle await_suspend(coro_handle cur) noexcept {
+            return lifecycle::yieldingTo(cur, _consumer);
+        }
 
     private:
         coro_handle _consumer; // The coroutine that's awaiting my result, or null if none.
@@ -124,10 +165,11 @@ namespace crouton {
 
 
 
-    /** A cooperative mutex. The first coroutine to `co_await` it gets back a `Lock`
+    /** A cooperative mutex. The first coroutine to `co_await` it will receive a `Lock`
         object, without blocking. From then on, any other coroutine that awaits the mutex will
         block. When the lock goes out of scope it means the first coroutine is done with the
-        mutex. The first waiter (if any) will be resumed, getting its own Lock, and so on. */
+        mutex. The first waiter (if any) will be resumed, getting its own Lock, and so on.
+        @warning  Not thread-safe, despite the name! */
     class CoMutex {
     public:
         class Lock {
@@ -141,136 +183,17 @@ namespace crouton {
             CoMutex* _mutex;
         };
 
-        bool locked() const {return _busy;}
+        bool locked() const                     {return _locked;}
 
-        bool await_ready() noexcept {
-            auto ready = !_busy; _busy = true; return ready;
-        }
-
-        coro_handle await_suspend(coro_handle h) noexcept {
-            _waiters.push_back(h);
-            return std::noop_coroutine();
-        }
-
-        Lock await_resume() noexcept {
-            return Lock(this);
-        }
+        bool await_ready() noexcept             {auto r = !_locked; _locked = true; return r;}
+        coro_handle await_suspend(coro_handle h) noexcept;
+        Lock await_resume() noexcept            {return Lock(this);}
 
     private:
-        void unlock() {
-            if (_waiters.empty())
-                _busy = false;
-            else {
-                coro_handle next = _waiters.front();
-                _waiters.erase(_waiters.begin());
-                next.resume();
-            }
-        }
+        void unlock();
 
-        bool _busy = false;
-        std::vector<coro_handle> _waiters;
+        std::vector<Suspension*> _waiters;
+        bool _locked = false;
     };
-
-
-
-    /** A cooperative condition variable. A coroutine that `co_await`s it will block until
-        something calls `notify`, passing in a value. That wakes up the waiting coroutine and
-        returns that value as the result of `co_await`. The CoCondition is then back in its
-        empty state and can be reused, if desired.
-
-        If `notify` is called first, the `co_await` doesn't block, it just returns the value.
-
-        This is very useful as an adapter for callback-based asynchronous code like libuv.
-        Just create a `CoCondition` and call the asynchronous function with a callback that
-        will call `notify` on it. Then `co_await` the `CoCondition`. If the callback is given a
-        result value, pass it to `notify` and you'll get it as the result of `co_await`.
-
-        @note It currently doesn't support more than one waiting coroutine, but it wouldn't be hard
-        to add that capability (`_waiter` just needs to become a vector/queue.) */
-    template <typename T>
-    class CoCondition {
-    public:
-        bool await_ready() noexcept {return _value.has_value();}
-
-        coro_handle await_suspend(coro_handle h) noexcept {
-            assert(!_waiter);   // currently only supports a single waiter
-            _waiter = h;
-            return std::noop_coroutine();
-        }
-
-        T&& await_resume() noexcept {
-            return std::move(_value).value();
-        }
-
-        template <typename U>
-        void notify(U&& val) {
-            _value.emplace(std::forward<U>(val));
-            if (auto w = _waiter) {
-                _waiter = nullptr;
-                w.resume();
-            }
-        }
-
-    protected:
-        T const& value() const  {return _value.value();}
-        
-    private:
-        coro_handle _waiter;
-        std::optional<T> _value;
-    };
-
-    template <>
-    class CoCondition<void> {
-    public:
-        bool await_ready() noexcept {return _notified;}
-
-        coro_handle await_suspend(coro_handle h) noexcept {
-            assert(!_waiter);   // currently only supports a single waiter
-            _waiter = h;
-            return std::noop_coroutine();
-        }
-
-        void await_resume() noexcept {
-            _notified = false;
-        }
-
-        void notify() {
-            assert(!_notified);
-            _notified = true;
-            if (auto w = _waiter) {
-                _waiter = nullptr;
-                w.resume();
-            }
-        }
-
-    private:
-        coro_handle _waiter;
-        bool _notified = false;
-    };
-
-
-    // DEPRECATED -- use CoMutex instead.
-    class NotReentrant {
-    public:
-        explicit NotReentrant(bool& scope) 
-        :_scope(scope)
-        {
-            if (_scope) throw std::logic_error("Illegal reentrant call");
-            _scope = true;
-        }
-
-        ~NotReentrant() {_scope = false;}
-
-    private:
-        bool& _scope;
-    };
-
-    
-
-    /** Returns a description of a coroutine, ideally the name of its function. */
-    std::string CoroutineName(coro_handle);
-
-    /** Writes `CoroutineName(h)` to `out` */
-    std::ostream& operator<< (std::ostream& out, coro_handle h);
 
 }

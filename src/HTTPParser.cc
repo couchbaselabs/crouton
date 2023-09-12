@@ -20,6 +20,8 @@
 #include "StringUtils.hh"
 #include "llhttp.h"
 
+#include <iostream>
+
 namespace crouton {
     using namespace std;
 

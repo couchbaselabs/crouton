@@ -17,6 +17,7 @@
 //
 
 #include "TCPServer.hh"
+#include "Logging.hh"
 #include "TCPSocket.hh"
 #include "UVInternal.hh"
 
@@ -45,7 +46,7 @@ namespace crouton {
             try {
                 ((TCPServer*)server->data)->accept(status);
             } catch (...) {
-                fprintf(stderr, "*** Caught unexpected exception in TCPServer::accept ***\n");
+                LNet->error("Caught unexpected exception in TCPServer::accept");
             }
         }), "starting server");
     }
@@ -58,7 +59,7 @@ namespace crouton {
 
     void TCPServer::accept(int status) {
         if (status < 0) {
-            fprintf(stderr, "TCPServer::listen failed: error %d", status);
+            LNet->error("TCPServer::listen failed: error {} {}", status, uv_strerror(status));
             //TODO: Notify the app somehow
         } else {
             auto clientHandle = new uv_tcp_t;

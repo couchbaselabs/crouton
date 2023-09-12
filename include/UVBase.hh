@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+struct uv_async_s;
 struct uv_loop_s;
 struct uv_timer_s;
 
@@ -51,7 +52,7 @@ namespace crouton {
         UVEventLoop();
         void run() override;
         bool runOnce(bool waitForIO =true) override;
-        void stop() override;
+        void stop(bool threadSafe) override;
         void perform(std::function<void()>) override;
 
         ASYNC<void> sleep(double delaySecs);
@@ -62,6 +63,7 @@ namespace crouton {
         bool _run(int mode);
 
         std::unique_ptr<uv_loop_s> _loop;
+        std::unique_ptr<uv_async_s> _async;
         std::unique_ptr<uv_timer_s> _distantFutureTimer;
     };
 

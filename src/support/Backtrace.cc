@@ -176,17 +176,10 @@ namespace fleece {
     }
 
 
-    const char* RawFunctionName(const void *pc) {
+    std::string RawFunctionName(const void *pc) {
         Dl_info info = {};
         dladdr(pc, &info);
         return info.dli_sname;
-    }
-
-    std::string FunctionName(const void *pc) {
-        if (const char* raw = RawFunctionName(pc))
-            return Unmangle(raw);
-        else
-            return "";
     }
 
 }
@@ -271,6 +264,20 @@ namespace fleece {
         return (char*)function;
     }
 
+
+    std::string RawFunctionName(const void *pc) {
+        const auto process = GetCurrentProcess();
+        auto symbol = (SYMBOL_INFO*)malloc(sizeof(SYMBOL_INFO)+1023 * sizeof(TCHAR));
+        if (!symbol)
+            return "";
+        symbol->MaxNameLen = 1024;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        SymFromAddr(process, (DWORD64)pc, nullptr, symbol);
+        std::string result(symbol->Name);
+        free(symbol);
+        return result;
+    }
+
 }
 
 #endif // _MSC_VER
@@ -293,6 +300,14 @@ namespace fleece {
 
     std::string Unmangle(const std::type_info &type) {
         return Unmangle(type.name());
+    }
+
+
+    std::string FunctionName(const void *pc) {
+        if (std::string raw = RawFunctionName(pc); !raw.empty())
+            return Unmangle(raw.c_str());
+        else
+            return "";
     }
 
 

@@ -35,10 +35,13 @@ set(MBEDTLS_FATAL_WARNINGS OFF CACHE INTERNAL "") # Work around doc-comment synt
 add_subdirectory(vendor/libuv)
 add_subdirectory(vendor/llhttp)
 add_subdirectory(vendor/mbedtls)
+add_subdirectory(vendor/spdlog)
 
 
 #### CROUTON CONFIG
 
+
+add_definitions(-DSPDLOG_COMPILED_LIB=1)
 
 if (MSVC)
     # MSVC:
@@ -47,6 +50,7 @@ if (MSVC)
         /W4         # I think this means 'turn on lots of warnings'
         /wd4068     # ignore unknown pragma
         /wd4100     # ignore unused fn parameters
+        /wd4244     # ignore implicit sign conversion
         /wd4267     # ignore implicit integer truncation
     )
 else()
@@ -82,6 +86,7 @@ include_directories( SYSTEM
     vendor/libuv/include/
     vendor/llhttp/include/
     vendor/mbedtls/include/
+    vendor/spdlog/include/
 )
 
 
@@ -95,6 +100,8 @@ include_directories(
 
 add_library( LibCrouton STATIC
     src/AddrInfo.cc
+    src/Coroutine.cc
+    src/CoroLifecycle.cc
     src/FileStream.cc
     src/Filesystem.cc
     src/Future.cc
@@ -103,6 +110,7 @@ add_library( LibCrouton STATIC
     src/HTTPParser.cc
     src/ISocket.cc
     src/IStream.cc
+    src/Logging.cc
     src/Pipe.cc
     src/Process.cc
     src/Scheduler.cc
@@ -114,6 +122,7 @@ add_library( LibCrouton STATIC
     src/WebSocket.cc
     src/mbedtls/TLSSocket.cc
     src/support/Backtrace.cc
+    src/support/Memoized.cc
 )
 
 set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
@@ -122,6 +131,7 @@ target_link_libraries( LibCrouton INTERFACE
     uv_a
     llhttp_static
     mbedtls
+    spdlog
 )
 
 if(APPLE)
@@ -138,6 +148,7 @@ endif()
 if (MSVC)
     target_sources( LibCrouton PRIVATE
         src/support/asprintf.c
+        src/support/vasprintf-msvc.c
     )
 endif()
 

@@ -18,7 +18,6 @@
 
 #pragma once
 #include "Scheduler.hh"
-#include <iostream>
 
 namespace crouton {
     class TaskImpl;
@@ -40,17 +39,21 @@ namespace crouton {
 
 
 
-    class TaskImpl : public CoroutineImpl<TaskImpl> {
+    class TaskImpl : public CoroutineImpl<TaskImpl, true> {
     public:
-        ~TaskImpl() = default;
-        Task get_return_object()                {return Task(handle());}
-        CORO_NS::suspend_never initial_suspend() {
-            //std::cerr << "New " << typeid(this).name() << " " << handle() << std::endl;
-            return {};
-        }
+        ~TaskImpl() { }
+        Task get_return_object()                {return Task(typedHandle());}
         Yielder yield_value(bool)               { return Yielder(handle()); }
-        void unhandled_exception()              {std::cerr << "*** Task failed with exception\n";}
-        void return_void()                      { }
+        void return_void()                      { lifecycle::returning(handle()); }
+
+        struct finalizer : public CORO_NS::suspend_always {
+            void await_suspend(coro_handle cur) noexcept {
+                lifecycle::finalSuspend(cur, nullptr);
+                cur.destroy();
+            }
+        };
+
+        finalizer final_suspend() noexcept { return {}; }
     private:
     };
 }

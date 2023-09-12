@@ -56,24 +56,27 @@ static Generator<string> toString(Generator <int64_t> source) {
 
 
 TEST_CASE("Generator coroutine", "[coroutines]") {
-    cerr << "Creating Generator...\n";
-    Generator fib = toString( onlyEven( fibonacci(100000) ) );
-
-    cerr << "Calling Generator...\n";
-
-    vector<string> results;
-    int n = 0;
-    for (string const& value : fib) {
-        results.push_back(value);
-        cerr << "got " << (value) << endl;
-        if (++n >= 100) {
-            cerr << "...OK, that's enough output!\n";
-            break;
+    InitLogging(); //FIXME: Put this somewhere where it gets run before any test
+    {
+        cerr << "Creating Generator...\n";
+        Generator fib = toString( onlyEven( fibonacci(100000) ) );
+        
+        cerr << "Calling Generator...\n";
+        
+        vector<string> results;
+        int n = 0;
+        for (string const& value : fib) {
+            results.push_back(value);
+            cerr << "got " << (value) << endl;
+            if (++n >= 100) {
+                cerr << "...OK, that's enough output!\n";
+                break;
+            }
         }
+        
+        cerr << "Done!\n";
+        CHECK(results == vector<string>{ "2i", "8i", "34i", "144i", "610i", "2584i", "10946i", "46368i" });
     }
-
-    cerr << "Done!\n";
-    CHECK(results == vector<string>{ "2i", "8i", "34i", "144i", "610i", "2584i", "10946i", "46368i" });
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
@@ -102,10 +105,12 @@ static Generator<int> waiter(string name) {
 
 
 TEST_CASE("Waiter coroutine") {
-    Generator<int> g1 = waiter("first");
+    {
+        Generator<int> g1 = waiter("first");
 
-    for (int i : g1)
-        cerr << "--received " << i << endl;
+        for (int i : g1)
+            cerr << "--received " << i << endl;
+    }
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
@@ -116,9 +121,11 @@ static Future<int> futuristicSquare(int n) {
 }
 
 TEST_CASE("Future coroutine") {
-    auto f = futuristicSquare(12);
-    int sqr = f.waitForValue();
-    CHECK(sqr == 144);
+    {
+        auto f = futuristicSquare(12);
+        int sqr = f.waitForValue();
+        CHECK(sqr == 144);
+    }
     REQUIRE(Scheduler::current().assertEmpty());
 }
 #endif
@@ -156,6 +163,7 @@ TEST_CASE("Actor") {
         cerr << "Sum20 is " << (AWAIT sum20) << endl;
         RETURN;
     });
+    REQUIRE(Scheduler::current().assertEmpty());
 }
 
 #endif // __clang__

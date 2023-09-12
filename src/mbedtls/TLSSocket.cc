@@ -65,7 +65,6 @@ namespace crouton::mbed {
         :_stream(std::move(stream))
         ,_context(context)
         {
-            context.setLogLevel(LogLevel::None);
             mbedtls_ssl_init(&_ssl);
 
             check(mbedtls_ssl_setup(&_ssl, _context.config()), "mbedtls_ssl_setup");
@@ -106,8 +105,8 @@ namespace crouton::mbed {
             if (verify_flags != 0 && verify_flags != uint32_t(-1)
                     && !(verify_flags & MBEDTLS_X509_BADCERT_SKIP_VERIFY)) {
                 char vrfy_buf[512];
-                mbedtls_x509_crt_verify_info(vrfy_buf, sizeof( vrfy_buf ), "", verify_flags);
-                log(1, "Cert verify failed: %s", vrfy_buf );
+                mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "", verify_flags);
+                LNet->warn("Cert verify failed: {}", vrfy_buf);
                 throw MbedError(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, "verifying cert");
             }
             _tlsOpen = true;
@@ -144,7 +143,7 @@ namespace crouton::mbed {
         Future<intptr_t> read(void *buf, size_t maxLen) {
             //cerr << "TLSStream read(" << maxLen << ") ...\n";
             if (_readEOF) {
-                std::cerr << "WARNING: Client is reading from TLSSocket that's already at EOF\n";
+                LMbed->warn("Client is reading from TLSSocket that's already at EOF");
                 RETURN 0;
             }
             while (true) {

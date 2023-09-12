@@ -27,7 +27,7 @@
 namespace crouton {
 
     std::unique_ptr<ISocket> ISocket::newSocket(bool useTLS) {
-#ifdef __APPLE__
+#ifdef x__APPLE__
         return std::make_unique<apple::NWConnection>(useTLS);
 #else
         if (useTLS)

@@ -17,6 +17,7 @@
 //
 
 #include "HTTPHandler.hh"
+#include "Logging.hh"
 #include <llhttp.h>
 #include <sstream>
 
@@ -37,7 +38,7 @@ namespace crouton {
 
         auto uri = _parser.requestURI.value();
         string path(uri.path);
-        cerr << "HTTPHandler: Request is " << _parser.requestMethod << " " << string(uri) << endl;
+        spdlog::info("HTTPHandler: Request is {} {}", _parser.requestMethod, string(uri));
 
         HTTPHeaders responseHeaders;
         responseHeaders.set("User-Agent", "Crouton");
@@ -126,7 +127,7 @@ namespace crouton {
 
     Future<void> HTTPHandler::Response::finishHeaders() {
         if (!_sentHeaders) {
-            cerr << "HTTPHandler: Sending " << int(status) << " response\n";
+            spdlog::info("HTTPHandler: Sending {} response", status);
             AWAIT _handler->writeHeaders(status, statusMessage, _headers);
         }
         _sentHeaders = true;

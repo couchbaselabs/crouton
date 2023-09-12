@@ -17,7 +17,7 @@
 //
 
 #include "UVBase.hh"
-#include "Backtrace.hh"
+#include "Logging.hh"
 #include "Task.hh"
 #include "UVInternal.hh"
 #include <charconv>
@@ -35,7 +35,9 @@ namespace crouton {
     UVError::UVError(const char* what, int status)
     :std::runtime_error(what)
     ,err(status)
-    { }
+    {
+        SPDLOG_WARN("UVError({}, \"{}\")", uv_strerror(status), what);
+    }
 
     const char* UVError::what() const noexcept {
         if (_message.empty()) {
@@ -52,9 +54,16 @@ namespace crouton {
     
     UVEventLoop::UVEventLoop()
     :_loop(make_unique<uv_loop_t>())
+    ,_async(make_unique<uv_async_t>())
     {
         check(uv_loop_init(_loop.get()), "initializing the event loop");
         _loop->data = this;
+
+        uv_async_cb stopCallback = [](uv_async_t *async) {
+            uv_stop((uv_loop_t*)async->data);
+        };
+        check(uv_async_init(_loop.get(), _async.get(), stopCallback), "initializing the event loop");
+        _async->data = _loop.get();
     }
 
     void UVEventLoop::ensureWaits() {
@@ -68,12 +77,12 @@ namespace crouton {
 
     bool UVEventLoop::_run(int mode)  {
         NotReentrant nr(_running);
-//        std::cerr << ">> UVEventLoop (" << (mode==UV_RUN_NOWAIT ? "non" : "") << "blocking"
-//        << ", alive=" << (bool)uv_loop_alive(_loop.get()) << ") ...";
+        LLoop->debug("Running as {}blocking (alive={})",
+                    (mode==UV_RUN_NOWAIT ? "non" : ""), (bool)uv_loop_alive(_loop.get()));
         auto ns = uv_hrtime();
         int status = uv_run(_loop.get(), uv_run_mode(mode));
         ns = uv_hrtime() - ns;
-//        std::cerr << "... end event loop (" << (ns / 1000000) << "ms, status=" << status << ") <<\n";
+        LLoop->debug("...stopped after {}ms, status={}", (ns / 1000000), status);
         return status != 0;
     }
 
@@ -85,8 +94,11 @@ namespace crouton {
         return _run(waitForIO ? UV_RUN_ONCE : UV_RUN_NOWAIT);
     }
 
-    void UVEventLoop::stop()  {
-        uv_stop(_loop.get());
+    void UVEventLoop::stop(bool threadSafe) {
+        if (threadSafe)
+            uv_async_send(_async.get());
+        else
+            uv_stop(_loop.get());
     }
 
     void UVEventLoop::perform(std::function<void()> fn) {
@@ -95,14 +107,14 @@ namespace crouton {
             std::function<void()> _fn;
         };
 
-        std::cout << "Scheduler::onEventLoop()\n";
+        LLoop->info("Scheduler::onEventLoop()");
         auto async = new uvAsyncFn(std::move(fn));
         check(uv_async_init(_loop.get(), async, [](uv_async_t *async) noexcept {
             auto self = static_cast<uvAsyncFn*>(async);
             try {
                 self->_fn();
             } catch (...) {
-                fprintf(stderr, "*** Caught unexpected exception in onEventLoop callback ***\n");
+                LLoop->error("*** Caught unexpected exception in onEventLoop callback ***");
             }
             closeHandle(self);
         }), "making an async call");
@@ -148,7 +160,7 @@ namespace crouton {
             try {
                 self->_fn();
             } catch (...) {
-                fprintf(stderr, "*** Caught unexpected exception in Timer callback ***\n");
+                LLoop->error("*** Caught unexpected exception in Timer callback ***");
             }
             if (self->_deleteMe)
                 delete self;
@@ -198,35 +210,6 @@ namespace crouton {
     void Randomize(void* buf, size_t len) {
         uv_random_t req;
         check(uv_random(curLoop(), &req, buf, len, 0, nullptr), "generating random bytes");
-    }
-
-
-    std::string CoroutineName(coro_handle h) {
-        if (h.address() == nullptr)
-            return "(null)";
-#ifdef __clang__
-        // libc++ specific:
-        struct fake_coroutine_guts {
-            void *resume, *destroy;
-        };
-        auto guts = ((fake_coroutine_guts*)h.address());
-        std::string symbol = fleece::FunctionName(guts->resume ? guts->resume : guts->destroy);
-        if (symbol.ends_with(" (.resume)"))
-            symbol = symbol.substr(0, symbol.size() - 10);
-        else if (symbol.ends_with(" (.destroy)"))
-            symbol = symbol.substr(0, symbol.size() - 11);
-        if (symbol.starts_with("crouton::"))
-            symbol = symbol.substr(9);
-        return symbol;
-#else
-        char buf[20];
-        auto result = std::to_chars(&buf[0], &buf[20], intptr_t(h.address()), 16);
-        return std::string(&buf[0], result.ptr);
-#endif
-    }
-
-    std::ostream& operator<< (std::ostream& out, coro_handle h) {
-        return out << "coro<" << CoroutineName(h) << ">";
     }
 
 }
