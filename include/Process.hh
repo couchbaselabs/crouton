@@ -6,7 +6,6 @@
 
 #pragma once
 #include "Future.hh"
-#include <string_view>
 #include <optional>
 #include <vector>
 
@@ -28,13 +27,13 @@ namespace crouton {
 
 
 
-    class Args : public std::vector<std::string_view> {
+    class Args : public std::vector<string_view> {
     public:
-        std::optional<std::string_view> first() const;
+        std::optional<string_view> first() const;
 
-        std::optional<std::string_view> popFirst();
+        std::optional<string_view> popFirst();
 
-        std::optional<std::string_view> popFlag();
+        std::optional<string_view> popFlag();
     };
 
     /// Process arguments, as captured by Main.

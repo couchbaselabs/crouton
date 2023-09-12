@@ -21,7 +21,6 @@
 #include "UVBase.hh"
 #include <memory>
 #include <optional>
-#include <string>
 #include <vector>
 
 struct uv_stream_s;

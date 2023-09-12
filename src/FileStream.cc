@@ -38,7 +38,7 @@ namespace crouton {
     };
 
 
-    FileStream::FileStream(std::string const& path, int flags, int mode)
+    FileStream::FileStream(string const& path, int flags, int mode)
     :_path(path)
     ,_flags(flags)
     ,_mode(mode)

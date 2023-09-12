@@ -70,7 +70,7 @@ namespace crouton {
     }
 
 
-    Future<string> IStream::readUntil(std::string end, size_t maxLen) {
+    Future<string> IStream::readUntil(string end, size_t maxLen) {
         assert(!end.empty());
         assert(maxLen >= end.size());
         string data;
@@ -114,7 +114,7 @@ namespace crouton {
     }
 
 
-    Future<void> IStream::write(std::string str) {
+    Future<void> IStream::write(string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
         AWAIT write(ConstBytes(str));
         RETURN;

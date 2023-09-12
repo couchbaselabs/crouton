@@ -18,7 +18,6 @@
 
 #pragma once
 #include "Generator.hh"
-#include <string>
 #include <vector>
 
 namespace crouton::fs {
@@ -33,7 +32,7 @@ namespace crouton::fs {
     bool rmdir(const char* path);
 
     /// Makes a temporary directory.
-    std::string mkdtemp(const char* templ);
+    string mkdtemp(const char* templ);
 
     struct dirent {
         enum type_t : uint8_t {
@@ -58,7 +57,7 @@ namespace crouton::fs {
 #pragma mark - FILE INFO:
 
     /// Returns the full absolute path without symlinks.
-    std::string realpath(const char* path);
+    string realpath(const char* path);
 
     typedef struct {        // copied from uv_timespec_t in uv.h
         long sec;

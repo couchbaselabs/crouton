@@ -20,8 +20,6 @@
 #include "Future.hh"
 #include <memory>
 #include <span>
-#include <string>
-#include <string_view>
 
 struct uv_buf_t;
 
@@ -33,15 +31,15 @@ namespace crouton {
     public:
         using span::span;       // inherits all of std::span's constructors
         using span::operator=;
-        MutableBytes(std::string& str) :span((std::byte*)str.data(), str.size()) { }
+        MutableBytes(string& str) :span((std::byte*)str.data(), str.size()) { }
         MutableBytes(uv_buf_t);
 
         template <typename T>
         MutableBytes(T* begin, size_t n)  :span((std::byte*)begin, n * sizeof(T)) { }
         MutableBytes(void* begin, size_t n) :span((std::byte*)begin, n) { }
 
-        explicit operator std::string_view() const {
-            return std::string_view((const char*)data(), size());
+        explicit operator string_view() const {
+            return string_view((const char*)data(), size());
         }
         explicit operator uv_buf_t() const;
     };
@@ -53,15 +51,15 @@ namespace crouton {
     public:
         using span::span;       // inherits all of std::span's constructors
         using span::operator=;
-        ConstBytes(std::string_view str) :span((const std::byte*)str.data(), str.size()) { }
+        ConstBytes(string_view str) :span((const std::byte*)str.data(), str.size()) { }
         ConstBytes(uv_buf_t);
 
         template <typename T>
         ConstBytes(const T* begin, size_t n)  :span((const std::byte*)begin, n * sizeof(T)) { }
         ConstBytes(const void* begin, size_t n) :span((const std::byte*)begin, n) { }
 
-        explicit operator std::string_view() const {
-            return std::string_view((const char*)data(), size());
+        explicit operator string_view() const {
+            return string_view((const char*)data(), size());
         }
         explicit operator uv_buf_t() const;
     };
@@ -112,7 +110,7 @@ namespace crouton {
 
         /// Reads `len` bytes, returning them as a string.
         /// Will always read the full number of bytes unless it hits EOF.
-        ASYNC<std::string> readString(size_t maxLen);
+        ASYNC<string> readString(size_t maxLen);
 
         /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
         ASYNC<void> readExactly(MutableBytes);
@@ -120,10 +118,10 @@ namespace crouton {
         /// Reads up through the first occurrence of the string `end`,
         /// or when `maxLen` bytes have been read, whichever comes first.
         /// Throws `UV_EOF` if it hits EOF first.
-        ASYNC<std::string> readUntil(std::string end, size_t maxLen = SIZE_MAX);
+        ASYNC<string> readUntil(string end, size_t maxLen = SIZE_MAX);
 
         /// Reads until EOF.
-        ASYNC<std::string> readAll() {return readString(SIZE_MAX);}
+        ASYNC<string> readAll() {return readString(SIZE_MAX);}
 
         //---- Writing:
 
@@ -133,7 +131,7 @@ namespace crouton {
         [[nodiscard]] virtual Future<void> write(ConstBytes) =0;
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
-        ASYNC<void> write(std::string);
+        ASYNC<void> write(string);
 
         /// Writes data, fully, from multiple input buffers.
         /// @warning The data pointed to by the buffers must remain valid until completion.

@@ -54,7 +54,7 @@ namespace crouton {
     }
 
 
-    std::string CoroutineName(coro_handle h) {
+    string CoroutineName(coro_handle h) {
         if (h.address() == nullptr)
             return "(null)";
 #ifdef __clang__
@@ -67,7 +67,7 @@ namespace crouton {
 #else
         char buf[20];
         auto result = std::to_chars(&buf[0], &buf[20], intptr_t(h.address()), 16);
-        return std::string(&buf[0], result.ptr);
+        return string(&buf[0], result.ptr);
 #endif
     }
 

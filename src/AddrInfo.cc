@@ -108,7 +108,7 @@ namespace crouton {
             throw UVError("getting address of hostname", UV__EAI_ADDRFAMILY);
     }
 
-    std::string AddrInfo::primaryAddressString() const {
+    string AddrInfo::primaryAddressString() const {
         char buf[100];
         auto &addr = primaryAddress();
         int err;

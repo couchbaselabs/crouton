@@ -25,7 +25,6 @@
 #include <memory>
 #include <optional>
 #include <regex>
-#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -42,7 +41,7 @@ namespace crouton {
             HTTPMethod  method = HTTPMethod::GET;   ///< The request method
             URL         uri;                        ///< The request URI (path + query.)
             HTTPHeaders headers;                    ///< The request headers.
-            std::string body;                       ///< The request body.
+            string body;                       ///< The request body.
         };
 
 
@@ -50,13 +49,13 @@ namespace crouton {
         class Response {
         public:
             HTTPStatus  status = HTTPStatus::OK;    ///< Can change this before calling writeToBody
-            std::string statusMessage;              ///< Can change this before calling writeToBody
+            string statusMessage;              ///< Can change this before calling writeToBody
 
             /// Adds a response header.
-            void writeHeader(std::string_view name, std::string_view value);
+            void writeHeader(string_view name, string_view value);
 
             /// Writes to the body. After this you can't call writeHeader any more.
-            ASYNC<void> writeToBody(std::string);
+            ASYNC<void> writeToBody(string);
 
             /// The socket's stream. Only use this when bypassing HTTP, e.g. for WebSockets.
             ASYNC<IStream*> rawStream();
@@ -92,9 +91,9 @@ namespace crouton {
         ASYNC<void> handleRequest(HTTPHeaders responseHeaders,
                                   HandlerFunction const& handler);
         ASYNC<void> writeHeaders(HTTPStatus status,
-                                 std::string_view statusMsg,
+                                 string_view statusMsg,
                                  HTTPHeaders const& headers);
-        ASYNC<void> writeToBody(std::string);
+        ASYNC<void> writeToBody(string);
         ASYNC<void> endBody();
 
         std::shared_ptr<ISocket> _socket;

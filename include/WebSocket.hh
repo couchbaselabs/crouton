@@ -24,7 +24,6 @@
 #include <deque>
 #include <memory>
 #include <optional>
-#include <string_view>
 
 namespace uWS {
     template <const bool isServer> class WebSocketProtocol;
@@ -67,14 +66,14 @@ namespace crouton {
 
 
         /// A WebSocket message: a string plus a type.
-        struct Message : public std::string {
-            using std::string::string;
+        struct Message : public string {
+            using string::string;
 
             MessageType type = Binary;
 
-            Message(CloseCode, std::string_view message);
+            Message(CloseCode, string_view message);
             CloseCode closeCode() const;            ///< If type==Close, this is the status code
-            std::string_view closeMessage() const;  ///< If type==Close, this is the status message
+            string_view closeMessage() const;  ///< If type==Close, this is the status message
         };
 
         friend std::ostream& operator<< (std::ostream&, MessageType);
@@ -131,7 +130,7 @@ namespace crouton {
     class ClientWebSocket final : public WebSocket {
     public:
         /// Constructs a WebSocket, but doesn't connect yet.
-        explicit ClientWebSocket(std::string urlStr);
+        explicit ClientWebSocket(string urlStr);
         ~ClientWebSocket();
 
         /// Adds an HTTP request header.
@@ -146,7 +145,7 @@ namespace crouton {
 
         void disconnect() override;
 
-        static std::string generateAcceptResponse(const char* key);
+        static string generateAcceptResponse(const char* key);
 
     private:
         size_t formatMessage(void* dst, ConstBytes message, MessageType) override;
@@ -154,7 +153,7 @@ namespace crouton {
 
         HTTPConnection              _connection;
         HTTPRequest                 _request;
-        std::string                 _accept;
+        string                      _accept;
         HTTPHeaders                 _responseHeaders;
         std::unique_ptr<ClientProtocol> _clientParser;
     };
@@ -174,7 +173,7 @@ namespace crouton {
         /// - If it's not valid, it returns a 400 response and returns false.
         ASYNC<bool> connect(HTTPHandler::Request const&,
                             HTTPHandler::Response&,
-                            std::string_view subprotocol = "");
+                            string_view subprotocol = "");
 
     private:
         size_t formatMessage(void* dst, ConstBytes message, MessageType) override;

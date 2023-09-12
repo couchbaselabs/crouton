@@ -23,7 +23,6 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -42,7 +41,7 @@ namespace crouton {
 
         int err; ///< libuv error code
     private:
-        mutable std::string _message;
+        mutable string _message;
     };
 
 

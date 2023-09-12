@@ -22,7 +22,6 @@
 #include <iosfwd>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <unordered_map>
 #include <utility>
 
@@ -59,29 +58,29 @@ namespace crouton {
 
 
     /// A map of HTTP header names->values. Inherits from `unordered_map`.
-    class HTTPHeaders : public std::unordered_map<std::string,std::string> {
+    class HTTPHeaders : public std::unordered_map<string,string> {
     public:
         using unordered_map::unordered_map;
 
         /// True if the header name exists. Name lookup is case-insensitive.
-        bool contains(std::string const& name) const {
+        bool contains(string const& name) const {
             return find(canonicalName(name)) != end();
         }
 
         /// Returns the value of a header. Name lookup is case-insensitive.
-        std::string get(std::string const& name) const {
+        string get(string const& name) const {
             auto i = find(canonicalName(name));
             return (i != end()) ? i->second : "";
         }
 
         /// Sets a header, replacing any prior value. The name is canonicalized.
-        void set(std::string const& name, std::string const& value) {
+        void set(string const& name, string const& value) {
             (*this)[canonicalName(name)] = value;
         }
 
         /// Sets a header, appending to any prior value (with a comma as a delimiter.)
         /// The name is canonicalized.
-        void add(std::string const& name, std::string const& value) {
+        void add(string const& name, string const& value) {
             if (auto [i, added] = insert({canonicalName(name), value}); !added) {
                 i->second += ", ";
                 i->second += value;
@@ -89,7 +88,7 @@ namespace crouton {
         }
 
         /// Title-capitalizes a header name, e.g. `conTent-TYPe` -> `Content-Type`.
-        static std::string canonicalName(std::string name);
+        static string canonicalName(string name);
     };
 
 
@@ -145,32 +144,32 @@ namespace crouton {
         HTTPStatus status = HTTPStatus::Unknown;
 
         /// The HTTP response status message.
-        std::string statusMessage;
+        string statusMessage;
 
         /// All the HTTP headers.
         HTTPHeaders headers;
 
         /// Returns the value of an HTTP header. (Case-insensitive.)
-        std::string_view getHeader(const char* name);
+        string_view getHeader(const char* name);
 
         //---- Body
 
         /// Reads from the response body and returns some more data.
         /// `readHeaders` MUST have completed before you call this.
         /// On EOF returns an empty string.
-        ASYNC<std::string> readBody();
+        ASYNC<string> readBody();
 
         /// Reads and returns the entire body.
         /// If readBody() has already been called, this will return the remainder.
-        ASYNC<std::string> entireBody();
+        ASYNC<string> entireBody();
 
         /// After a call to parseData, returns body bytes that were read by the call.
-        std::string latestBodyData()    {return std::move(_body);}
+        string latestBodyData()    {return std::move(_body);}
 
     private:
         HTTPParser(IStream*, Role role);
         int gotBody(const char* data, size_t length);
-        int addHeader(std::string value);
+        int addHeader(string value);
 
         using SettingsRef = std::unique_ptr<llhttp_settings_s>;
         using ParserRef   = std::unique_ptr<llhttp__internal_s>;
@@ -179,9 +178,9 @@ namespace crouton {
         Role        _role;                      // Request or Response
         SettingsRef _settings;                  // llhttp settings
         ParserRef   _parser;                    // llhttp parser
-        std::string _statusMsg;                 // Parsed status message ("OK", etc.)
-        std::string _curHeaderName;             // Latest header name read during parsing
-        std::string _body;                      // Latest chunk of body read
+        string      _statusMsg;                 // Parsed status message ("OK", etc.)
+        string      _curHeaderName;             // Latest header name read during parsing
+        string      _body;                      // Latest chunk of body read
         bool        _headersComplete = false;   // True when metadata/headers have been read
         bool        _messageComplete = false;   // True when entire request/response is read
         bool        _upgraded = false;          // True on protocol upgrade (WebSocket etc.)

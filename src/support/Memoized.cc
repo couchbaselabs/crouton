@@ -49,7 +49,7 @@ namespace crouton {
 
     string const& GetFunctionName(const void* addr) {
         static Memoized sFnNames([](const void* addr) -> string {
-            std::string symbol = fleece::FunctionName(addr);
+            string symbol = fleece::FunctionName(addr);
             if (symbol.ends_with(" (.resume)"))
                 symbol = symbol.substr(0, symbol.size() - 10);
             else if (symbol.ends_with(" (.destroy)"))

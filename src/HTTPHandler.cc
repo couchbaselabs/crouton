@@ -97,7 +97,7 @@ namespace crouton {
     }
 
 
-    Future<void> HTTPHandler::writeToBody(std::string str) {
+    Future<void> HTTPHandler::writeToBody(string str) {
         return _stream.write(std::move(str));   //TODO: Write via the Parser
     }
 

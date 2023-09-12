@@ -19,7 +19,6 @@
 #pragma once
 #include "Base.hh"
 #include <mutex>
-#include <string>
 #include <typeinfo>
 #include <unordered_map>
 
@@ -28,24 +27,24 @@ namespace crouton {
     /** Maps a void* to string, computing the string only once for each unique address. */
     class Memoized {
     public:
-        using ComputeFn = std::string(*)(const void*);
+        using ComputeFn = string(*)(const void*);
 
         explicit Memoized(ComputeFn fn) :_compute(fn) { }
 
-        std::string const& lookup(const void* addr);
+        string const& lookup(const void* addr);
 
     private:
         ComputeFn _compute;
         std::mutex _mutex;
-        std::unordered_map<const void*, std::string> _known;
+        std::unordered_map<const void*, string> _known;
     };
 
 
     /** Returns the unmangled, cleaned-up form of a C++ type name. */
-    std::string const& GetTypeName(std::type_info const&);
+    string const& GetTypeName(std::type_info const&);
 
     /** Returns the unmangled, cleaned-up form of a function's name,
         given its address from a backtrace.*/
-    std::string const& GetFunctionName(const void* address);
+    string const& GetFunctionName(const void* address);
 
 }

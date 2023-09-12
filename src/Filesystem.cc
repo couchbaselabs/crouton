@@ -54,7 +54,7 @@ namespace crouton::fs {
     }
 
 
-    std::string mkdtemp(const char* templ) {
+    string mkdtemp(const char* templ) {
         fs_request req;
         check(uv_fs_mkdtemp(curLoop(), &req, templ, nullptr), "mkdtemp");
         return string(req.path);
@@ -98,7 +98,7 @@ namespace crouton::fs {
     }
 
 
-    std::string realpath(const char* path) {
+    string realpath(const char* path) {
         fs_request req;
         check(uv_fs_realpath(curLoop(), &req, path, nullptr), "realpath");
         return string((const char*)req.ptr);

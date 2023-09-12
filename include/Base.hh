@@ -39,6 +39,9 @@
 
 namespace crouton {
 
+    using std::string;
+    using std::string_view;
+
     using coro_handle = CORO_NS::coroutine_handle<>;
 
 

@@ -58,7 +58,7 @@ namespace crouton {
     }
 
 
-    std::string URLRef::normalizedScheme() const {
+    string URLRef::normalizedScheme() const {
         return toLower(string(scheme));
     }
 

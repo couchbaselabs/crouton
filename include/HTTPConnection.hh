@@ -23,8 +23,6 @@
 #include "UVBase.hh"
 #include <iosfwd>
 #include <memory>
-#include <string>
-#include <string_view>
 #include <utility>
 
 namespace crouton {
@@ -38,7 +36,7 @@ namespace crouton {
         /// Constructs a client that connects to the given host and port with HTTP or HTTPS.
         /// The URL's path, if any, becomes a prefix to that of all HTTPRequests.
         explicit HTTPConnection(URL);
-        explicit HTTPConnection(std::string_view urlStr);
+        explicit HTTPConnection(string_view urlStr);
 
         ~HTTPConnection()       {close();}
 
@@ -67,9 +65,9 @@ namespace crouton {
     /** An HTTP request to send on an HTTPConnection. */
     struct HTTPRequest {
         HTTPMethod  method = HTTPMethod::GET;   ///< The request method
-        std::string uri;                        ///< The request URI (path + query.)
+        string      uri;                        ///< The request URI (path + query.)
         HTTPHeaders headers;                    ///< The request headers.
-        std::string body;                       ///< The request body.
+        string      body;                       ///< The request body.
         std::shared_ptr<IStream> bodyStream;    ///< Stream to read body from (sent after `body`)
 
         /// Writes the request line & headers for transmission.
@@ -88,7 +86,7 @@ namespace crouton {
         HTTPStatus status() const               {return _parser.status;}
 
         /// The HTTP status message.
-        std::string const& statusMessage() const {return _parser.statusMessage;}
+        string const& statusMessage() const {return _parser.statusMessage;}
 
         /// The response headers.
         HTTPHeaders const& headers() const      {return _parser.headers;}
@@ -109,9 +107,9 @@ namespace crouton {
 
     private:
         HTTPConnection* _connection;
-        HTTPParser _parser;
-        std::string _buf;
-        size_t _bufUsed = 0;
+        HTTPParser      _parser;
+        string          _buf;
+        size_t          _bufUsed = 0;
     };
 
 }

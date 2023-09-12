@@ -156,7 +156,7 @@ namespace crouton {
 #pragma mark - CLIENT WEBSOCKET:
 
 
-    ClientWebSocket::ClientWebSocket(std::string urlStr)
+    ClientWebSocket::ClientWebSocket(string urlStr)
     :_connection(urlStr)
     ,_clientParser(make_unique<ClientProtocol>())
     {

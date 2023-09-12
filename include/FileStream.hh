@@ -21,7 +21,6 @@
 #include "Generator.hh"
 #include "UVBase.hh"
 #include <memory>
-#include <string>
 
 namespace crouton {
     struct Buffer;
@@ -36,7 +35,7 @@ namespace crouton {
         static const int ReadOnly, WriteOnly, ReadWrite, Create, Append;
 
         /// Constructs a FileStream; next, call open().
-        FileStream(std::string const& path, int flags = ReadOnly, int mode = 0644);
+        FileStream(string const& path, int flags = ReadOnly, int mode = 0644);
 
         FileStream(FileStream&& fs);
         FileStream& operator=(FileStream&& fs);
@@ -77,7 +76,7 @@ namespace crouton {
         ASYNC<ConstBytes> _fillBuffer();
         void _close();
 
-        std::string _path;
+        string _path;
         int _flags;
         int _mode;
         int  _fd   = -1;

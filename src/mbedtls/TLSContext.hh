@@ -139,7 +139,7 @@ namespace crouton::mbed {
             :runtime_error(to_string(code_) + " in " + what)
             ,code(code_) { }
 
-        static std::string messageFor(int code, bool withCode) {
+        static string messageFor(int code, bool withCode) {
             char msg[100];
             mbedtls_strerror(code, msg, sizeof(msg));
             if (withCode) {
@@ -149,7 +149,7 @@ namespace crouton::mbed {
             return string(msg);
         }
 
-        static std::string codeToString(int status) {
+        static string codeToString(int status) {
             char msg[20];
             return string(msg);
         }
@@ -268,7 +268,7 @@ namespace crouton::mbed {
 
 
         // Parses a data blob containing one or many X.59 certs.
-        static unique_ptr<cert> parse_cert(const std::string &cert_data, bool partialOk) {
+        static unique_ptr<cert> parse_cert(const string &cert_data, bool partialOk) {
             unique_ptr<cert> c(new cert);
             mbedtls_x509_crt_init(c.get());
             int ret = mbedtls_x509_crt_parse(c.get(),

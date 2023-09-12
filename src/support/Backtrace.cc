@@ -125,11 +125,11 @@ namespace fleece {
         {"(anonymous namespace)",   "(anon)"},
         {"std::__1::",              "std::"},
         {"std::basic_string<char, std::char_traits<char>, std::allocator<char> >",
-                                    "std::string"},
+                                    "string"},
     };
 
 
-    static void replace(std::string &str, string_view oldStr, string_view newStr) {
+    static void replace(string &str, string_view oldStr, string_view newStr) {
         string::size_type pos = 0;
         while (string::npos != (pos = str.find(oldStr, pos))) {
             str.replace(pos, oldStr.size(), newStr);
@@ -289,16 +289,16 @@ namespace fleece {
 namespace fleece {
 
 
-    std::string Unmangle(const char *name) {
+    string Unmangle(const char *name) {
         auto unmangled = unmangle(name);
-        std::string result = unmangled;
+        string result = unmangled;
         if (unmangled != name)
             free(unmangled);
         return result;
     }
 
 
-    std::string Unmangle(const std::type_info &type) {
+    string Unmangle(const std::type_info &type) {
         return Unmangle(type.name());
     }
 

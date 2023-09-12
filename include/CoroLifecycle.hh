@@ -88,7 +88,7 @@ namespace crouton {
 
 
     /** Returns a description of a coroutine, ideally the name of its function. */
-    std::string CoroutineName(coro_handle);
+    string CoroutineName(coro_handle);
 
     /** Writes `CoroutineName(h)` to `out` */
     std::ostream& operator<< (std::ostream& out, coro_handle h);

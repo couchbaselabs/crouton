@@ -5,7 +5,6 @@
 //
 
 #pragma once
-#include <string>
 #include <string_view>   
 
 namespace crouton {
@@ -29,13 +28,13 @@ namespace crouton {
     }
 
     /// Lowercases a string.
-    static inline std::string toLower(std::string str) {
+    static inline string toLower(string str) {
         for (char &c : str)
             c = toLower(c);
         return str;
     }
 
-    static inline bool equalIgnoringCase(std::string_view a, std::string_view b) {
+    static inline bool equalIgnoringCase(string_view a, string_view b) {
         size_t len = a.size();
         if (len != b.size())
             return false;

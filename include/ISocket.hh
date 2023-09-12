@@ -18,7 +18,6 @@
 #include "Future.hh"
 #include "Task.hh"
 #include <memory>
-#include <string>
 #include <cassert>
 
 namespace crouton {
@@ -32,7 +31,7 @@ namespace crouton {
         static std::unique_ptr<ISocket> newSocket(bool useTLS);
 
         /// Specifies the address and port to connect to, and whether to use TLS.
-        virtual void bind(std::string const& address, uint16_t port) {
+        virtual void bind(string const& address, uint16_t port) {
             assert(!_binding);
             _binding.reset(new binding{address, port});
         }
@@ -47,7 +46,7 @@ namespace crouton {
         [[nodiscard]] virtual Future<void> open() =0;
 
         /// Equivalent to bind + open.
-        [[nodiscard]] virtual Future<void> connect(std::string const& address, uint16_t port) {
+        [[nodiscard]] virtual Future<void> connect(string const& address, uint16_t port) {
             bind(address, port);
             return open();
         }
@@ -67,7 +66,7 @@ namespace crouton {
 
     protected:
         struct binding {
-            std::string address;
+            string address;
             uint16_t port;
             bool noDelay = false;
             unsigned keepAlive = 0;

@@ -114,7 +114,7 @@ namespace crouton {
     }
 
 
-    Future<std::string> HTTPParser::readBody() {
+    Future<string> HTTPParser::readBody() {
         assert(_stream);
         ConstBytes data;
         while (_body.empty() && !complete()) {
@@ -124,7 +124,7 @@ namespace crouton {
         RETURN std::move(_body);
     }
 
-    Future<std::string> HTTPParser::entireBody() {
+    Future<string> HTTPParser::entireBody() {
         string entireBody;
         while (!complete()) {
             entireBody += (AWAIT readBody());
@@ -165,7 +165,7 @@ namespace crouton {
     }
 
 
-    int HTTPParser::addHeader(std::string value) {
+    int HTTPParser::addHeader(string value) {
         assert(!_curHeaderName.empty());
         this->headers.add(_curHeaderName, value);
         _curHeaderName = "";

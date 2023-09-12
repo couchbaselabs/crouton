@@ -39,7 +39,7 @@ namespace crouton {
 
 
     /// Creates a new spdlog logger.
-    std::shared_ptr<spdlog::logger> MakeLogger(std::string_view name,
+    std::shared_ptr<spdlog::logger> MakeLogger(string_view name,
                                                spdlog::level::level_enum = spdlog::level::info);
 
     /// Creates a log destination.
