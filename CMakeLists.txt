@@ -50,6 +50,7 @@ if (MSVC)
         /W4         # I think this means 'turn on lots of warnings'
         /wd4068     # ignore unknown pragma
         /wd4100     # ignore unused fn parameters
+        /wd4244     # ignore implicit sign conversion
         /wd4267     # ignore implicit integer truncation
     )
 else()

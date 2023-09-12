@@ -88,9 +88,8 @@ namespace fleece {
     /// Attempts to unmangle a name. (If it fails, returns the input string unaltered.)
     std::string Unmangle(const char *name);
 
-    /// Returns the mangled name of the function at the given address, or nullptr if none.
-    /// (This C string should remain valid for the length of the process.)
-    const char* RawFunctionName(const void *pc);
+    /// Returns the mangled name of the function at the given address, or an empty string if none.
+    std::string RawFunctionName(const void *pc);
 
     /// Returns the name of the function at the given address, or an empty string if none.
     /// The name will be unmangled, if possible.
