@@ -66,18 +66,16 @@ namespace crouton {
 
 
 
-    Future<void> FutureProvider<void>::future()                      {return Future<void>(_state);}
-
-
-    void FutureImpl<void>::waitForValue() {
-        Scheduler::current().runUntil([this]{ return _provider.hasValue(); });
-        return _provider.value();
+    Future<void> FutureProvider<void>::future() {
+        return Future<void>(_state);
     }
+
 
     Future<void> FutureImpl<void>::get_return_object() {
         auto f = _provider.future();
         f.setHandle(typedHandle());
         return f;
     }
+
 
 }

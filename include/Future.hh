@@ -52,8 +52,7 @@ namespace crouton {
         resolves the future and unblocks anyone waiting. If the function finds it can return a
         value immediately, it can just return a Future constructed with its value (or exception.)
 
-        A regular function that gets a Future can call `waitForValue()`, but this blocks the
-        current thread. */
+        A regular function that gets a Future can call `then()` to register a callback. */
     template <typename T = void>
     class Future : public Coroutine<FutureImpl<T>> {
     public:
@@ -80,10 +79,9 @@ namespace crouton {
         /// Returns the value, or throws the exception. Don't call this if hasValue is false.
         T&& value() const               {return _state->value();}
 
-        /// Blocks until the value is available. 
-        /// @warning Do not call this in a coroutine! Use `co_await` instead.
-        /// @warning Current implementation requires the Future have been returned from a coroutine.
-        [[nodiscard]] T&& waitForValue() {return std::move(this->handle().promise().waitForValue());}
+        /// Registers a callback that will be called when the value is available.
+        /// (If it's already available, the callback is called immediately.)
+        void then(std::function<void(Result<T> const&)> fn)      {_state->setThen(std::move(fn));}
 
         //---- These methods make Future awaitable:
         bool await_ready() {
@@ -136,7 +134,6 @@ namespace crouton {
     };
 
 
-
 #pragma mark - INTERNALS:
 
 
@@ -170,10 +167,20 @@ namespace crouton {
         template <typename U>
         void setResult(U&& value) {
             _result = std::forward<U>(value);
+            if (_then)
+                _then(_result);
             _notify();
+        }
+        void setThen(std::function<void(Result<T> const&)> fn) {
+            //FIXME: This has race conditions; need to implement it like suspend()
+            if (hasValue())
+                fn(_result);
+            else
+                _then = std::move(fn);
         }
     private:
         Result<T> _result;
+        std::function<void(Result<T> const&)> _then;
     };
 
 
@@ -186,15 +193,27 @@ namespace crouton {
         }
         void setResult() {
             _result.set();
+            if (_then)
+                _then(_result);
             _notify();
         }
         template <typename U>
         void setResult(U&& value) {
             _result = std::forward<U>(value);
+            if (_then)
+                _then(_result);
             _notify();
+        }
+        void setThen(std::function<void(Result<void> const&)> fn)   {
+            //FIXME: This has race conditions; need to implement it like suspend()
+            if (hasValue())
+                fn(_result);
+            else
+                _then = std::move(fn);
         }
     private:
         Result<void> _result;
+        std::function<void(Result<void> const&)> _then;
     };
 
 
@@ -225,7 +244,7 @@ namespace crouton {
         :_state(std::make_shared<FutureState<void>>()) {_state->setResult(std::forward<X>(x));}
         bool hasValue() const           {return _state->hasValue();}
         void value() const              {_state->value();}
-        inline void waitForValue();
+        void then(std::function<void(Result<void> const&)> fn)   {_state->setThen(std::move(fn));}
         bool await_ready()              {return _state->hasValue();}
         auto await_suspend(coro_handle coro) noexcept {
             auto next = _state->suspend(coro);
@@ -253,11 +272,6 @@ namespace crouton {
         using handle_type = typename super::handle_type;
 
         FutureImpl() = default;
-
-        T&& waitForValue() {
-            Scheduler::current().runUntil([&]{ return _provider.hasValue(); });
-            return std::move(_provider.value());
-        }
 
         //---- C++ coroutine internal API:
 
@@ -297,7 +311,6 @@ namespace crouton {
         using super = CoroutineImpl<FutureImpl<void>, true>;
         using handle_type = super::handle_type;
         FutureImpl() = default;
-        void waitForValue();
         Future<void> get_return_object();
         void unhandled_exception() {
             this->super::unhandled_exception();
@@ -307,8 +320,5 @@ namespace crouton {
     private:
         FutureProvider<void> _provider;
     };
-
-
-    void Future<void>::waitForValue()           {this->handle().promise().waitForValue();}
 
 }
