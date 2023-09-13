@@ -143,8 +143,8 @@ namespace crouton {
         } else {
             // Start an async read:
             read_start();
-            _futureBuf.emplace();
-            return *_futureBuf;
+            _futureBuf = make_shared<FutureState<BufferRef>>();
+            return Future(_futureBuf);
         }
     }
 
@@ -206,7 +206,7 @@ namespace crouton {
                 _futureBuf->setResult(nullptr);
             else
                 _futureBuf->setResult(UVError("reading from the network", err));
-            _futureBuf = nullopt;
+            _futureBuf = nullptr;
         } else {
             // If this is an unrequested read, queue it up for later:
             if (err == 0)

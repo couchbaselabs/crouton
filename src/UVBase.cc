@@ -123,9 +123,9 @@ namespace crouton {
 
 
     Future<void> Timer::sleep(double delaySecs) {
-        FutureProvider<void> provider;
-        Timer::after(delaySecs, [provider]{provider.setResult();});
-        return provider;
+        auto provider = make_shared<FutureState<void>>();
+        Timer::after(delaySecs, [provider]{provider->setResult();});
+        return Future(provider);
     }
 
 
@@ -181,7 +181,7 @@ namespace crouton {
 
 
     struct QueuedWork : public uv_work_t {
-        FutureProvider<void>    provider;
+        FutureProvider<void>    provider = std::make_shared<FutureState<void>>();
         std::function<void()>   fn;
         std::exception_ptr      exception;
     };
@@ -198,12 +198,12 @@ namespace crouton {
         }, [](uv_work_t *req, int status) noexcept {
             auto work = static_cast<QueuedWork*>(req);
             if (work->exception)
-                work->provider.setResult(work->exception);
+                work->provider->setResult(work->exception);
             else
-                work->provider.setResult();
+                work->provider->setResult();
             delete work;
         }), "making a background call");
-        return work->provider.future();
+        return Future(work->provider);
     }
 
     

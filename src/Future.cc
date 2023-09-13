@@ -20,33 +20,68 @@
 
 namespace crouton {
 
+    // Returns true if the current state is Empty, false if it's Ready, else throws.
+    bool FutureStateBase::checkEmpty() {
+        switch (State state = _state.load()) {
+            case Empty:
+                return true;
+            case Waiting:
+                throw std::logic_error("Another coroutine is already awaiting this Future");
+            case Chained:
+                throw std::logic_error("This Future already has a `then(...)` callback");
+            case Ready:
+                break;
+        }
+        return false;
+    }
+
+
+    // Atomically changes the state from Empty to Waiting or Chained.
+    // Returns true on success, false if it's already Ready, otherwise throws.
+    bool FutureStateBase::changeState(State newState) {
+        State state = Empty;
+        if (_state.compare_exchange_strong(state, newState))
+            return true;
+        else if (state == Ready)
+            return false;
+        else
+            throw std::logic_error("Race condition: two threads awaiting the same Future");
+    }
+
+
     // Called by Future::await_suspend.
     // @param coro  the current coroutine that's `co_await`ing the Future
     // @return  The coroutine that should resume
     coro_handle FutureStateBase::suspend(coro_handle coro) {
-        switch (State state = _state.load()) {
-            case Empty: {
-                // No value yet, so suspend this coroutine:
-                assert(!_suspension);
-                Scheduler& sched = Scheduler::current();
-                _suspension = sched.suspend(coro);
-                if (!_state.compare_exchange_strong(state, Waiting)) {
-                    // Oops, provider set a value while I was suspending; wake immediately:
-                    assert(state == Ready);
-                    _suspension->wakeUp();
-                }
-                return sched.next();
+        if (checkEmpty()) {
+            // No value yet, so suspend this coroutine:
+            assert(!_suspension);
+            Scheduler& sched = Scheduler::current();
+            _suspension = sched.suspend(coro);
+            if (!changeState(Waiting)) {
+                // Oops, provider set a value while I was suspending; wake immediately:
+                _suspension->wakeUp();
             }
-            case Waiting:
-                throw std::logic_error("Another coroutine is already awaiting this Future");
-            case Ready:
-                // There's a value now, so continue:
-                return coro;
+            return sched.next();
+        } else {
+            // There's a value now, so continue:
+            return coro;
         }
-        // unreachable
-        throw std::logic_error("invalid state");
     }
 
+
+    // Chains another FutureState to this one through a `then` callback.
+    void FutureStateBase::_chain(std::shared_ptr<FutureStateBase> future, ChainCallback fn) {
+        bool ready = !checkEmpty();
+        assert(!_chainedFuture);
+        _chainedFuture = std::move(future);
+        _chainedCallback = std::move(fn);
+        if (ready || !changeState(Chained))
+            resolveChain();
+    }
+
+
+    // Changes the state to Ready and notifies any waiting coroutine or chained FutureState.
     void FutureStateBase::_notify() {
         switch (_state.exchange(Ready)) {
             case Empty:
@@ -59,23 +94,29 @@ namespace crouton {
                     _suspension = nullptr;
                 }
                 break;
+            case Chained:
+                // Resolve the chained FutureState:
+                resolveChain();
+                break;
             case Ready:
                 throw std::logic_error("Future already has a result");
         }
     }
 
 
-
-    Future<void> FutureProvider<void>::future() {
-        return Future<void>(_state);
+    // Updates the chained FutureState based on my `then` callback.
+    void FutureStateBase::resolveChain() {
+        if (auto x = getException()) {
+            _chainedFuture->setException(x);
+        } else {
+            try {
+                _chainedCallback(*_chainedFuture, *this);
+            } catch(...) {
+                _chainedFuture->setException(std::current_exception());
+            }
+        }
+        _chainedFuture = nullptr;
+        _chainedCallback = nullptr;
     }
-
-
-    Future<void> FutureImpl<void>::get_return_object() {
-        auto f = _provider.future();
-        f.setHandle(typedHandle());
-        return f;
-    }
-
 
 }
