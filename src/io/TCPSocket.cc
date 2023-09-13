@@ -23,7 +23,9 @@
 namespace crouton::io {
     using namespace std;
 
+    using connect_request = AwaitableRequest<uv_connect_s>;
 
+    
     TCPSocket::TCPSocket() = default;
 
 
@@ -48,7 +50,7 @@ namespace crouton::io {
 
         connect_request req("opening connection");
         err = uv_tcp_connect(&req, tcpHandle, &addr,
-                             req.callbackWithStatus);
+                             req.callback);
         if (err < 0) {
             closeHandle(tcpHandle);
             check(err, "opening connection");

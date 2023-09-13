@@ -100,7 +100,6 @@ namespace crouton::io::apple {
         _onClose = std::make_shared<FutureState<void>>();
         nw_connection_set_state_changed_handler(_conn, ^(nw_connection_state_t state,
                                                          nw_error_t error) {
-            std::exception_ptr x;
             switch (state) {
                 case nw_connection_state_ready:
                     _isOpen = true;

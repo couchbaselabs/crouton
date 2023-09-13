@@ -22,6 +22,8 @@
 namespace crouton::io {
     using namespace std;
 
+    using write_request = AwaitableRequest<uv_write_s>;
+
 
     Stream::Stream() = default;
 
@@ -40,8 +42,8 @@ namespace crouton::io {
     Future<void> Stream::closeWrite() {
         assert(isOpen());
 
-        Request<uv_shutdown_t> req("closing connection");
-        check( uv_shutdown(&req, _stream, req.callbackWithStatus), "closing connection");
+        AwaitableRequest<uv_shutdown_t> req("closing connection");
+        check( uv_shutdown(&req, _stream, req.callback), "closing connection");
         AWAIT req;
         RETURN noerror;
     }
@@ -104,6 +106,7 @@ namespace crouton::io {
         assert(isOpen());
         assert(_readBusy);
         if (_inputBuf && _inputBuf->available() == 0) {
+            // Recycle the used-up buffer:
             _spare.emplace_back(std::move(_inputBuf));
             _inputBuf.reset();
         }
@@ -118,7 +121,7 @@ namespace crouton::io {
     /// Reads once from the uv_stream and returns the result as a BufferRef.
     Future<BufferRef> Stream::readBuf() {
         assert(isOpen());
-        assert(!_futureBuf);
+        assert(!_readFuture);
         if (!_input.empty()) {
             // We have an already-read buffer available; return it:
             Future<BufferRef> result(std::move(_input[0]));
@@ -134,8 +137,8 @@ namespace crouton::io {
         } else {
             // Start an async read:
             read_start();
-            _futureBuf = make_shared<FutureState<BufferRef>>();
-            return Future<BufferRef>(_futureBuf);
+            _readFuture = make_shared<FutureState<BufferRef>>();
+            return Future(_readFuture);
         }
     }
 
@@ -189,15 +192,15 @@ namespace crouton::io {
             err = int(nread);
         }
 
-        if (_futureBuf) {
+        if (_readFuture) {
             // Fulfil the Future from the latest read() call:
             if (err == 0)
-                _futureBuf->setResult(std::move(_readingBuf));
+                _readFuture->setResult(std::move(_readingBuf));
             else if (err == UV_EOF || err == UV_EINVAL)
-                _futureBuf->setResult(nullptr);
+                _readFuture->setResult(nullptr);
             else
-                _futureBuf->setResult(UVError(err));
-            _futureBuf = nullptr;
+                _readFuture->setError(Error(UVError{err}, "reading from the network"));
+            _readFuture = nullptr;
         } else {
             // If this is an unrequested read, queue it up for later:
             if (err == 0)
@@ -229,7 +232,7 @@ namespace crouton::io {
             uvbufs[i] = uv_buf_t(bufs[i]);
 
         write_request req("sending to the network");
-        check(uv_write(&req, _stream, uvbufs, unsigned(nbufs), req.callbackWithStatus),
+        check(uv_write(&req, _stream, uvbufs, unsigned(nbufs), req.callback),
               "sending to the network");
         AWAIT req;
         RETURN noerror;

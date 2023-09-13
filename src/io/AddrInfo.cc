@@ -26,13 +26,13 @@ namespace crouton::io {
 #pragma mark - DNS LOOKUP:
 
 
-    class getaddrinfo_request : public Request<uv_getaddrinfo_s> {
+    class getaddrinfo_request : public AwaitableRequest<uv_getaddrinfo_s> {
     public:
-        explicit getaddrinfo_request(const char* what) :Request(what) { }
+        explicit getaddrinfo_request(const char* what) :AwaitableRequest(what) { }
         static void callback(uv_getaddrinfo_s *req, int status, struct addrinfo *res) {
             auto self = static_cast<getaddrinfo_request*>(req);
             self->info = res;
-            self->callbackWithStatus(req, status);
+            self->notify(status);
         }
 
         struct addrinfo* info = nullptr;

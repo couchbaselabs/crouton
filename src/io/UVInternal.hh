@@ -66,21 +66,15 @@ namespace crouton::io {
     }
 
 
-    /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
+    /** An Awaitable subclass of a libUV request type, such as uv_write_s. */
     template <class UV_REQUEST_T>
-    class Request : public UV_REQUEST_T, public Blocker<int> {
+    class AwaitableRequest : public UV_REQUEST_T, public Blocker<int> {
     public:
-        explicit Request(const char* what)  :_what(what) { }
+        explicit AwaitableRequest(const char* what)  :_what(what) { }
 
         /// Pass this as the callback to a UV call on this request.
-        static void callback(UV_REQUEST_T *req) {
-            auto self = static_cast<Request*>(req);
-            self->notify(0);
-        }
-
-        /// Pass this as the callback to a UV call on this request.
-        static void callbackWithStatus(UV_REQUEST_T *req, int status) {
-            static_cast<Request*>(req)->notify(status);
+        static void callback(UV_REQUEST_T *req, int status) {
+            static_cast<AwaitableRequest*>(req)->notify(status);
         }
 
         int await_resume() noexcept {
@@ -91,9 +85,6 @@ namespace crouton::io {
 
         const char* _what;
     };
-
-    using connect_request = Request<uv_connect_s>;
-    using write_request   = Request<uv_write_s>;
 
 
     /** A data buffer used by stream_wrapper and Stream. */

@@ -30,11 +30,36 @@ namespace crouton::io {
     const int FileStream::WriteOnly = O_WRONLY;
 
 
-    class fs_request : public Request<uv_fs_s> {
+    // Subclass of libuv file request that resolves to a Future<size_t>.
+    class fs_request : public uv_fs_s {
     public:
-        fs_request(const char* what) :Request(what) { }
-        ~fs_request()                {if (await_ready()) uv_fs_req_cleanup(this);}
+        fs_request(const char* what)        :_what(what) { }
+
+        void check(int r) {
+            if (r < 0)
+                _futureP->setError(Error(UVError{r}, _what));
+        }
+
+        static void callback(uv_fs_s *req) {
+            auto self = static_cast<fs_request*>(req);
+            if (self->result < 0)
+                self->check(int(self->result));
+            else
+                self->_futureP->setResult(size_t(self->result));
+            uv_fs_req_cleanup(req);
+            delete self;
+        }
+
+        Future<size_t> future() {
+            Future<size_t> future(_futureP);
+            if (_futureP->getError())
+                delete this;
+            return future;
+        }
+
     private:
+        const char* _what;                  // must point to a string constant (never freed)
+        FutureProvider<size_t> _futureP = make_shared<FutureState<size_t>>();
     };
 
 
@@ -45,21 +70,13 @@ namespace crouton::io {
     { }
 
     FileStream::FileStream(int fd)                     :_fd(fd) { }
-
-//    FileStream::FileStream(FileStream&& fs)            {std::swap(_fd, fs._fd);}
-//    FileStream& FileStream::operator=(FileStream&& fs) {_close(); std::swap(_fd, fs._fd); return *this;}
     FileStream::~FileStream()                          {_close();}
 
 
     Future<void> FileStream::open() {
-        fs_request req("opening file");
-        CHECK_RETURN(uv_fs_open(curLoop(), &req, _path.c_str(), _flags, _mode, req.callback),
-                     "opening file");
-        AWAIT req;
-
-        CHECK_RETURN(req.result, "opening file");
-        _fd = int(req.result);
-        RETURN noerror;
+        auto req = new fs_request("opening file");
+        req->check(uv_fs_open(curLoop(), req, _path.c_str(), _flags, _mode, req->callback));
+        return req->future().then([this](ssize_t result) {_fd = int(result);});
     }
 
 
@@ -68,18 +85,15 @@ namespace crouton::io {
         assert(isOpen());
         static constexpr size_t kMaxBufs = 8;
         if (nbufs > kMaxBufs) 
-            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
+            return Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
 
-        fs_request req("reading from a file");
-        CHECK_RETURN(uv_fs_read(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
-                                req.callback),
-                     "reading from a file");
-        AWAIT req;
-        CHECK_RETURN(req.result, "opening file");
-        RETURN req.result;
+        auto req = new fs_request("reading from a file");
+        req->check(uv_fs_read(curLoop(), req, _fd, uvbufs, unsigned(nbufs), offset,
+                              req->callback));
+        return req->future();
     }
 
 
@@ -105,19 +119,22 @@ namespace crouton::io {
     // IStream's primitive read operation.
     Future<ConstBytes> FileStream::readNoCopy(size_t maxLen) {
         NotReentrant nr(_busy);
-        if (!_readBuf || _readBuf->empty()) {
-            TRY_AWAIT(_fillBuffer());
+        if (_readBuf && !_readBuf->empty())
+            return _readBuf->read(maxLen);
+        else {
+            return _fillBuffer().then([this,maxLen](ConstBytes) {
+                return _readBuf->read(maxLen);
+            });
         }
-        RETURN _readBuf->read(maxLen);
     }
 
 
     Future<ConstBytes> FileStream::peekNoCopy() {
         NotReentrant nr(_busy);
-        if (!_readBuf || _readBuf->empty())
-            return _fillBuffer();
-        else
+        if (_readBuf && !_readBuf->empty())
             return _readBuf->bytes();
+        else
+            return _fillBuffer();
     }
 
 
@@ -126,21 +143,19 @@ namespace crouton::io {
         NotReentrant nr(_busy);
         assert(isOpen());
 
+        _readBuf = nullptr; // because this write might invalidate it
+
         static constexpr size_t kMaxBufs = 8;
         if (nbufs > kMaxBufs) 
-            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
+            return Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
 
-        _readBuf = nullptr; // because this write might invalidate it
-        fs_request req("writing to a file");
-        CHECK_RETURN(uv_fs_write(curLoop(), &req, _fd, uvbufs, unsigned(nbufs), offset,
-                                 req.callback),
-                     "writing to a file");
-        AWAIT req;
-        CHECK_RETURN(req.result, "writing to a file");
-        RETURN noerror;
+        auto req = new fs_request("writing to a file");
+        req->check(uv_fs_write(curLoop(), req, _fd, uvbufs, unsigned(nbufs), offset,
+                               req->callback));
+        return req->future().then([](size_t) { });
     }
 
 
