@@ -64,7 +64,7 @@ namespace crouton {
         /// Returns the value, or throws the exception. Throws logic_error if empty.
         T const& value() const & {
             if (_value.index() == 1)
-                return std::get_if<T>(&_value);
+                return std::get<T>(_value);
             else if (auto x = std::get<std::exception_ptr>(_value))
                 std::rethrow_exception(x);
             else

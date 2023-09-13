@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Future.hh"
+#include <initializer_list>
 #include <memory>
 #include <span>
 

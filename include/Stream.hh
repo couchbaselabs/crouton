@@ -92,7 +92,7 @@ namespace crouton {
         std::vector<BufferRef>  _input;             // Buffers of already-read data
         std::vector<BufferRef>  _spare;             // Recycled buffers waiting to be reused
         BufferRef               _readingBuf;        // Buffer currently being filled by libuv
-        std::optional<FutureProvider<BufferRef>> _futureBuf;  // Client data request
+        FutureProvider<BufferRef> _futureBuf;       // Client data request
         int                     _readError = 0;     // Error read from stream
         std::unique_ptr<Buffer> _inputBuf;          // The last data read from the stream
         bool                    _reading = false;   // True after uv_read_start

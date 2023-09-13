@@ -30,3 +30,19 @@ using namespace crouton;
 void RunCoroutine(Future<void> (*test)());
 
 
+template <typename T>
+T waitFor(Future<T>&& f) {
+    bool ready = false;
+    (void) f.template then([&](T const&) {ready = true;});
+    Scheduler::current().runUntil([&]{ return ready; });
+    return std::move(f).result();
+}
+
+template <>
+inline void waitFor(Future<void>&& f) {
+    bool ready = false;
+    (void) f.then([&]() {ready = true;});
+    Scheduler::current().runUntil([&]{ return ready; });
+}
+
+

@@ -41,8 +41,7 @@ namespace crouton::apple {
 
 
     NWConnection::~NWConnection() {
-        if (_conn)
-            nw_release(_conn);
+        _close();
         if (_queue)
             dispatch_release(_queue);
     }
@@ -60,49 +59,52 @@ namespace crouton::apple {
                                                       NW_PARAMETERS_DEFAULT_CONFIGURATION);
         //TODO: Set nodelay, keepalive based on _binding
         _conn = nw_connection_create(endpoint, params);
+        nw_release(endpoint);
         nw_release(params);
 
         _queue = dispatch_queue_create("NWConnection", DISPATCH_QUEUE_SERIAL);
         nw_connection_set_queue(_conn, _queue);
 
-        FutureProvider<void> onOpen;
+        FutureProvider<void> onOpen = std::make_shared<FutureState<void>>();
+        _onClose = std::make_shared<FutureState<void>>();
         nw_connection_set_state_changed_handler(_conn, ^(nw_connection_state_t state,
                                                          nw_error_t error) {
             std::exception_ptr x;
             switch (state) {
                 case nw_connection_state_ready:
                     _isOpen = true;
-                    onOpen.setResult();
+                    onOpen->setResult();
                     break;
                 case nw_connection_state_cancelled:
-                    if (!onOpen.hasValue())
-                        onOpen.setResult(runtime_error("cancelled"));
-                    _onClose.setResult();
+                    if (!onOpen->hasResult())
+                        onOpen->setResult(runtime_error("cancelled"));
+                    _onClose->setResult();
                     break;
                 case nw_connection_state_failed:
-                    if (!onOpen.hasValue())
-                        onOpen.setResult(NWError(error));
+                    if (!onOpen->hasResult())
+                        onOpen->setResult(NWError(error));
                     break;
                 default:
                     break;
             }
         });
         nw_connection_start(_conn);
-        return onOpen;
+        return Future(onOpen);
     }
 
 
     Future<void> NWConnection::close() {
         if (_conn)
             nw_connection_cancel(_conn);
-        else if (!_onClose.hasValue())
-            _onClose.setResult();
-        return _onClose;
+        else if (!_onClose->hasResult())
+            _onClose->setResult();
+        return Future(_onClose);
     }
 
 
     void NWConnection::_close() {
         if (_conn) {
+            nw_connection_set_state_changed_handler(_conn, nullptr);
             nw_connection_force_cancel(_conn);
             nw_release(_conn);
             _conn = nullptr;
@@ -143,7 +145,7 @@ namespace crouton::apple {
             
         } else {
             // Read from the stream:
-            FutureProvider<ConstBytes> onRead;
+            auto onRead = std::make_shared<FutureState<ConstBytes>>();
             dispatch_sync(_queue, ^{
                 clearReadBuf();
                 nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
@@ -162,22 +164,22 @@ namespace crouton::apple {
                         _contentBuf = ConstBytes(data, size);
                         _contentUsed = peek ? 0 : size;
                         spdlog::debug("NWConnection read {} bytes", size);
-                        onRead.setResult(_contentBuf);
+                        onRead->setResult(_contentBuf);
                     } else if (error) {
-                        onRead.setResult(NWError(error));
+                        onRead->setResult(NWError(error));
                     } else if (is_complete) {
-                        onRead.setResult(ConstBytes{});
+                        onRead->setResult(ConstBytes{});
                     }
                 });
             });
-            return onRead;
+            return Future(onRead);
         }
     }
 
 
     Future<void> NWConnection::_writeOrShutdown(ConstBytes src, bool shutdown) {
         clearReadBuf();
-        FutureProvider<void> onWrite;
+        auto onWrite = make_shared<FutureState<void>>();
         dispatch_sync(_queue, ^{
             __block __unused bool released = false;
             dispatch_data_t content = dispatch_data_create(src.data(), src.size(), _queue,
@@ -186,13 +188,13 @@ namespace crouton::apple {
                                ^(nw_error_t error) {
                 assert(released);
                 if (error)
-                    onWrite.setResult(NWError(error));
+                    onWrite->setResult(NWError(error));
                 else
-                    onWrite.setResult();
+                    onWrite->setResult();
             });
             dispatch_release(content);
         });
-        return onWrite;
+        return Future(onWrite);
     }
 
 }

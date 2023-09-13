@@ -44,10 +44,10 @@ namespace crouton {
 
 
     Future<void> IStream::readExactly(MutableBytes buf) {
-        size_t bytesRead = AWAIT read(buf);
-        if (bytesRead < buf.size())
-            check(int(UV_EOF), "reading from the network");
-        RETURN;
+        return read(buf).then([buf](size_t bytesRead) {
+            if (bytesRead < buf.size())
+                check(int(UV_EOF), "reading from the network");
+        });
     }
 
 

@@ -106,26 +106,23 @@ namespace crouton {
 
         explicit ActorMethodImpl(crouton::Actor const* actor, ...) :ActorMethodImpl(*actor) { }
 
-        struct suspendInitial : public CORO_NS::suspend_always {
-            ActorMethodImpl* self;
-            bool await_ready() const noexcept {
-                return self->_actor->startNew(self->handle());
-            }
-            void await_suspend(coro_handle cur) {
-                lifecycle::suspendInitial(cur);
-            }
-        };
+        auto initial_suspend() {
+            struct suspendInitial : public CORO_NS::suspend_always {
+                ActorMethodImpl* self;
+                bool await_ready() const noexcept {
+                    return self->_actor->startNew(self->handle());
+                }
+                void await_suspend(coro_handle cur) {
+                    lifecycle::suspendInitial(cur);
+                }
+            };
+            return suspendInitial{{},this};
+        }
 
-        struct suspendFinal : public Finisher {
-            ActorMethodImpl* self;
-            coro_handle await_suspend(coro_handle h) noexcept {
-                self->_actor->finished(h);
-                return Finisher::await_suspend(h);
-            }
-        };
-
-        suspendInitial initial_suspend()        { return suspendInitial{{},this}; }
-        suspendFinal final_suspend() noexcept   { return suspendFinal{{},this}; }
+        auto final_suspend() noexcept   {
+            _actor->finished(this->handle());
+            return FutureImpl<T>::final_suspend();
+        }
 
     private:
         ActorMethodImpl() = delete;     // I need to know the identity of the Actor owning the coro

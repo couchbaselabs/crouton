@@ -173,7 +173,7 @@ namespace crouton {
         /// Makes the associated suspended coroutine runnable again;
         /// at some point its Scheduler will return it from next().
         /// @note This may be called from any thread, but _only once_.
-        /// @warning  The Suspention pointer becomes invalid as soon as this is called.
+        /// @warning  The Suspension pointer becomes invalid as soon as this is called.
         void wakeUp();
 
         // internal only, do not call
