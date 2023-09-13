@@ -125,7 +125,7 @@ namespace crouton {
     Future<void> Timer::sleep(double delaySecs) {
         auto provider = make_shared<FutureState<void>>();
         Timer::after(delaySecs, [provider]{provider->setResult();});
-        return Future(provider);
+        return Future<void>(provider);
     }
 
 
@@ -203,7 +203,7 @@ namespace crouton {
                 work->provider->setResult();
             delete work;
         }), "making a background call");
-        return Future(work->provider);
+        return Future<void>(work->provider);
     }
 
     

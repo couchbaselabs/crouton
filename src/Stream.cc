@@ -144,7 +144,7 @@ namespace crouton {
             // Start an async read:
             read_start();
             _futureBuf = make_shared<FutureState<BufferRef>>();
-            return Future(_futureBuf);
+            return Future<BufferRef>(_futureBuf);
         }
     }
 

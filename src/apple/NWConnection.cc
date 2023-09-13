@@ -89,7 +89,7 @@ namespace crouton::apple {
             }
         });
         nw_connection_start(_conn);
-        return Future(onOpen);
+        return Future<void>(onOpen);
     }
 
 
@@ -98,7 +98,7 @@ namespace crouton::apple {
             nw_connection_cancel(_conn);
         else if (!_onClose->hasResult())
             _onClose->setResult();
-        return Future(_onClose);
+        return Future<void>(_onClose);
     }
 
 
@@ -172,7 +172,7 @@ namespace crouton::apple {
                     }
                 });
             });
-            return Future(onRead);
+            return Future<ConstBytes>(onRead);
         }
     }
 
@@ -194,7 +194,7 @@ namespace crouton::apple {
             });
             dispatch_release(content);
         });
-        return Future(onWrite);
+        return Future<void>(onWrite);
     }
 
 }
