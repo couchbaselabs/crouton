@@ -72,8 +72,8 @@ namespace crouton {
             initArgs(argc, argv);
             InitLogging();
             Future<int> fut = fn();
-            Scheduler::current().runUntil([&]{ return fut.hasValue(); });
-            return fut.value();
+            Scheduler::current().runUntil([&]{ return fut.hasResult(); });
+            return fut.result();
         } catch (std::exception const& x) {
             spdlog::error("*** Unexpected exception: {}" , x.what());
             return 1;

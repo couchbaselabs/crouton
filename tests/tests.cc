@@ -19,9 +19,9 @@
 #include "tests.hh"
 
 void RunCoroutine(Future<void> (*test)()) {
-    Future<void> result = test();
-    Scheduler::current().runUntil([&]{return result.hasValue();});
-    result.value(); // check exception
+    Future<void> f = test();
+    Scheduler::current().runUntil([&]{return f.hasResult();});
+    f.result(); // check exception
 }
 
 

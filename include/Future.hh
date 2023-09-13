@@ -73,26 +73,37 @@ namespace crouton {
             _state->setResult(std::forward<X>(x));
         }
 
+        Future(Future&&) = default;
+        ~Future()                       {this->setHandle(nullptr);} // don't destroy handle
+
         /// True if a value or exception has been set by the provider.
-        bool hasValue() const           {return _state->hasValue();}
+        bool hasResult() const           {return _state->hasResult();}
 
-        /// Returns the value, or throws the exception. Don't call this if hasValue is false.
-        T&& value() const               {return _state->value();}
+        /// Returns the result, or throws the exception. Don't call this if hasResult is false.
+        T&& result() const               {return _state->result();}
 
-        /// Registers a callback that will be called when the value is available.
-        /// (If it's already available, the callback is called immediately.)
-        void then(std::function<void(Result<T> const&)> fn)      {_state->setThen(std::move(fn));}
+        /// Registers a callback that will be called when the result is available, and which can
+        /// return a new value (or void) which becomes the result of the returned Future.
+        /// @param fn A callback that will be called when the value is available.
+        /// @returns  A new Future whose result will be the return value of the callback,
+        ///           or a `Future<void>` if the callback doesn't return a value.
+        /// @note  If this Future already has a result, the callback is called immediately,
+        ///        before `then` returns, and thus the returned Future will also have a result.
+        /// @note  If this Future fails with an exception, the callback will not be called.
+        ///        Instead the returned Future's result will be the same exception.
+        template <typename FN, typename U = std::invoke_result_t<FN,T>>
+        Future<U> then(FN fn);
 
         //---- These methods make Future awaitable:
         bool await_ready() {
-            return _state->hasValue();
+            return _state->hasResult();
         }
         auto await_suspend(coro_handle coro) noexcept {
             auto next = _state->suspend(coro);
             return lifecycle::suspendingTo(coro, this->handle(), next);
         }
         [[nodiscard]] T&& await_resume(){
-            return std::move(_state->value());
+            return std::move(_state->result());
         }
 
     private:
@@ -116,7 +127,7 @@ namespace crouton {
         Future<T> future()                      {return Future<T>(*this);}
 
         /// True if there is a value.
-        bool hasValue() const                   {return _state->hasValue();}
+        bool hasResult() const                   {return _state->hasResult();}
 
         /// Sets the Future's value, or exception, and unblocks anyone waiting for it.
         template <class X>
@@ -124,12 +135,13 @@ namespace crouton {
 
         /// Gets the future's value, or throws its exception.
         /// It's illegal to call this before a value is set.
-        T&& value() const                       {return std::move(_state->value());}
+        T&& result() const                       {return std::move(_state->result());}
 
         /// Clears the provider, detaching it from its current Future, so it can create another.
         void reset()                            {_state = std::make_shared<FutureState<T>>();}
     private:
-        friend class Future<T>;
+        template <typename U> friend class Future;
+        auto& state() {return _state;}
         std::shared_ptr<FutureState<T>> _state;
     };
 
@@ -140,9 +152,11 @@ namespace crouton {
     // Internal base class of the shared state co-owned by a Future and its FutureProvider.
     class FutureStateBase {
     public:
-        bool hasValue() const                       {return _state.load() == Ready;}
+        bool hasResult() const                       {return _state.load() == Ready;}
         coro_handle suspend(coro_handle coro);
+        virtual void setException(std::exception_ptr) = 0;
     protected:
+        virtual ~FutureStateBase() = default;
         void _notify();
 
         enum State : uint8_t {
@@ -152,6 +166,7 @@ namespace crouton {
         };
 
         Suspension*         _suspension = nullptr;  // coro that's blocked awaiting result
+        std::shared_ptr<FutureStateBase> _chainedFuture;
         std::atomic<State>  _state = Empty;         // Current state, for thread-safety
     };
 
@@ -160,60 +175,93 @@ namespace crouton {
     template <typename T>
     class FutureState : public FutureStateBase {
     public:
-        T&& value() {
-            assert(hasValue());
+        T&& result() {
+            assert(hasResult());
             return std::move(_result).value();
         }
+
         template <typename U>
         void setResult(U&& value) {
             _result = std::forward<U>(value);
-            if (_then)
-                _then(_result);
+            if (_chainedFuture)
+                resolveChain();
             _notify();
         }
-        void setThen(std::function<void(Result<T> const&)> fn) {
+
+        void setException(std::exception_ptr x) override {setResult(x);}
+
+        void chain(std::shared_ptr<FutureStateBase> future,
+                   std::function<void(FutureStateBase&,T&&)> fn) {
             //FIXME: This has race conditions; need to implement it like suspend()
-            if (hasValue())
-                fn(_result);
-            else
-                _then = std::move(fn);
+            _chainedFuture = std::move(future);
+            _chainedCallback = std::move(fn);
+            if (hasResult())
+                resolveChain();
         }
+
+        void resolveChain() {
+            auto x = _result.exception();
+            if (!x) {
+                try {
+                    _chainedCallback(*_chainedFuture, std::move(_result).value());
+                    return;
+                } catch(...) {
+                    x = std::current_exception();
+                }
+            }
+            _chainedFuture->setException(x);
+        }
+        
     private:
         Result<T> _result;
-        std::function<void(Result<T> const&)> _then;
+        std::function<void(FutureStateBase&,T&&)> _chainedCallback;
     };
 
 
     template <>
     class FutureState<void> : public FutureStateBase {
     public:
-        void value() {
-            assert(hasValue());
+        void result() {
+            assert(hasResult());
             return _result.value();
         }
         void setResult() {
             _result.set();
-            if (_then)
-                _then(_result);
+            if (_chainedFuture)
+                resolveChain();
             _notify();
         }
+        void setException(std::exception_ptr x) override {setResult(x);}
         template <typename U>
         void setResult(U&& value) {
             _result = std::forward<U>(value);
-            if (_then)
-                _then(_result);
+            if (_chainedFuture)
+                resolveChain();
             _notify();
         }
-        void setThen(std::function<void(Result<void> const&)> fn)   {
+        void chain(std::shared_ptr<FutureStateBase> future,
+                   std::function<void(FutureStateBase&)> fn) {
             //FIXME: This has race conditions; need to implement it like suspend()
-            if (hasValue())
-                fn(_result);
-            else
-                _then = std::move(fn);
+            _chainedFuture = std::move(future);
+            _chainedCallback = std::move(fn);
+            if (hasResult())
+                resolveChain();
+        }
+        void resolveChain() {
+            auto x = _result.exception();
+            if (!x) {
+                try {
+                    _chainedCallback(*_chainedFuture);
+                    return;
+                } catch(...) {
+                    x = std::current_exception();
+                }
+            }
+            _chainedFuture->setException(x);
         }
     private:
         Result<void> _result;
-        std::function<void(Result<void> const&)> _then;
+        std::function<void(FutureStateBase&)> _chainedCallback;
     };
 
 
@@ -222,14 +270,15 @@ namespace crouton {
     public:
         FutureProvider()                        {reset();}
         Future<void> future();
-        bool hasValue() const                   {return _state->hasValue();}
+        bool hasResult() const                  {return _state->hasResult();}
         void setResult() const                  {_state->setResult();}
         template <typename U>
             void setResult(U&& value) const     {_state->setResult(std::forward<U>(value));}
-        void value() const                      {return _state->value();}
+        void result() const                     {return _state->result();}
         void reset()                            {_state = std::make_shared<FutureState<void>>();}
     private:
-        friend class Future<void>;
+        template <typename U> friend class Future;
+        auto& state() {return _state;}
         std::shared_ptr<FutureState<void>> _state;
     };
 
@@ -242,16 +291,19 @@ namespace crouton {
         template <class X>
         Future(X&& x) requires std::derived_from<X, std::exception>
         :_state(std::make_shared<FutureState<void>>()) {_state->setResult(std::forward<X>(x));}
-        bool hasValue() const           {return _state->hasValue();}
-        void value() const              {_state->value();}
-        void then(std::function<void(Result<void> const&)> fn)   {_state->setThen(std::move(fn));}
-        bool await_ready()              {return _state->hasValue();}
+        Future(Future&&) = default;
+        ~Future()                       {this->setHandle(nullptr);} // don't destroy handle
+        bool hasResult() const           {return _state->hasResult();}
+        void result() const              {_state->result();}
+        template <typename FN, typename U = std::invoke_result_t<FN>>
+        Future<U> then(FN);
+        bool await_ready()              {return _state->hasResult();}
         auto await_suspend(coro_handle coro) noexcept {
             auto next = _state->suspend(coro);
             return lifecycle::suspendingTo(coro, this->handle(), next);
         }
         void await_resume(){
-            _state->value();
+            _state->result();
         }
     protected:
         friend class FutureProvider<void>;
@@ -259,6 +311,38 @@ namespace crouton {
         Future(std::shared_ptr<FutureState<void>> state)   :_state(std::move(state)) { }
         std::shared_ptr<FutureState<void>>  _state;
     };
+
+
+    template <typename T>
+    template <typename FN, typename U>
+    Future<U> Future<T>::then(FN fn) {
+        FutureProvider<U> provider;
+        _state->chain(provider.state(), [fn](FutureStateBase& baseState, T&& result) {
+            auto& state = dynamic_cast<FutureState<U>&>(baseState);
+            if constexpr (std::is_void_v<U>) {
+                fn(std::move(result));
+                state.setResult();
+            } else {
+                state.setResult(fn(std::move(result)));
+            }
+        });
+        return provider.future();
+    }
+
+    template <typename FN, typename U>
+    Future<U> Future<void>::then(FN fn) {
+        FutureProvider<U> provider;
+        _state->chain(provider.state(), [fn](FutureStateBase& baseState) {
+            auto& state = dynamic_cast<FutureState<U>&>(baseState);
+            if constexpr (std::is_void_v<U>) {
+                fn();
+                state.setResult();
+            } else {
+                state.setResult(fn());
+            }
+        });
+        return provider.future();
+    }
 
 
 #pragma mark - FUTURE IMPL:
@@ -291,13 +375,23 @@ namespace crouton {
             lifecycle::returning(this->handle());
             _provider.setResult(std::forward<X>(x));
         }
-        void return_value(T&& value)            {
+        void return_value(T&& value) {
             lifecycle::returning(this->handle());
             _provider.setResult(std::move(value));
         }
-        void return_value(T const& value)       {
+        void return_value(T const& value) {
             lifecycle::returning(this->handle());
             _provider.setResult(value);
+        }
+
+        auto final_suspend() noexcept {
+            struct finalizer : public CORO_NS::suspend_always {
+                void await_suspend(coro_handle cur) noexcept {
+                    lifecycle::finalSuspend(cur, nullptr);
+                    cur.destroy();
+                }
+            };
+            return finalizer{};
         }
 
     protected:
@@ -317,6 +411,17 @@ namespace crouton {
             _provider.setResult(std::current_exception());
         }
         void return_void()                      {lifecycle::returning(handle()); _provider.setResult();}
+
+        auto final_suspend() noexcept {
+            struct finalizer : public CORO_NS::suspend_always {
+                void await_suspend(coro_handle cur) noexcept {
+                    lifecycle::finalSuspend(cur, nullptr);
+                    cur.destroy();
+                }
+            };
+            return finalizer{};
+        }
+
     private:
         FutureProvider<void> _provider;
     };

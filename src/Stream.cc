@@ -74,14 +74,27 @@ namespace crouton {
     Future<ConstBytes> Stream::readNoCopy(size_t maxLen) {
         assert(isOpen());
         NotReentrant nr(_readBusy);
+#if 1
+        if (_inputBuf && !_inputBuf->empty()) {
+            // Advance _inputBuf->used and return the pointer:
+            return _inputBuf->read(maxLen);
+        } else {
+            return fillInputBuf().then([=](ConstBytes bytes) -> ConstBytes {
+                if (_inputBuf)
+                    return _inputBuf->read(maxLen);
+                else
+                    return ConstBytes{};  // Reached EOF
+            });
+        }
+#else
         if (!_inputBuf || _inputBuf->empty()) {
             (void) AWAIT fillInputBuf();
             if (!_inputBuf)
                 RETURN {};  // Reached EOF
         }
-
         // Advance _inputBuf->used and return the pointer:
         RETURN _inputBuf->read(maxLen);
+#endif
     }
 
 

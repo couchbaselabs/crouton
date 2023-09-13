@@ -33,15 +33,15 @@ void RunCoroutine(Future<void> (*test)());
 template <typename T>
 T waitFor(Future<T>&& f) {
     bool ready = false;
-    f.then([&](Result<T> const&) {ready = true;});
+    (void) f.template then([&](T const&) {ready = true;});
     Scheduler::current().runUntil([&]{ return ready; });
-    return std::move(f).value();
+    return std::move(f).result();
 }
 
 template <>
 inline void waitFor(Future<void>&& f) {
     bool ready = false;
-    f.then([&](Result<void> const&) {ready = true;});
+    (void) f.then([&]() {ready = true;});
     Scheduler::current().runUntil([&]{ return ready; });
 }
 

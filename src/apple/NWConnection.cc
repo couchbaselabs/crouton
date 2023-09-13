@@ -75,12 +75,12 @@ namespace crouton::apple {
                     onOpen.setResult();
                     break;
                 case nw_connection_state_cancelled:
-                    if (!onOpen.hasValue())
+                    if (!onOpen.hasResult())
                         onOpen.setResult(runtime_error("cancelled"));
                     _onClose.setResult();
                     break;
                 case nw_connection_state_failed:
-                    if (!onOpen.hasValue())
+                    if (!onOpen.hasResult())
                         onOpen.setResult(NWError(error));
                     break;
                 default:
@@ -95,7 +95,7 @@ namespace crouton::apple {
     Future<void> NWConnection::close() {
         if (_conn)
             nw_connection_cancel(_conn);
-        else if (!_onClose.hasValue())
+        else if (!_onClose.hasResult())
             _onClose.setResult();
         return _onClose;
     }
