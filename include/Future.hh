@@ -22,6 +22,7 @@
 #include "Scheduler.hh"
 #include <atomic>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <utility>
 #include <cassert>
@@ -288,7 +289,7 @@ namespace crouton {
         //---- C++ coroutine internal API:
 
         Future<T> get_return_object() {
-            return Future(this->typedHandle(), _provider);
+            return Future<T>(this->typedHandle(), _provider);
         }
 
         void unhandled_exception() {
@@ -331,7 +332,7 @@ namespace crouton {
         using super = CoroutineImpl<FutureImpl<void>, true>;
         using handle_type = super::handle_type;
         FutureImpl() = default;
-        Future<void> get_return_object() {return Future(typedHandle(), _provider);}
+        Future<void> get_return_object() {return Future<void>(typedHandle(), _provider);}
         void unhandled_exception() {
             this->super::unhandled_exception();
             _provider->setResult(std::current_exception());

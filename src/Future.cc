@@ -22,15 +22,11 @@ namespace crouton {
 
     // Returns true if the current state is Empty, false if it's Ready, else throws.
     bool FutureStateBase::checkEmpty() {
-        switch (State state = _state.load()) {
-            case Empty:
-                return true;
-            case Waiting:
-                throw std::logic_error("Another coroutine is already awaiting this Future");
-            case Chained:
-                throw std::logic_error("This Future already has a `then(...)` callback");
-            case Ready:
-                break;
+        switch (_state.load()) {
+            case Empty:   return true;
+            case Waiting: throw std::logic_error("Another coroutine is already awaiting this Future");
+            case Chained: throw std::logic_error("This Future already has a `then(...)` callback");
+            case Ready:   break;
         }
         return false;
     }

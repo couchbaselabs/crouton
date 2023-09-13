@@ -79,7 +79,7 @@ namespace crouton {
             // Advance _inputBuf->used and return the pointer:
             return _inputBuf->read(maxLen);
         } else {
-            return fillInputBuf().then([=](ConstBytes bytes) -> ConstBytes {
+            return fillInputBuf().then([this,maxLen](ConstBytes bytes) -> ConstBytes {
                 if (_inputBuf)
                     return _inputBuf->read(maxLen);
                 else
