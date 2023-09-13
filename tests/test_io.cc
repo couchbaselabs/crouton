@@ -202,6 +202,7 @@ static Future<string> readNWSocket(const char* hostname, bool tls) {
 
     cerr << "Reading...\n";
     string result = AWAIT socket.readAll();
+    AWAIT socket.close();
     RETURN result;
 }
 

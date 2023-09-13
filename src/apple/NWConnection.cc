@@ -41,8 +41,7 @@ namespace crouton::apple {
 
 
     NWConnection::~NWConnection() {
-        if (_conn)
-            nw_release(_conn);
+        _close();
         if (_queue)
             dispatch_release(_queue);
     }
@@ -60,6 +59,7 @@ namespace crouton::apple {
                                                       NW_PARAMETERS_DEFAULT_CONFIGURATION);
         //TODO: Set nodelay, keepalive based on _binding
         _conn = nw_connection_create(endpoint, params);
+        nw_release(endpoint);
         nw_release(params);
 
         _queue = dispatch_queue_create("NWConnection", DISPATCH_QUEUE_SERIAL);
@@ -103,6 +103,7 @@ namespace crouton::apple {
 
     void NWConnection::_close() {
         if (_conn) {
+            nw_connection_set_state_changed_handler(_conn, nullptr);
             nw_connection_force_cancel(_conn);
             nw_release(_conn);
             _conn = nullptr;
