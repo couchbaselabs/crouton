@@ -50,7 +50,7 @@ static Future<int> run() {
     }
 
     // Send HTTP request:
-    auto ws = make_unique<ClientWebSocket>(string(*url));
+    auto ws = make_unique<ws::ClientWebSocket>(string(*url));
     if (!protocol.empty())
         ws->setHeader("Sec-WebSocket-Protocol", protocol.c_str());
     AWAIT ws->connect();

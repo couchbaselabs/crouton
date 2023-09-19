@@ -35,7 +35,7 @@ namespace crouton::blip {
         using RequestHandlerItem = std::pair<const string,RequestHandler>;
 
         /// Constructs a BLIPConnection and registers any given request handlers.
-        explicit BLIPConnection(std::unique_ptr<WebSocket> ws,
+        explicit BLIPConnection(std::unique_ptr<ws::WebSocket> ws,
                                 std::initializer_list<RequestHandlerItem> = {});
         ~BLIPConnection();
 
@@ -59,7 +59,7 @@ namespace crouton::blip {
         /// 4. When peer's WebSocket CLOSE frame is received, closes the socket.
         ///
         /// If `immediate` is true, step 1 is skipped.
-        ASYNC<void> close(WebSocket::CloseCode = WebSocket::CloseCode::Normal,
+        ASYNC<void> close(ws::CloseCode = ws::CloseCode::Normal,
                           string message = "",
                           bool immediate = false);
 
@@ -70,11 +70,11 @@ namespace crouton::blip {
 
         using HandlerMap = std::unordered_map<string,RequestHandler>;
 
-        BLIPIO                      _io;
-        std::unique_ptr<WebSocket>  _socket;
-        HandlerMap                  _handlers;
-        std::optional<Task>         _outputTask, _inputTask;
-        CoCondition                 _outputDone, _inputDone;
+        BLIPIO                          _io;
+        std::unique_ptr<ws::WebSocket>  _socket;
+        HandlerMap                      _handlers;
+        std::optional<Task>             _outputTask, _inputTask;
+        CoCondition                     _outputDone, _inputDone;
     };
 
 }

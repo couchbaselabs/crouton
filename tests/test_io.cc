@@ -161,7 +161,7 @@ TEST_CASE("Read a TLS socket", "[uv]") {
 
 TEST_CASE("WebSocket", "[uv]") {
     auto test = []() -> Future<void> {
-        ClientWebSocket ws("wss://ws.postman-echo.com/raw");
+        ws::ClientWebSocket ws("wss://ws.postman-echo.com/raw");
         cerr << "-- Test Connecting...\n";
         try {
             AWAIT ws.connect();
@@ -174,19 +174,19 @@ TEST_CASE("WebSocket", "[uv]") {
         for (auto &h : ws.responseHeaders())
             cout << '\t' << h.first << ": " << h.second << endl;
         cerr << "-- Test Sending Message...\n";
-        AWAIT ws.send(ConstBytes("This is a test of WebSockets in Crouton."), WebSocket::Text);
+        AWAIT ws.send(ConstBytes("This is a test of WebSockets in Crouton."), ws::Message::Text);
 
         cerr << "-- Test Receiving Message...\n";
         auto msg = AWAIT ws.receive();
         cerr << "-- Received type " << int(msg.type) << ": " << msg << endl;
-        CHECK(msg.type == WebSocket::Text);
+        CHECK(msg.type == ws::Message::Text);
         CHECK(msg == "This is a test of WebSockets in Crouton.");
 
         cerr << "-- Closing...\n";
-        AWAIT ws.send(WebSocket::Message(WebSocket::CloseCode::Normal, "bye"));
+        AWAIT ws.send(ws::Message(ws::CloseCode::Normal, "bye"));
         msg = AWAIT ws.receive();
-        CHECK(msg.type == WebSocket::Close);
-        CHECK(msg.closeCode() == WebSocket::CloseCode::Normal);
+        CHECK(msg.type == ws::Message::Close);
+        CHECK(msg.closeCode() == ws::CloseCode::Normal);
         CHECK(ws.readyToClose());
         AWAIT ws.close();
     };

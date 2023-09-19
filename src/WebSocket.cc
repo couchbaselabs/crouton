@@ -26,7 +26,7 @@
 
 #include <iomanip>
 
-namespace crouton {
+namespace crouton::ws {
     using namespace std;
 
 
@@ -54,12 +54,12 @@ namespace crouton {
     }
 
 
-    Future<void> WebSocket::send(ConstBytes message, MessageType type) {
+    Future<void> WebSocket::send(ConstBytes message, Message::Type type) {
         // Note: This method is not a coroutine, and it passes the message to _stream->write
         // as a `string`, so the caller does not need to keep the data valid.
         if (_closeSent || !_stream)
             throw std::logic_error("WebSocket is already closing");
-        if (type == Close)
+        if (type == Message::Close)
             _closeSent = true;
         string frame(message.size() + 10, 0);
         size_t frameLen = formatMessage(frame.data(), message, type);
@@ -68,7 +68,7 @@ namespace crouton {
     }
 
 
-    Future<WebSocket::Message> WebSocket::receive() {
+    Future<Message> WebSocket::receive() {
         if (_closeReceived || !_stream)
             RETURN runtime_error("WebSocket is closed");
         while (true) {
@@ -82,6 +82,8 @@ namespace crouton {
 
             Message msg = std::move(_incoming.front());
             _incoming.pop_front();
+
+            using enum Message::Type;
             switch (msg.type) {
                 case Close:
                     _closeReceived = true;
@@ -115,7 +117,7 @@ namespace crouton {
         if (!_curMessage) {
             _curMessage.emplace();
             _curMessage->reserve(dataLen + remainingBytes);
-            _curMessage->type = (MessageType)opCode;
+            _curMessage->type = (Message::Type)opCode;
         }
 
         // Data:
@@ -158,7 +160,7 @@ namespace crouton {
 
     ClientWebSocket::ClientWebSocket(string urlStr)
     :_connection(urlStr)
-    ,_clientParser(make_unique<ClientProtocol>())
+    ,_clientParser(make_unique<uWS::ClientProtocol>())
     {
         // Generate a base64-encoded 16-byte random `Sec-WebSocket-Key`:
         uint8_t rawKey[16];
@@ -219,8 +221,8 @@ namespace crouton {
     }
 
 
-    size_t ClientWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
-        return ClientProtocol::formatMessage((byte*)dst,
+    size_t ClientWebSocket::formatMessage(void* dst, ConstBytes message, Message::Type type) {
+        return uWS::ClientProtocol::formatMessage((byte*)dst,
                                              (const char*)message.data(),
                                              message.size(),
                                              uWS::OpCode(type),
@@ -238,7 +240,7 @@ namespace crouton {
 
 
     ServerWebSocket::ServerWebSocket()
-    :_serverParser(make_unique<ServerProtocol>())
+    :_serverParser(make_unique<uWS::ServerProtocol>())
     { }
 
     ServerWebSocket::~ServerWebSocket() = default;
@@ -280,13 +282,13 @@ namespace crouton {
     }
 
 
-    size_t ServerWebSocket::formatMessage(void* dst, ConstBytes message, MessageType type) {
-        return ServerProtocol::formatMessage((byte*)dst,
-                                             (const char*)message.data(),
-                                             message.size(),
-                                             uWS::OpCode(type),
-                                             message.size(),
-                                             false);
+    size_t ServerWebSocket::formatMessage(void* dst, ConstBytes message, Message::Type type) {
+        return uWS::ServerProtocol::formatMessage((byte*)dst,
+                                                  (const char*)message.data(),
+                                                  message.size(),
+                                                  uWS::OpCode(type),
+                                                  message.size(),
+                                                  false);
     }
 
 
@@ -298,34 +300,34 @@ namespace crouton {
 #pragma mark - MESSAGE:
 
 
-    WebSocket::Message::Message(CloseCode code, string_view message)
+    Message::Message(CloseCode code, string_view message)
     :string(message.size() + 2, 0)
     ,type(Close)
     {
-        size_t sz = ClientProtocol::formatClosePayload((byte*)data(),
-                                                       int16_t(code),
-                                                       message.data(), message.size());
+        size_t sz = uWS::ClientProtocol::formatClosePayload((byte*)data(),
+                                                            int16_t(code),
+                                                            message.data(), message.size());
         assert(sz <= size());
         resize(sz);
     }
 
-    WebSocket::CloseCode WebSocket::Message::closeCode() const {
+    CloseCode Message::closeCode() const {
         if (type != Close)
             throw std::invalid_argument("Not a CLOSE message");
-        auto payload = ClientProtocol::parseClosePayload((byte*)data(), size());
+        auto payload = uWS::ClientProtocol::parseClosePayload((byte*)data(), size());
         return payload.code ? CloseCode{payload.code} : CloseCode::NoCode;
     }
 
-    string_view WebSocket::Message::closeMessage() const {
+    string_view Message::closeMessage() const {
         if (type != Close)
             throw std::invalid_argument("Not a CLOSE message");
-        auto payload = ClientProtocol::parseClosePayload((byte*)data(), size());
+        auto payload = uWS::ClientProtocol::parseClosePayload((byte*)data(), size());
         return {(char*)payload.message, payload.length};
     }
 
 
-    std::ostream& operator<< (std::ostream& out, WebSocket::Message const& msg) {
-        using enum WebSocket::MessageType;
+    std::ostream& operator<< (std::ostream& out, Message const& msg) {
+        using enum Message::Type;
         out << msg.type << '[';
         switch (msg.type) {
             case Text:
@@ -346,8 +348,8 @@ namespace crouton {
     }
 
 
-    std::ostream& operator<< (std::ostream& out, WebSocket::MessageType type) {
-        using enum WebSocket::MessageType;
+    std::ostream& operator<< (std::ostream& out, Message::Type type) {
+        using enum Message::Type;
         static constexpr const char* kTypeNames[] = {
             nullptr, "Text", "Binary", nullptr, nullptr, nullptr, nullptr, nullptr,
             "Close", "Ping", "Pong"
@@ -359,8 +361,8 @@ namespace crouton {
     }
 
 
-    std::ostream& operator<< (std::ostream& out, WebSocket::CloseCode code) {
-        using enum WebSocket::CloseCode;
+    std::ostream& operator<< (std::ostream& out, CloseCode code) {
+        using enum CloseCode;
         static constexpr const char* kCodeNames[] = {
             "Normal",
             "GoingAway",
@@ -394,7 +396,7 @@ namespace uWS {
 
 
 // The `user` parameter points to the owning WebSocketImpl object.
-#define USER_SOCK ((crouton::WebSocket*)user)
+#define USER_SOCK ((crouton::ws::WebSocket*)user)
 
     template <const bool isServer>
     bool WebSocketProtocol<isServer>::setCompressed(void* user) {

@@ -24,7 +24,7 @@ namespace crouton::blip {
     using namespace std;
 
 
-    BLIPConnection::BLIPConnection(std::unique_ptr<WebSocket> ws,
+    BLIPConnection::BLIPConnection(std::unique_ptr<ws::WebSocket> ws,
                                    std::initializer_list<RequestHandlerItem> handlers)
     :_socket(std::move(ws))
     ,_handlers(handlers)
@@ -50,7 +50,7 @@ namespace crouton::blip {
             optional<string> frame = AWAIT _io.output();
             if (!frame)
                 break; // BLIPIO's send side has closed.
-            AWAIT _socket->send(*frame, WebSocket::Binary);
+            AWAIT _socket->send(*frame, ws::Message::Binary);
         } while (YIELD true);
         _outputDone.notifyOne();
     }
@@ -58,8 +58,8 @@ namespace crouton::blip {
 
     Task BLIPConnection::inputTask() {
         do {
-            WebSocket::Message frame = AWAIT _socket->receive();
-            if (frame.type == WebSocket::Close) {
+            ws::Message frame = AWAIT _socket->receive();
+            if (frame.type == ws::Message::Close) {
                 LBLIP->info("BLIPConnection received WebSocket CLOSE");
                 break;
             }
@@ -101,7 +101,7 @@ namespace crouton::blip {
     }
 
 
-    Future<void> BLIPConnection::close(WebSocket::CloseCode code, string message, bool immediate) {
+    Future<void> BLIPConnection::close(ws::CloseCode code, string message, bool immediate) {
         LBLIP->info("BLIPConnection closing with code {} \"{}\"", int(code), message);
         if (immediate)
             _io.stop();
@@ -109,7 +109,7 @@ namespace crouton::blip {
             _io.closeSend();
         AWAIT _outputDone;
         LBLIP->debug("BLIPConnection now sending WebSocket CLOSE...");
-        AWAIT _socket->send(WebSocket::Message{code, message});
+        AWAIT _socket->send(ws::Message{code, message});
         AWAIT _inputDone;
         AWAIT _socket->close();
     }
