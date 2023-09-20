@@ -52,7 +52,7 @@ namespace crouton::blip {
                 break; // BLIPIO's send side has closed.
             AWAIT _socket->send(*frame, ws::Message::Binary);
         } while (YIELD true);
-        _outputDone.notifyOne();
+        _outputDone.notify();
     }
 
 
@@ -68,7 +68,7 @@ namespace crouton::blip {
                 dispatchRequest(std::move(msg));
         } while (YIELD true);
         _io.closeReceive();
-        _inputDone.notifyOne();
+        _inputDone.notify();
     }
 
 

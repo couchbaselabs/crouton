@@ -29,6 +29,9 @@
 		275A5F162AAFB3B1009791E8 /* Memoized.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A5F142AAFB3B1009791E8 /* Memoized.cc */; };
 		275A5F172AB105EE009791E8 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
 		275A5F182AB105F4009791E8 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E332AA015C0005B12F2 /* Security.framework */; };
+		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
+		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
+		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
 		278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F76782A9FEF54005B12F2 /* TLSSocket.hh */; };
 		278F767B2A9FEF54005B12F2 /* TLSSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F76792A9FEF54005B12F2 /* TLSSocket.cc */; };
 		278F7E322AA015B1005B12F2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
@@ -310,6 +313,9 @@
 		272A85332A99451B0083D947 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		275A5F132AAFB3B1009791E8 /* Memoized.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Memoized.hh; sourceTree = "<group>"; };
 		275A5F142AAFB3B1009791E8 /* Memoized.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Memoized.cc; sourceTree = "<group>"; };
+		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
+		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
+		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
 		278F76782A9FEF54005B12F2 /* TLSSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSSocket.hh; sourceTree = "<group>"; };
 		278F76792A9FEF54005B12F2 /* TLSSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSSocket.cc; sourceTree = "<group>"; };
 		278F76822A9FF0C4005B12F2 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
@@ -641,6 +647,7 @@
 			children = (
 				27F49CCD2A9D007D00BFB24C /* Actor.hh */,
 				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
+				277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */,
 				27ED1C702AABF47200ADC971 /* CoroLifecycle.hh */,
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
 				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
@@ -725,6 +732,7 @@
 			isa = PBXGroup;
 			children = (
 				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
+				277E8A402ABA4AA200E78CB1 /* CoCondition.cc */,
 				278F7F262AAB8E5F005B12F2 /* Coroutine.cc */,
 				27ED1C712AABF47200ADC971 /* CoroLifecycle.cc */,
 				272730512A8EC61D000CCA22 /* FileStream.cc */,
@@ -1315,6 +1323,7 @@
 				27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
 				27B330692AB388960066C8DA /* Endian.hh */,
+				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
 				275A5F132AAFB3B1009791E8 /* Memoized.hh */,
 				275A5F142AAFB3B1009791E8 /* Memoized.cc */,
 				278F7E3E2AA24FEE005B12F2 /* StringUtils.hh */,
@@ -1353,6 +1362,7 @@
 			files = (
 				278F7E4F2AA2ADFD005B12F2 /* Filesystem.hh in Headers */,
 				272730522A8EC61D000CCA22 /* FileStream.hh in Headers */,
+				277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */,
 				27B330632AB373430066C8DA /* MessageOut.hh in Headers */,
 				27B330522AB2763B0066C8DA /* Message.hh in Headers */,
 				27B3305D2AB36F1D0066C8DA /* MessageBuilder.hh in Headers */,
@@ -1372,6 +1382,7 @@
 				275A5F152AAFB3B1009791E8 /* Memoized.hh in Headers */,
 				278F7F242AAA98FE005B12F2 /* Logging.hh in Headers */,
 				272A852A2A97B2090083D947 /* HTTPConnection.hh in Headers */,
+				277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */,
 				279D5D612A952986005C3066 /* Stream.hh in Headers */,
 				272A85262A96DCB30083D947 /* URL.hh in Headers */,
 				278F7E5A2AA93D5A005B12F2 /* HTTPHandler.hh in Headers */,
@@ -1585,6 +1596,7 @@
 				27ED1C732AABF47200ADC971 /* CoroLifecycle.cc in Sources */,
 				278F7F1C2AAA9212005B12F2 /* async.cpp in Sources */,
 				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
+				277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */,
 				27B330582AB278870066C8DA /* StringUtils.cc in Sources */,
 				27B330542AB2763B0066C8DA /* Message.cc in Sources */,
 				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,

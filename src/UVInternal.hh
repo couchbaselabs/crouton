@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "CoCondition.hh"
 #include "Coroutine.hh"
 #include "Internal.hh"
 #include "Bytes.hh"

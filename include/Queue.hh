@@ -5,6 +5,7 @@
 //
 
 #pragma once
+#include "CoCondition.hh"
 #include "Generator.hh"
 
 namespace crouton {

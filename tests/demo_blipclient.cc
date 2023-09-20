@@ -18,6 +18,7 @@
 
 #include "Crouton.hh"
 #include "BLIP.hh"
+#include "CoCondition.hh"
 #include <iostream>
 #include <vector>
 
@@ -55,7 +56,7 @@ static Future<int> run() {
         ws->setHeader("Sec-WebSocket-Protocol", protocol.c_str());
     AWAIT ws->connect();
 
-    CoCondition gotChanges;
+    Blocker<void> gotChanges;
 
     blip::BLIPConnection blip(std::move(ws), {
         {"changes", [&](blip::MessageInRef msg) {
@@ -66,7 +67,7 @@ static Future<int> run() {
                 response << "[]";
                 msg->respond(response);
             }
-            gotChanges.notifyAll();
+            gotChanges.notify();
         } }
     });
     blip.start();

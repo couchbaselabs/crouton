@@ -18,6 +18,7 @@
 
 #pragma once
 #include "BLIPIO.hh"
+#include "CoCondition.hh"
 #include "Message.hh"
 #include "Task.hh"
 #include "WebSocket.hh"
@@ -74,7 +75,7 @@ namespace crouton::blip {
         std::unique_ptr<ws::WebSocket>  _socket;
         HandlerMap                      _handlers;
         std::optional<Task>             _outputTask, _inputTask;
-        CoCondition                     _outputDone, _inputDone;
+        Blocker<void>                   _outputDone, _inputDone;
     };
 
 }
