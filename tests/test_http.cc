@@ -20,7 +20,7 @@
 #include "HTTPParser.hh"
 
 using namespace std;
-using namespace crouton;
+using namespace crouton::http;
 
 
 TEST_CASE("HTTP Request Parser", "[http]") {
@@ -28,10 +28,10 @@ TEST_CASE("HTTP Request Parser", "[http]") {
     "Foo: Bar\r\n"
     "Foo: Zab\r\n\r\n";
 
-    HTTPParser parser(HTTPParser::Request);
+    Parser parser(Parser::Request);
     CHECK(parser.parseData(req));
     CHECK(parser.latestBodyData() == "");
-    CHECK(parser.requestMethod == HTTPMethod::GET);
+    CHECK(parser.requestMethod == Method::GET);
     CHECK(parser.requestURI.value().path == "/foo/bar");
     CHECK(parser.requestURI.value().query == "x=y");
     CHECK(parser.headers.size() == 1);
@@ -47,10 +47,10 @@ TEST_CASE("HTTP Request Parser With Body", "[http]") {
     "Foo: Zab\r\n\r\n"
     "Here's the body";
 
-    HTTPParser parser(HTTPParser::Request);
+    Parser parser(Parser::Request);
     CHECK(parser.parseData(req));
     CHECK(parser.latestBodyData() == "Here's the body");
-    CHECK(parser.requestMethod == HTTPMethod::POST);
+    CHECK(parser.requestMethod == Method::POST);
     CHECK(parser.requestURI.value().path == "/foo/bar");
     CHECK(parser.requestURI.value().query == "x=y");
     CHECK(parser.headers.size() == 2);
@@ -72,10 +72,10 @@ TEST_CASE("HTTP Response Parser", "[http]") {
     "Foo: Zab\r\n\r\n"
     "Here's the body";
 
-    HTTPParser parser(HTTPParser::Response);
+    Parser parser(Parser::Response);
     CHECK(parser.parseData(req));
     CHECK(parser.latestBodyData() == "Here's the body");
-    CHECK(parser.status == HTTPStatus::OK);
+    CHECK(parser.status == Status::OK);
     CHECK(parser.statusMessage == "Copacetic");
     CHECK(parser.headers.size() == 2);
     CHECK(parser.headers["Foo"] == "Bar, Zab");
@@ -97,9 +97,9 @@ TEST_CASE("WebSocket Response Parser", "[http]") {
     "Sec-WebSocket-Protocol: chat\r\n\r\n"
     "...websocketdatafromhereon...";
 
-    HTTPParser parser(HTTPParser::Response);
+    Parser parser(Parser::Response);
     CHECK(parser.parseData(req));
-    CHECK(parser.status == HTTPStatus::SwitchingProtocols);
+    CHECK(parser.status == Status::SwitchingProtocols);
     CHECK(parser.statusMessage == "Switching Protocols");
     CHECK(parser.headers.size() == 4);
     CHECK(parser.headers.get("Sec-WebSocket-Accept") == "HSmrc0sMlYUkAGmm5OPpG2HaGWk=");
@@ -112,12 +112,12 @@ TEST_CASE("WebSocket Response Parser", "[http]") {
 
 TEST_CASE("HTTP GET", "[uv][http]") {
     auto test = []() -> Future<void> {
-        HTTPConnection connection("http://example.com/");
-        HTTPRequest req{.uri = "/foo"};
-        HTTPResponse resp = AWAIT connection.send(req);
+        Connection connection("http://example.com/");
+        Request req{.uri = "/foo"};
+        Response resp = AWAIT connection.send(req);
 
         cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
-        CHECK(resp.status() == HTTPStatus::NotFound);
+        CHECK(resp.status() == Status::NotFound);
         CHECK(resp.statusMessage() == "Not Found");
         cout << "Headers:\n";
         for (auto &h : resp.headers())
@@ -138,12 +138,12 @@ TEST_CASE("HTTP GET", "[uv][http]") {
 
 TEST_CASE("HTTPS GET", "[uv][http]") {
     auto test = []() -> Future<void> {
-        HTTPConnection connection("https://example.com/");
-        HTTPRequest req;
-        HTTPResponse resp = AWAIT connection.send(req);
+        Connection connection("https://example.com/");
+        Request req;
+        Response resp = AWAIT connection.send(req);
 
         cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
-        CHECK(resp.status() == HTTPStatus::OK);
+        CHECK(resp.status() == Status::OK);
         CHECK(resp.statusMessage() == "OK");
         cout << "Headers:\n";
         for (auto &h : resp.headers())
@@ -163,12 +163,12 @@ TEST_CASE("HTTPS GET", "[uv][http]") {
 
 TEST_CASE("HTTPs GET Streaming", "[uv][http]") {
     auto test = []() -> Future<void> {
-        HTTPConnection connection("https://mooseyard.com");
-        HTTPRequest req{.uri = "/Music/Mine/Easter.mp3"};
-        HTTPResponse resp = AWAIT connection.send(req);
+        Connection connection("https://mooseyard.com");
+        Request req{.uri = "/Music/Mine/Easter.mp3"};
+        Response resp = AWAIT connection.send(req);
 
         cout << "Status: " << int(resp.status()) << " " << resp.statusMessage() << endl;
-        CHECK(resp.status() == HTTPStatus::OK);
+        CHECK(resp.status() == Status::OK);
         cout << "BODY:\n";
         size_t len = 0;
         while(true) {

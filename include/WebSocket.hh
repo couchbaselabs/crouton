@@ -144,7 +144,7 @@ namespace crouton::ws {
         ASYNC<void> connect();
 
         /// The HTTP response headers.
-        HTTPHeaders const& responseHeaders()    {return _responseHeaders;}
+        http::Headers const& responseHeaders()    {return _responseHeaders;}
 
         void disconnect() override;
 
@@ -158,10 +158,10 @@ namespace crouton::ws {
 
         using ProtocolRef = std::unique_ptr<uWS::ClientProtocol>;
 
-        HTTPConnection  _connection;
-        HTTPRequest     _request;
+        http::Connection  _connection;
+        http::Request     _request;
         string          _accept;
-        HTTPHeaders     _responseHeaders;
+        http::Headers     _responseHeaders;
         ProtocolRef     _clientParser;
     };
 
@@ -174,14 +174,14 @@ namespace crouton::ws {
         ~ServerWebSocket();
 
         /// Returns true if this is a valid WebSocket client request.
-        static bool isRequestValid(HTTPHandler::Request const&);
+        static bool isRequestValid(http::Handler::Request const&);
 
         /// Handles an HTTP request.
         /// - If it's a valid WebSocket request, it sends the HTTP 101 response and returns true.
         ///   Caller should then call `receive` in a loop and handle messages until client closes.
         /// - If it's not valid, it returns a 400 response and returns false.
-        ASYNC<bool> connect(HTTPHandler::Request const&,
-                            HTTPHandler::Response&,
+        ASYNC<bool> connect(http::Handler::Request const&,
+                            http::Handler::Response&,
                             string_view subprotocol = "");
 
     private:

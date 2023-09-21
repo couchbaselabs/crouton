@@ -24,11 +24,11 @@
 #include "llhttp.h"
 #include <sstream>
 
-namespace crouton {
+namespace crouton::http {
     using namespace std;
 
 
-    std::ostream& operator<< (std::ostream& out, HTTPRequest const& req) {
+    std::ostream& operator<< (std::ostream& out, Request const& req) {
         out << llhttp_method_name(llhttp_method_t(req.method)) << ' ';
         if (!req.uri.starts_with('/'))
             out << '/';
@@ -39,7 +39,7 @@ namespace crouton {
     }
 
 
-    HTTPConnection::HTTPConnection(URL url)
+    Connection::Connection(URL url)
     :_url(std::move(url))
     {
         if (_url.hostname.empty())
@@ -64,16 +64,16 @@ namespace crouton {
     }
 
 
-    HTTPConnection::HTTPConnection(string_view url) :HTTPConnection(URL(url)) { }
+    Connection::Connection(string_view url) :Connection(URL(url)) { }
 
 
-    Future<HTTPResponse> HTTPConnection::send(HTTPRequest& req) {
+    Future<Response> Connection::send(Request& req) {
         //TODO: Support multiple requests over same socket using keepalive.
         if (_sent)
             Error::raise(CroutonError::LogicError, "HTTPConnection can only send one request, for now");
         _sent = true;
 
-        if (req.method == HTTPMethod::GET) {
+        if (req.method == Method::GET) {
             if (req.bodyStream || !req.body.empty())
                 Error::raise(CroutonError::InvalidArgument, "GET request may not have a body");
         } else {
@@ -99,7 +99,7 @@ namespace crouton {
             out << req;
             out << "Host: " << _url.hostname << "\r\n";
             out << "Connection: close\r\n";
-            if (req.method != HTTPMethod::GET && !req.bodyStream) {
+            if (req.method != Method::GET && !req.bodyStream) {
                 assert(!req.headers.contains("Content-Length"));
                 out << "Content-Length: " << req.body.size() << "\r\n";
             }
@@ -120,24 +120,24 @@ namespace crouton {
         }
 
         // Now create the response and read the headers:
-        HTTPResponse response(*this);
+        Response response(*this);
         AWAIT response.open();
         RETURN response;
     }
 
 
-    Future<HTTPResponse> HTTPConnection::send() {
-        HTTPRequest req;
+    Future<Response> Connection::send() {
+        Request req;
         return send(req);
     }
 
 
-    void HTTPConnection::close() {
+    void Connection::close() {
         ISocket::closeAndFree(std::move(_socket));
     }
 
 
-    Future<void> HTTPConnection::closeResponse() {
+    Future<void> Connection::closeResponse() {
         return _stream->close();
     }
 
@@ -146,31 +146,31 @@ namespace crouton {
 #pragma mark - HTTP RESPONSE:
 
 
-    HTTPResponse::HTTPResponse(HTTPConnection& connection)
+    Response::Response(Connection& connection)
     :_connection(&connection)
-    ,_parser(*connection._stream, HTTPParser::Response)
+    ,_parser(*connection._stream, Parser::Response)
     { }
 
-    HTTPResponse::HTTPResponse(HTTPResponse&& r) noexcept
+    Response::Response(Response&& r) noexcept
     :_connection(r._connection)
     ,_parser(std::move(r._parser))
     { }
 
-    HTTPResponse& HTTPResponse::operator=(HTTPResponse&& r) noexcept {
+    Response& Response::operator=(Response&& r) noexcept {
         _connection = r._connection;
         _parser = std::move(r._parser);
         return *this;
     }
 
-    Future<void> HTTPResponse::close() {
+    Future<void> Response::close() {
         return _connection->closeResponse();
     }
 
-    Future<void> HTTPResponse::closeWrite() {
+    Future<void> Response::closeWrite() {
         Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
-    Future<ConstBytes> HTTPResponse::readNoCopy(size_t maxLen) {
+    Future<ConstBytes> Response::readNoCopy(size_t maxLen) {
         if (_bufUsed >= _buf.size()) {
             _buf = AWAIT _parser.readBody();
             _bufUsed = 0;
@@ -180,7 +180,7 @@ namespace crouton {
         RETURN result;
     }
 
-    Future<ConstBytes> HTTPResponse::peekNoCopy() {
+    Future<ConstBytes> Response::peekNoCopy() {
         if (_bufUsed >= _buf.size()) {
             _buf = AWAIT _parser.readBody();
             _bufUsed = 0;
@@ -188,11 +188,11 @@ namespace crouton {
         RETURN ConstBytes(&_buf[_bufUsed], _buf.size() - _bufUsed);
     }
 
-    Future<void> HTTPResponse::write(ConstBytes) {
+    Future<void> Response::write(ConstBytes) {
         Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
-    IStream& HTTPResponse::upgradedStream() {
+    IStream& Response::upgradedStream() {
         assert(_parser.upgraded());
         return *_connection->_stream;
     }

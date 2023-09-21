@@ -25,23 +25,25 @@
 #include <iostream>
 
 namespace crouton {
+    string ErrorDomainInfo<http::Status>::description(errorcode_t code) {
+        return llhttp_status_name(llhttp_status_t(code));
+    }
+}
+
+namespace crouton::http {
     using namespace std;
 
 
-    string ErrorDomainInfo<HTTPStatus>::description(errorcode_t code) {
-        return llhttp_status_name(llhttp_status_t(code));
-    }
-
-    std::ostream& operator<< (std::ostream& out, HTTPStatus status) {
+    std::ostream& operator<< (std::ostream& out, Status status) {
         return out << llhttp_status_name(llhttp_status_t(status));
     }
 
-    std::ostream& operator<< (std::ostream& out, HTTPMethod method) {
+    std::ostream& operator<< (std::ostream& out, Method method) {
         return out << llhttp_method_name(llhttp_method_t(method));
     }
 
 
-    string HTTPHeaders::canonicalName(string name) {
+    string Headers::canonicalName(string name) {
         bool inWord = false;
         for (char &c : name) {
             c = inWord ? toLower(c) : toUpper(c);
@@ -50,9 +52,9 @@ namespace crouton {
         return name;
     }
 
-#define SELF ((HTTPParser*)parser->data)
+#define SELF ((Parser*)parser->data)
 
-    HTTPParser::HTTPParser(IStream* stream, Role role)
+    Parser::Parser(IStream* stream, Role role)
     :_stream(stream)
     ,_role(role)
     ,_settings(make_unique<llhttp_settings_s>())
@@ -93,17 +95,17 @@ namespace crouton {
     }
 
 
-    HTTPParser::HTTPParser(HTTPParser&&) noexcept = default;
-    HTTPParser& HTTPParser::operator=(HTTPParser&&) noexcept = default;
+    Parser::Parser(Parser&&) noexcept = default;
+    Parser& Parser::operator=(Parser&&) noexcept = default;
 
 
-    HTTPParser::~HTTPParser() {
+    Parser::~Parser() {
         if (_parser)
             llhttp_reset(_parser.get());
     }
 
 
-    Future<void> HTTPParser::readHeaders() {
+    Future<void> Parser::readHeaders() {
         assert(_stream);
         if (!_stream->isOpen())
             AWAIT _stream->open();
@@ -116,7 +118,7 @@ namespace crouton {
     }
 
 
-    Future<string> HTTPParser::readBody() {
+    Future<string> Parser::readBody() {
         assert(_stream);
         ConstBytes data;
         while (_body.empty() && !complete()) {
@@ -126,7 +128,7 @@ namespace crouton {
         RETURN std::move(_body);
     }
 
-    Future<string> HTTPParser::entireBody() {
+    Future<string> Parser::entireBody() {
         string entireBody;
         while (!complete()) {
             entireBody += (AWAIT readBody());
@@ -135,7 +137,7 @@ namespace crouton {
     }
 
 
-    bool HTTPParser::parseData(ConstBytes data) {
+    bool Parser::parseData(ConstBytes data) {
         _parser->data = this;
         llhttp_errno_t err;
         if (data.size() > 0)
@@ -158,16 +160,16 @@ namespace crouton {
 
         if (_headersComplete) {
             if (_role == Role::Request) {
-                this->requestMethod = HTTPMethod{llhttp_get_method(_parser.get())};
+                this->requestMethod = Method{llhttp_get_method(_parser.get())};
             } else {
-                this->status = HTTPStatus{llhttp_get_status_code(_parser.get())};
+                this->status = Status{llhttp_get_status_code(_parser.get())};
             }
         }
         return _headersComplete;
     }
 
 
-    int HTTPParser::addHeader(string value) {
+    int Parser::addHeader(string value) {
         assert(!_curHeaderName.empty());
         this->headers.add(_curHeaderName, value);
         _curHeaderName = "";
@@ -175,7 +177,7 @@ namespace crouton {
     }
 
 
-    int HTTPParser::gotBody(const char *data, size_t length) {
+    int Parser::gotBody(const char *data, size_t length) {
         _body.append(data, length);
         return 0;
     }

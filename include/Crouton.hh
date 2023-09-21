@@ -18,10 +18,14 @@
 
 #pragma once
 #include "Actor.hh"
+#include "Bytes.hh"
+#include "CoCondition.hh"
 #include "Error.hh"
 #include "EventLoop.hh"
 #include "Future.hh"
 #include "Generator.hh"
+#include "Logging.hh"
+#include "Result.hh"
 #include "Scheduler.hh"
 #include "Task.hh"
 

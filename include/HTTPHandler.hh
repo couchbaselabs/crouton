@@ -28,19 +28,19 @@
 #include <tuple>
 #include <vector>
 
-namespace crouton {
+namespace crouton::http {
 
     /** An HTTP server's connection to a client,
         from which it will read a request and send a response.
         @note  It does not support keep-alive, so it closes the socket after one response. */
-    class HTTPHandler {
+    class Handler {
     public:
 
         /// An HTTP request as sent to a HandlerFunction function.
         struct Request {
-            HTTPMethod  method = HTTPMethod::GET;   ///< The request method
+            Method  method = Method::GET;   ///< The request method
             URL         uri;                        ///< The request URI (path + query.)
-            HTTPHeaders headers;                    ///< The request headers.
+            Headers headers;                    ///< The request headers.
             string body;                       ///< The request body.
         };
 
@@ -48,7 +48,7 @@ namespace crouton {
         /// An HTTP response for a HandlerFunction function to define.
         class Response {
         public:
-            HTTPStatus  status = HTTPStatus::OK;    ///< Can change this before calling writeToBody
+            Status  status = Status::OK;    ///< Can change this before calling writeToBody
             string statusMessage;              ///< Can change this before calling writeToBody
 
             /// Adds a response header.
@@ -61,12 +61,12 @@ namespace crouton {
             ASYNC<IStream*> rawStream();
 
         private:
-            friend class HTTPHandler;
-            Response(HTTPHandler*, HTTPHeaders&&);
+            friend class Handler;
+            Response(Handler*, Headers&&);
             ASYNC<void> finishHeaders();
 
-            HTTPHandler* _handler;
-            HTTPHeaders  _headers;
+            Handler* _handler;
+            Headers  _headers;
             bool         _sentHeaders = false;
         };
 
@@ -76,29 +76,29 @@ namespace crouton {
 
         /// An HTTP method and path regex, with the function that should be called.
         struct Route {
-            HTTPMethod      method = HTTPMethod::GET;
+            Method      method = Method::GET;
             std::regex      pathPattern;
             HandlerFunction handler;
         };
 
         /// Constructs an HTTPHandler on a socket, given its routing table.
-        explicit HTTPHandler(std::shared_ptr<ISocket>, std::vector<Route> const&);
+        explicit Handler(std::shared_ptr<ISocket>, std::vector<Route> const&);
 
         /// Reads the request, calls the handler (or writes an error) and closes the socket.
         ASYNC<void> run();
 
     private:
-        ASYNC<void> handleRequest(HTTPHeaders responseHeaders,
+        ASYNC<void> handleRequest(Headers responseHeaders,
                                   HandlerFunction const& handler);
-        ASYNC<void> writeHeaders(HTTPStatus status,
+        ASYNC<void> writeHeaders(Status status,
                                  string_view statusMsg,
-                                 HTTPHeaders const& headers);
+                                 Headers const& headers);
         ASYNC<void> writeToBody(string);
         ASYNC<void> endBody();
 
         std::shared_ptr<ISocket> _socket;
         IStream&                 _stream;
-        HTTPParser               _parser;
+        Parser               _parser;
         std::vector<Route> const&_routes;
     };
 

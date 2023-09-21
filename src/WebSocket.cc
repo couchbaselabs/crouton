@@ -222,10 +222,10 @@ namespace crouton::ws {
 
 
     Future<void> ClientWebSocket::connect() {
-        HTTPResponse response = AWAIT _connection.send(_request);
+        http::Response response = AWAIT _connection.send(_request);
 
         _responseHeaders = response.headers();
-        if (auto status = response.status(); status != HTTPStatus::SwitchingProtocols)
+        if (auto status = response.status(); status != http::Status::SwitchingProtocols)
             Error::raise(status, "Server returned wrong status for WebSocket upgrade");
         if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
                 !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
@@ -269,8 +269,8 @@ namespace crouton::ws {
     ServerWebSocket::~ServerWebSocket() = default;
 
 
-    bool ServerWebSocket::isRequestValid(HTTPHandler::Request const& request) {
-        return request.method == HTTPMethod::GET
+    bool ServerWebSocket::isRequestValid(http::Handler::Request const& request) {
+        return request.method == http::Method::GET
         && request.headers.get("Sec-WebSocket-Key").size() == 24
         && equalIgnoringCase(request.headers.get("Connection"), "upgrade")
         && equalIgnoringCase(request.headers.get("Upgrade"), "WebSocket")
@@ -278,12 +278,12 @@ namespace crouton::ws {
     }
 
 
-    Future<bool> ServerWebSocket::connect(HTTPHandler::Request const& request,
-                                          HTTPHandler::Response& response,
+    Future<bool> ServerWebSocket::connect(http::Handler::Request const& request,
+                                          http::Handler::Response& response,
                                           string_view subprotocol)
     {
         if (!isRequestValid(request)) {
-            response.status = HTTPStatus::BadRequest;
+            response.status = http::Status::BadRequest;
             response.writeHeader("Sec-WebSocket-Version", "13");
             response.statusMessage = "Invalid WebSocket handshake";
             RETURN false;
@@ -292,7 +292,7 @@ namespace crouton::ws {
         string key = request.headers.get("Sec-WebSocket-Key");
         string accept = ClientWebSocket::generateAcceptResponse(key.c_str());
 
-        response.status = HTTPStatus::SwitchingProtocols;
+        response.status = http::Status::SwitchingProtocols;
         response.writeHeader("Connection",           "Upgrade");
         response.writeHeader("Upgrade",              "WebSocket");
         response.writeHeader("Sec-WebSocket-Accept", accept);

@@ -25,33 +25,33 @@
 #include <memory>
 #include <utility>
 
-namespace crouton {
-    struct HTTPRequest;
-    class HTTPResponse;
+namespace crouton::http {
+    struct Request;
+    class Response;
 
     /** An HTTP client connection to a server, from which multiple requests can be made.
         This object must remain valid as long as any HTTPRequest created from it exists. */
-    class HTTPConnection {
+    class Connection {
     public:
         /// Constructs a client that connects to the given host and port with HTTP or HTTPS.
         /// The URL's path, if any, becomes a prefix to that of all HTTPRequests.
-        explicit HTTPConnection(URL);
-        explicit HTTPConnection(string_view urlStr);
+        explicit Connection(URL);
+        explicit Connection(string_view urlStr);
 
-        ~HTTPConnection()       {close();}
+        ~Connection()       {close();}
 
         void close();
 
         /// Sends a request, returning the response.
         /// @note Currently, an HTTPConnection can only send a single request.
-        ASYNC<HTTPResponse> send(HTTPRequest&);
+        ASYNC<Response> send(Request&);
 
         /// Sends a default GET request to the URI given by the constructor.
         /// @note Currently, an HTTPConnection can only send a single request.
-        ASYNC<HTTPResponse> send();
+        ASYNC<Response> send();
 
     private:
-        friend class HTTPResponse;
+        friend class Response;
         ASYNC<void> closeResponse();
 
         URL                      _url;
@@ -63,37 +63,37 @@ namespace crouton {
 
 
     /** An HTTP request to send on an HTTPConnection. */
-    struct HTTPRequest {
-        HTTPMethod  method = HTTPMethod::GET;   ///< The request method
+    struct Request {
+        Method  method = Method::GET;   ///< The request method
         string      uri;                        ///< The request URI (path + query.)
-        HTTPHeaders headers;                    ///< The request headers.
+        Headers headers;                    ///< The request headers.
         string      body;                       ///< The request body.
         std::shared_ptr<IStream> bodyStream;    ///< Stream to read body from (sent after `body`)
 
         /// Writes the request line & headers for transmission.
         /// Doesn't include the trailing CRLF after the headers, so more can be appended.
-        friend std::ostream& operator<< (std::ostream&, HTTPRequest const&);
+        friend std::ostream& operator<< (std::ostream&, Request const&);
     };
 
 
     /** The response received from an outgoing HTTPRequest. */
-    class HTTPResponse : public IStream {
+    class Response : public IStream {
     public:
-        explicit HTTPResponse(HTTPConnection&);
-        HTTPResponse(HTTPResponse&&) noexcept;
-        HTTPResponse& operator=(HTTPResponse&&) noexcept;
+        explicit Response(Connection&);
+        Response(Response&&) noexcept;
+        Response& operator=(Response&&) noexcept;
 
         /// The HTTP status code.
-        HTTPStatus status() const               {return _parser.status;}
+        Status status() const               {return _parser.status;}
 
         /// The HTTP status message.
         string const& statusMessage() const {return _parser.statusMessage;}
 
         /// The response headers.
-        HTTPHeaders const& headers() const      {return _parser.headers;}
+        Headers const& headers() const      {return _parser.headers;}
 
         ASYNC<void> open() override             {return _parser.readHeaders();}
-        bool isOpen() const override            {return _parser.status != HTTPStatus::Unknown;}
+        bool isOpen() const override            {return _parser.status != Status::Unknown;}
         ASYNC<void> close() override;
         ASYNC<void> closeWrite() override;
 
@@ -107,8 +107,8 @@ namespace crouton {
         IStream& upgradedStream();
 
     private:
-        HTTPConnection* _connection;
-        HTTPParser      _parser;
+        Connection* _connection;
+        Parser      _parser;
         string          _buf;
         size_t          _bufUsed = 0;
     };

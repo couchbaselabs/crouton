@@ -52,11 +52,11 @@ TEST_CASE("Error", "[error]") {
     CHECK(err.brief() == "Crouton error 3");
     CHECK(err.description() == "internal error (logic error)");
     CHECK(err.is<CroutonError>());
-    CHECK(!err.is<HTTPStatus>());
+    CHECK(!err.is<http::Status>());
     CHECK(err == CroutonError::LogicError);
     CHECK(err.as<CroutonError>() == CroutonError::LogicError);
-    CHECK(err.as<HTTPStatus>() == HTTPStatus{0});
-    CHECK(err != HTTPStatus::OK);
+    CHECK(err.as<http::Status>() == http::Status{0});
+    CHECK(err != http::Status::OK);
 
     Exception x(err);
     CHECK(x.error() == err);
@@ -67,7 +67,7 @@ TEST_CASE("Error", "[error]") {
 TEST_CASE("Error Types", "[error]") {
     // Make sure multiple error domains can be registered and aren't confused with each other.
     Error croutonErr(CroutonError::LogicError);
-    Error httpError(HTTPStatus::NotFound);
+    Error httpError(http::Status::NotFound);
     Error wsError(ws::CloseCode::ProtocolError);
     CHECK(croutonErr == croutonErr);
     CHECK(httpError != croutonErr);
