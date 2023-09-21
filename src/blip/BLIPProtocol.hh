@@ -12,9 +12,9 @@
 
 #pragma once
 #include "Bytes.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include <cstdint>
-#include <stdexcept>
 
 namespace crouton::blip {
 
@@ -51,6 +51,14 @@ namespace crouton::blip {
     constexpr size_t kIncomingAckThreshold = 50000;
 
 
+    enum class BLIPError : errorcode_t {
+        InvalidFrame = 1,
+        PropertiesTooLarge,
+        CompressionError,
+        BadChecksum,
+    };
+
+
     extern std::shared_ptr<spdlog::logger> LBLIP;
 
 
@@ -59,34 +67,20 @@ namespace crouton::blip {
 
     constexpr size_t kMaxVarintSize = 10;
 
-    inline uint64_t readUVarint(ConstBytes& bytes) {
-        uint64_t n = 0;
-        int shift = 0;
-        auto end = std::min(bytes.begin() + 10, bytes.end());
-        for (auto i = bytes.begin(); i != end; ++i) {
-            if (auto b = uint8_t(*i); b & 0x80) {
-                n |= uint64_t(b & 0x7F) << shift;
-                shift += 7;
-            } else {
-                bytes = ConstBytes(i + 1, bytes.end());
-                return n | (uint64_t(b) << shift);
-            }
-        }
-        throw std::runtime_error("invalid varint");
-    }
-
-    inline size_t putUVarint(uint64_t n, void* dst) {
-        uint8_t* i = (uint8_t*)dst;
-        while (n >= 0x80) {
-            *i++ = (n & 0xFF) | 0x80;
-            n >>= 7;
-        }
-        *i++ = (uint8_t)n;
-        return i - (uint8_t*)dst;
-    }
+    uint64_t readUVarint(ConstBytes& bytes);
+    size_t putUVarint(uint64_t n, void* dst);
 
     inline void writeUVarint(uint64_t n, MutableBytes& out) {
         out = out.without_first(putUVarint(n, out.data()));
     }
+
+}
+
+namespace crouton {
+
+    template <> struct ErrorDomainInfo<blip::BLIPError> {
+        static constexpr string_view name = "BLIP";
+        static string description(errorcode_t);
+    };
 
 }

@@ -59,6 +59,7 @@ TEST_CASE("BLIP Send Message", "[blip]") {
         b.stop();
         frame = AWAIT b.output();
         CHECK(frame == nullopt);
+        RETURN noerror;
     });
 }
 
@@ -82,9 +83,9 @@ TEST_CASE("BLIP Receive Message", "[blip]") {
 }
 
 
-[[nodiscard]] static Future<void> testSendReceive(initializer_list<MessageBuilder::property> properties,
-                                                  string body,
-                                                  bool compressed)
+staticASYNC<void> testSendReceive(initializer_list<MessageBuilder::property> properties,
+                                  string body,
+                                  bool compressed)
 {
     BLIPIO sender;
     MessageBuilder msg{properties};
@@ -124,6 +125,7 @@ TEST_CASE("BLIP Receive Message", "[blip]") {
     for (auto kv : properties)
         CHECK(rcvd->property(kv.first) == kv.second);
     CHECK(rcvd->body() == body);
+    RETURN noerror;
 }
 
 
@@ -132,5 +134,6 @@ TEST_CASE("BLIP Send And Receive Message", "[blip]") {
         string body = AWAIT readFile("README.md");
         AWAIT testSendReceive({}, body, false);
         AWAIT testSendReceive({}, body, true);
+        RETURN noerror;
     });
 }

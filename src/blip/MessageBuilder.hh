@@ -57,7 +57,7 @@ namespace crouton::blip {
         propertySetter operator[](string_view name) { return {*this, name}; }
 
         /** Makes a response an error. */
-        void makeError(Error);
+        void makeError(Message::Error);
 
         /** Adds data to the body of the message. No more properties can be added afterwards. */
         MessageBuilder& write(ConstBytes);

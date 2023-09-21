@@ -129,6 +129,7 @@ TEST_CASE("HTTP GET", "[uv][http]") {
         cout << body << endl;
         CHECK(body.starts_with("<!doctype html>"));
         CHECK(body.size() >= 200);
+        RETURN noerror;
     };
     waitFor(test());
     REQUIRE(Scheduler::current().assertEmpty());
@@ -153,6 +154,7 @@ TEST_CASE("HTTPS GET", "[uv][http]") {
         cout << body << endl;
         CHECK(body.starts_with("<!doctype html>"));
         CHECK(body.size() >= 1000);
+        RETURN noerror;
     };
     waitFor(test());
     REQUIRE(Scheduler::current().assertEmpty());
@@ -179,6 +181,7 @@ TEST_CASE("HTTPs GET Streaming", "[uv][http]") {
         }
         cout << "Total bytes read: " << len << endl;
         CHECK(len == 4086469);
+        RETURN noerror;
     };
     waitFor(test());
     REQUIRE(Scheduler::current().assertEmpty());

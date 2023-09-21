@@ -52,7 +52,7 @@ namespace crouton {
                 if (regex_match(path, route.pathPattern)) {
                     // Call the handler:
                     AWAIT handleRequest(std::move(responseHeaders), route.handler);
-                    RETURN;
+                    RETURN noerror;
                 }
             }
         }
@@ -60,6 +60,7 @@ namespace crouton {
         // No matching route; return an error:
         AWAIT writeHeaders(status, "", responseHeaders);
         AWAIT endBody();
+        RETURN noerror;
     }
 
 
@@ -78,7 +79,7 @@ namespace crouton {
         AWAIT handled;
         AWAIT response.finishHeaders();
         AWAIT endBody();
-        RETURN;
+        RETURN noerror;
     }
 
 
@@ -123,6 +124,7 @@ namespace crouton {
     Future<void> HTTPHandler::Response::writeToBody(string str) {
         AWAIT finishHeaders();
         AWAIT _handler->writeToBody(std::move(str));
+        RETURN noerror;
     }
 
     Future<void> HTTPHandler::Response::finishHeaders() {
@@ -131,6 +133,7 @@ namespace crouton {
             AWAIT _handler->writeHeaders(status, statusMessage, _headers);
         }
         _sentHeaders = true;
+        RETURN noerror;
     }
 
     Future<IStream*> HTTPHandler::Response::rawStream() {

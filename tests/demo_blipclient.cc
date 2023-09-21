@@ -18,7 +18,6 @@
 
 #include "Crouton.hh"
 #include "BLIP.hh"
-#include "CoCondition.hh"
 #include <iostream>
 #include <vector>
 
@@ -26,7 +25,7 @@ using namespace std;
 using namespace crouton;
 
 
-static Future<int> run() {
+staticASYNC<int> run() {
     // Read flags:
     auto args = MainArgs();
     string protocol;

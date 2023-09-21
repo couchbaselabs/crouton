@@ -39,7 +39,7 @@ namespace crouton::ws {
     ///
     /// Codes marked `[do not send]` in the comments are intended to be returned by a client
     /// API and are never actually sent in a message.
-    enum class CloseCode : uint16_t {
+    enum class CloseCode : errorcode_t {
         Normal           = 1000, // Normal close
         GoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
         ProtocolError    = 1002, // Protocol violation: invalid framing data
@@ -117,7 +117,7 @@ namespace crouton::ws {
         virtual void consume(ConstBytes) = 0;
 
         bool handleFragment(std::byte*, size_t, size_t,uint8_t, bool);
-        void protocolError();
+        void protocolError(string_view logMessage);
         ASYNC<void> handleCloseMessage(Message const& msg);
 
         IStream*                _stream = nullptr;
@@ -189,5 +189,12 @@ namespace crouton::ws {
         void consume(ConstBytes) override;
 
         std::unique_ptr<uWS::ServerProtocol> _serverParser;
+    };
+}
+
+namespace crouton {
+    template <> struct ErrorDomainInfo<ws::CloseCode> {
+        static constexpr string_view name = "WebSocket";
+        static string description(errorcode_t);
     };
 }

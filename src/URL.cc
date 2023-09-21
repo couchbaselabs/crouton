@@ -17,9 +17,9 @@
 //
 
 #include "URL.hh"
+#include "Error.hh"
 #include "StringUtils.hh"
 #include <cstring>
-#include <stdexcept>
 
 namespace crouton {
     using namespace std;
@@ -54,7 +54,7 @@ namespace crouton {
 
     void URLRef::parse(const char* str) {
         if (!tryParse(str))
-            throw invalid_argument("Invalid URL");
+            Error::raise(CroutonError::InvalidURL);
     }
 
 

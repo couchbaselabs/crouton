@@ -11,12 +11,27 @@
 //
 
 #include "BLIPIO.hh"
+#include "Error.hh"
+#include "Internal.hh"
 #include "MessageOut.hh"
 #include "Logging.hh"
 #include "StringUtils.hh"
 #include "Task.hh"
 #include <ranges>
 #include <spdlog/fmt/fmt.h>
+
+namespace crouton {
+    string ErrorDomainInfo<blip::BLIPError>::description(errorcode_t code) {
+        using enum blip::BLIPError;
+        static constexpr NameEntry names[] = {
+            {int(InvalidFrame),         "invalid BLIP frame"},
+            {int(PropertiesTooLarge),   "message properties too large"},
+            {int(CompressionError),     "failed to compress message"},
+            {int(BadChecksum),          "invalid checksum in message"},
+        };
+        return NameEntry::lookup(code, names);
+    }
+}
 
 namespace crouton::blip {
     using namespace std;
@@ -35,6 +50,33 @@ namespace crouton::blip {
 
     /// Logger
     shared_ptr<spdlog::logger> LBLIP = MakeLogger("BLIP");
+
+
+    uint64_t readUVarint(ConstBytes& bytes) {
+        uint64_t n = 0;
+        int shift = 0;
+        auto end = std::min(bytes.begin() + 10, bytes.end());
+        for (auto i = bytes.begin(); i != end; ++i) {
+            if (auto b = uint8_t(*i); b & 0x80) {
+                n |= uint64_t(b & 0x7F) << shift;
+                shift += 7;
+            } else {
+                bytes = ConstBytes(i + 1, bytes.end());
+                return n | (uint64_t(b) << shift);
+            }
+        }
+        Error(BLIPError::InvalidFrame).raise("invalid varint");
+    }
+
+    size_t putUVarint(uint64_t n, void* dst) {
+        uint8_t* i = (uint8_t*)dst;
+        while (n >= 0x80) {
+            *i++ = (n & 0xFF) | 0x80;
+            n >>= 7;
+        }
+        *i++ = (uint8_t)n;
+        return i - (uint8_t*)dst;
+    }
 
 
 #pragma mark - OUTBOX:
@@ -292,7 +334,7 @@ namespace crouton::blip {
         MessageNo msgNo = MessageNo(readUVarint(frame));
         uint64_t f = readUVarint(frame);
         if (f > 0x80)
-            throw runtime_error("unknown frame flags");
+            Error::raise(BLIPError::InvalidFrame, "unknown frame flags");
         FrameFlags flags = FrameFlags(f);
 
         LBLIP->debug("Received frame: {} {} {}{}{}{}, length {}",
@@ -359,8 +401,9 @@ namespace crouton::blip {
                 LBLIP->debug("REQ {} has more frames coming", msgNo);
             }
         } else {
-            throw runtime_error(fmt::format("BLIP protocol error: Bad incoming REQ {} ({})", msgNo,
-                                       (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
+            string err = fmt::format("Bad incoming REQ {} ({})", msgNo,
+                                     (msgNo <= _numRequestsReceived ? "already finished" : "too high"));
+            Error::raise(BLIPError::InvalidFrame, err);
         }
         return msg;
     }
@@ -377,8 +420,9 @@ namespace crouton::blip {
                 _pendingResponses.erase(i);
             }
         } else {
-            throw runtime_error(fmt::format("BLIP protocol error: Bad incoming RES {} ({})", msgNo,
-                                       (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
+            string err = fmt::format("Bad incoming RES {} ({})", msgNo,
+                                     (msgNo <= _lastMessageNo ? "no request waiting" : "too high"));
+            Error::raise(BLIPError::InvalidFrame, err);
         }
         return msg;
     }

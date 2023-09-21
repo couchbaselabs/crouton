@@ -28,6 +28,10 @@ namespace crouton {
     using namespace std;
 
 
+    string ErrorDomainInfo<HTTPStatus>::description(errorcode_t code) {
+        return llhttp_status_name(llhttp_status_t(code));
+    }
+
     std::ostream& operator<< (std::ostream& out, HTTPStatus status) {
         return out << llhttp_status_name(llhttp_status_t(status));
     }
@@ -35,12 +39,6 @@ namespace crouton {
     std::ostream& operator<< (std::ostream& out, HTTPMethod method) {
         return out << llhttp_method_name(llhttp_method_t(method));
     }
-
-
-    HTTPParser::Error::Error(int code, const char* reason)
-    :runtime_error(reason)
-    ,code(code)
-    { }
 
 
     string HTTPHeaders::canonicalName(string name) {
@@ -95,7 +93,8 @@ namespace crouton {
     }
 
 
-    HTTPParser::HTTPParser(HTTPParser&&) = default;
+    HTTPParser::HTTPParser(HTTPParser&&) noexcept = default;
+    HTTPParser& HTTPParser::operator=(HTTPParser&&) noexcept = default;
 
 
     HTTPParser::~HTTPParser() {
@@ -113,6 +112,7 @@ namespace crouton {
         do {
             data = AWAIT _stream->readNoCopy();
         } while (!parseData(data));
+        RETURN noerror;
     }
 
 
@@ -152,7 +152,7 @@ namespace crouton {
                 assert((byte*)end >= data.data() && (byte*)end <= data.data() + data.size());
                 _body = string(end, (char*)data.data() + data.size() - end);
             } else {
-                throw Error(err, llhttp_get_error_reason(_parser.get()));
+                Error::raise(CroutonError::HTTPParseError, llhttp_get_error_reason(_parser.get()));
             }
         }
 

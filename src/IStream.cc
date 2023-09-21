@@ -117,7 +117,7 @@ namespace crouton {
     Future<void> IStream::write(string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
         AWAIT write(ConstBytes(str));
-        RETURN;
+        RETURN noerror;
     }
 
 
@@ -125,6 +125,7 @@ namespace crouton {
         for (size_t i = 0; i < nBuffers; ++i) {
             AWAIT write(buffers[i]);
         }
+        RETURN noerror;
     }
 
 

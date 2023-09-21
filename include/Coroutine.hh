@@ -18,7 +18,6 @@
 
 #pragma once
 #include "CoroLifecycle.hh"
-#include <stdexcept>
 #include <optional>
 #include <vector>
 

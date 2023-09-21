@@ -33,6 +33,63 @@ TEST_CASE("Randomize") {
 }
 
 
+TEST_CASE("Empty Error", "[error]") {
+    Error err;
+    CHECK(!err);
+    CHECK(err.code() == 0);
+    CHECK(err.domain() == "");
+    CHECK(err.brief() == "(no error)");
+    CHECK(err.description() == "(no error)");
+    err.raise_if("shouldn't raise");
+}
+
+
+TEST_CASE("Error", "[error]") {
+    Error err(CroutonError::LogicError);
+    CHECK(err);
+    CHECK(err.code() == errorcode_t(CroutonError::LogicError));
+    CHECK(err.domain() == "Crouton");
+    CHECK(err.brief() == "Crouton error 3");
+    CHECK(err.description() == "internal error (logic error)");
+    CHECK(err.is<CroutonError>());
+    CHECK(!err.is<HTTPStatus>());
+    CHECK(err == CroutonError::LogicError);
+    CHECK(err.as<CroutonError>() == CroutonError::LogicError);
+    CHECK(err.as<HTTPStatus>() == HTTPStatus{0});
+    CHECK(err != HTTPStatus::OK);
+
+    Exception x(err);
+    CHECK(x.error() == err);
+    CHECK(x.what() == "internal error (logic error)"s);
+}
+
+
+TEST_CASE("Error Types", "[error]") {
+    // Make sure multiple error domains can be registered and aren't confused with each other.
+    Error croutonErr(CroutonError::LogicError);
+    Error httpError(HTTPStatus::NotFound);
+    Error wsError(ws::CloseCode::ProtocolError);
+    CHECK(croutonErr == croutonErr);
+    CHECK(httpError != croutonErr);
+    CHECK(wsError != httpError);
+    CHECK(croutonErr.domain() == "Crouton");
+    CHECK(httpError.domain() == "HTTP");
+    CHECK(httpError.brief() == "HTTP error 404");
+    CHECK(wsError.domain() == "WebSocket");
+    CHECK(wsError.brief() == "WebSocket error 1002");
+}
+
+
+TEST_CASE("Exception To Error", "[error]") {
+    Error xerr(std::runtime_error("oops"));
+    CHECK(xerr);
+    CHECK(xerr.domain() == "exception");
+    CHECK(xerr.code() == errorcode_t(CppError::runtime_error));
+    CHECK(xerr == CppError::runtime_error);
+    CHECK(xerr.as<CppError>() == CppError::runtime_error);
+}
+
+
 void RunCoroutine(Future<void> (*test)()) {
     Future<void> f = test();
     Scheduler::current().runUntil([&]{return f.hasResult();});
@@ -96,7 +153,7 @@ TEST_CASE("Generator coroutine", "[coroutines]") {
 
 
 #if 0
-static Future<void> waitFor(chrono::milliseconds ms) {
+staticASYNC<void> waitFor(chrono::milliseconds ms) {
     FutureProvider<void> f;
     Timer::after(ms.count() / 1000.0, [f] {
         cerr << "\tTimer fired\n";
@@ -129,7 +186,7 @@ TEST_CASE("Waiter coroutine") {
 }
 
 
-static Future<int> futuristicSquare(int n) {
+staticASYNC<int> futuristicSquare(int n) {
     AWAIT waitFor(500ms);
     RETURN n * n;
 }
@@ -175,7 +232,7 @@ TEST_CASE("Actor") {
         Future<int64_t> sum20 = actor->fibonacciSum(20);
         cerr << "Sum10 is " << (AWAIT sum10) << endl;
         cerr << "Sum20 is " << (AWAIT sum20) << endl;
-        RETURN;
+        RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }

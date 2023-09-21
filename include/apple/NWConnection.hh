@@ -19,10 +19,10 @@
 #pragma once
 #ifdef __APPLE__
 
+#include "Error.hh"
 #include "ISocket.hh"
 #include "IStream.hh"
 #include <optional>
-#include <stdexcept>
 
 struct dispatch_data_s;
 struct dispatch_queue_s;
@@ -31,10 +31,10 @@ struct nw_error;
 
 namespace crouton::apple {
 
-    class NWError : public std::runtime_error {
-    public:
-        explicit NWError(nw_error*);
-    };
+    // The three error domains that Network.framework's NWError can represent:
+    enum class POSIXError : errorcode_t { };
+    enum class DNSError : errorcode_t { };
+    enum class TLSError : errorcode_t { };
 
 
     /** A TCP client connection using Apple's Network.framework.
@@ -48,7 +48,7 @@ namespace crouton::apple {
         void useTLS(bool tls)                               {_useTLS = tls;}
 
         /// Opens the socket to the bound address. Resolves once opened.
-        [[nodiscard]] virtual Future<void> open() override;
+        virtualASYNC<void> open() override;
 
         bool isOpen() const override                        {return _isOpen;}
 
@@ -58,13 +58,13 @@ namespace crouton::apple {
 
         IStream& stream() override               {return *this;}
 
-        [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
-        [[nodiscard]] virtual Future<ConstBytes> peekNoCopy() override;
+        virtualASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
+        virtualASYNC<ConstBytes> peekNoCopy() override;
         ASYNC<void> write(ConstBytes b) override {return _writeOrShutdown(b, false);}
         using IStream::write;
         
     private:
-        [[nodiscard]] virtual Future<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
+        virtualASYNC<ConstBytes> _readNoCopy(size_t maxLen, bool peek);
         ASYNC<void> _writeOrShutdown(ConstBytes, bool shutdown);
         void _close();
         void clearReadBuf();
@@ -79,7 +79,21 @@ namespace crouton::apple {
         bool                _isOpen = false;
         bool                _eof = false;
     };
+}
 
+namespace crouton {
+    template <> struct ErrorDomainInfo<apple::POSIXError> {
+        static constexpr string_view name = "POSIX";
+        static string description(errorcode_t);
+    };
+    template <> struct ErrorDomainInfo<apple::DNSError> {
+        static constexpr string_view name = "DNS";
+        static string description(errorcode_t);
+    };
+    template <> struct ErrorDomainInfo<apple::TLSError> {
+        static constexpr string_view name = "Apple TLS";
+        static string description(errorcode_t);
+    };
 }
 
 #endif // __APPLE__

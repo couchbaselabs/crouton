@@ -26,6 +26,27 @@
 
 #include <iomanip>
 
+namespace crouton {
+    string ErrorDomainInfo<ws::CloseCode>::description(errorcode_t code) {
+        static constexpr NameEntry names[] = {
+            {1001, "Server Going Away"},
+            {1002, "Protocol Error"},
+            {1003, "Invalid Data"},
+            {1005, "Closed With No Reason"},
+            {1006, "Unexpected Disconnect"},
+            {1007, "Bad Message Format"},
+            {1008, "Policy Error"},
+            {1009, "Message Too Big"},
+            {1010, "Missing Extension"},
+            {1011, "Can't Fulfill a Request"},
+            {1015, "TLS Error"},
+            {4001, "Transient Error"},
+            {4002, "Permanent Error"},
+        };
+        return NameEntry::lookup(code, names);
+    }
+}
+
 namespace crouton::ws {
     using namespace std;
 
@@ -43,6 +64,7 @@ namespace crouton::ws {
             AWAIT _stream->close();
             _stream = nullptr;
         }
+        RETURN noerror;
     }
 
 
@@ -58,7 +80,7 @@ namespace crouton::ws {
         // Note: This method is not a coroutine, and it passes the message to _stream->write
         // as a `string`, so the caller does not need to keep the data valid.
         if (_closeSent || !_stream)
-            throw std::logic_error("WebSocket is already closing");
+            Error::raise(CroutonError::LogicError, "WebSocket is already closing");
         if (type == Message::Close)
             _closeSent = true;
         string frame(message.size() + 10, 0);
@@ -70,7 +92,7 @@ namespace crouton::ws {
 
     Future<Message> WebSocket::receive() {
         if (_closeReceived || !_stream)
-            RETURN runtime_error("WebSocket is closed");
+            RETURN Error(CroutonError::InvalidState, "WebSocket is closed");
         while (true) {
             while (_incoming.empty()) {
                 ConstBytes data = AWAIT _stream->readNoCopy(100000);
@@ -133,8 +155,8 @@ namespace crouton::ws {
 
 
     // Called from inside _parser->consume()
-    void WebSocket::protocolError() {
-        throw runtime_error("WebSocket protocol error");
+    void WebSocket::protocolError(string_view message) {
+        Error::raise(CloseCode::ProtocolError, message);
     }
 
 
@@ -204,14 +226,15 @@ namespace crouton::ws {
 
         _responseHeaders = response.headers();
         if (auto status = response.status(); status != HTTPStatus::SwitchingProtocols)
-            throw runtime_error("Server returned wrong status " + to_string(int(status)));
+            Error::raise(status, "Server returned wrong status for WebSocket upgrade");
         if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
-            !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
-            throw runtime_error("Server did not upgrade to WebSocket protocol");
+                !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
+            protocolError("Server did not upgrade to WebSocket protocol");
         if (_accept != _responseHeaders.get("Sec-WebSocket-Accept"))
-            throw runtime_error("Server returned wrong Sec-WebSocket-Accept value");
+           protocolError("Server returned wrong Sec-WebSocket-Accept value");
 
         _stream = &response.upgradedStream();
+        RETURN noerror;
     }
 
 
@@ -305,7 +328,7 @@ namespace crouton::ws {
     ,type(Close)
     {
         size_t sz = uWS::ClientProtocol::formatClosePayload((byte*)data(),
-                                                            int16_t(code),
+                                                            uint16_t(code),
                                                             message.data(), message.size());
         assert(sz <= size());
         resize(sz);
@@ -313,14 +336,14 @@ namespace crouton::ws {
 
     CloseCode Message::closeCode() const {
         if (type != Close)
-            throw std::invalid_argument("Not a CLOSE message");
+            Error::raise(CroutonError::InvalidArgument, "Not a CLOSE message");
         auto payload = uWS::ClientProtocol::parseClosePayload((byte*)data(), size());
-        return payload.code ? CloseCode{payload.code} : CloseCode::NoCode;
+        return payload.code ? CloseCode(payload.code) : CloseCode::NoCode;
     }
 
     string_view Message::closeMessage() const {
         if (type != Close)
-            throw std::invalid_argument("Not a CLOSE message");
+            Error::raise(CroutonError::InvalidArgument, "Not a CLOSE message");
         auto payload = uWS::ClientProtocol::parseClosePayload((byte*)data(), size());
         return {(char*)payload.message, payload.length};
     }
@@ -410,7 +433,7 @@ namespace uWS {
 
     template <const bool isServer>
     void WebSocketProtocol<isServer>::forceClose(void* user) {
-        USER_SOCK->protocolError();
+        USER_SOCK->protocolError("");
     }
 
     template <const bool isServer>

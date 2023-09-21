@@ -29,7 +29,6 @@
 #include <concepts>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 
 #include <uv.h>
 // On Windows <uv.h> drags in <windows.h>, which defines `min` and `max` as macros,
@@ -43,12 +42,12 @@ namespace crouton {
 
     /// Checks a libuv function result and throws a UVError exception if it's negative.
     static inline void check(std::signed_integral auto status, const char* what) {
-        if (status < 0) {
-            UVError x(what, int(status));
-            spdlog::info("** libuv error: {}", x.what());
-            throw x;
-        }
+        if (status < 0)
+            Error::raise(UVError(status), what);
     }
+
+    #define CHECK_RETURN(STATUS, WHAT) \
+        if (auto _status_ = (STATUS); _status_ >= 0) {} else co_return Error(UVError(_status_), (WHAT))
 
 
     /// Convenience function that returns `Scheduler::current().uvLoop()`.

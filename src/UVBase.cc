@@ -26,29 +26,18 @@
 namespace crouton {
     using namespace std;
 
+    string ErrorDomainInfo<UVError>::description(errorcode_t code) {
+        switch (code) {
+            case UV__EAI_NONAME:    return "unknown host";
+            default:                return uv_strerror(code);
+        }
+    };
+
+    
     EventLoop* Scheduler::newEventLoop() {
         auto loop = new UVEventLoop();
         loop->ensureWaits();
         return loop;
-    }
-
-    UVError::UVError(const char* what, int status)
-    :std::runtime_error(what)
-    ,err(status)
-    {
-        SPDLOG_WARN("UVError({}, \"{}\")", uv_strerror(status), what);
-    }
-
-    const char* UVError::what() const noexcept {
-        if (_message.empty()) {
-            const char* errStr;
-            switch (err) {
-                case UV__EAI_NONAME:    errStr = "unknown host";  break;
-                default:                errStr = uv_strerror(err);
-            }
-            _message = "Error "s + runtime_error::what() + ": " + errStr;
-        }
-        return _message.c_str();
     }
 
     
@@ -198,7 +187,7 @@ namespace crouton {
         }, [](uv_work_t *req, int status) noexcept {
             auto work = static_cast<QueuedWork*>(req);
             if (work->exception)
-                work->provider->setResult(work->exception);
+                work->provider->setResult(Error(work->exception));
             else
                 work->provider->setResult();
             delete work;

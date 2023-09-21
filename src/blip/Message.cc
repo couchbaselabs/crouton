@@ -161,7 +161,7 @@ namespace crouton::blip {
             ConstBytes dst = codec.write(frame, out, mode);
             _propertiesSize = readUVarint(dst);
             if (_propertiesSize > kMaxPropertiesSize)
-                throw std::runtime_error("properties excessively large");
+                crouton::Error::raise(BLIPError::PropertiesTooLarge);
             _properties.reserve(_propertiesSize);
             // Copy any properties into _properties, and any body after that into _body:
             _properties.append(string_view(dst.read(_propertiesSize)));
@@ -178,7 +178,7 @@ namespace crouton::blip {
                 // Finished the properties:
                 state = kBeginning;
                 if (_propertiesSize > 0 && _properties[_propertiesSize - 1] != 0)
-                    throw std::runtime_error("message properties not null-terminated");
+                    crouton::Error::raise(BLIPError::InvalidFrame, "message properties not null-terminated");
             }
         } else {
             state = kBeginning;
@@ -197,7 +197,7 @@ namespace crouton::blip {
         if (!(frameFlags & kMoreComing)) {
             // Completed!
             if (state < kBeginning)
-                throw std::runtime_error("message ends before end of properties");
+                crouton::Error::raise(BLIPError::InvalidFrame, "message ends before end of properties");
             _complete = true;
             state = kEnd;
             LBLIP->info("Finished receiving {}", *this);
@@ -279,7 +279,7 @@ namespace crouton::blip {
     }
 
 
-    Error MessageIn::getError() const {
+    Message::Error MessageIn::getError() const {
         if (!isError()) 
             return {};
         return {string(property("Error-Domain")), (int)intProperty("Error-Code"), body()};

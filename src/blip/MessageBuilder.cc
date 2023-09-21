@@ -11,6 +11,7 @@
 //
 
 #include "MessageBuilder.hh"
+#include "BLIPIO.hh"
 #include "BLIPProtocol.hh"
 #include "StringUtils.hh"
 #include <ostream>
@@ -46,7 +47,7 @@ namespace crouton::blip {
     }
 
 
-    void MessageBuilder::makeError(Error err) {
+    void MessageBuilder::makeError(Message::Error err) {
         assert(!err.domain.empty() && err.code != 0);
         type = kErrorType;
         addProperty("Error-Domain", err.domain);
@@ -91,7 +92,7 @@ namespace crouton::blip {
             _properties.clear();
             size_t propertiesSize = properties.size();
             if (propertiesSize > kMaxPropertiesSize)
-                throw std::runtime_error("properties excessively large");
+                Error::raise(BLIPError::PropertiesTooLarge);
             char  buf[kMaxVarintSize];
             _out << string_view(buf, putUVarint(propertiesSize, buf));
             _out << properties;

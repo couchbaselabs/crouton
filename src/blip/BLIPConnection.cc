@@ -112,6 +112,7 @@ namespace crouton::blip {
         AWAIT _socket->send(ws::Message{code, message});
         AWAIT _inputDone;
         AWAIT _socket->close();
+        RETURN noerror;
     }
 
 }

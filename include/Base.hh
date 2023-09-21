@@ -5,7 +5,6 @@
 //
 
 #pragma once
-#include <exception>
 #include <iosfwd>
 #include <memory>
 #include <string>

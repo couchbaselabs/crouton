@@ -75,6 +75,7 @@ else()
         add_compile_options(
             -Wno-gnu-zero-variadic-macro-arguments
             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
+            -Wno-gnu-statement-expression-from-macro-expansion  # Allow `({...})`
         )
     endif()
 endif()
@@ -103,6 +104,7 @@ add_library( LibCrouton STATIC
     src/AddrInfo.cc
     src/Coroutine.cc
     src/CoroLifecycle.cc
+    src/Error.cc
     src/FileStream.cc
     src/Filesystem.cc
     src/Future.cc

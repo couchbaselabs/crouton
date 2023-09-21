@@ -104,20 +104,14 @@ namespace crouton {
             Response
         };
 
-        /// Exception thrown on a parse error.
-        class Error : public std::runtime_error {
-        public:
-            explicit Error(int code, const char* reason);
-            int code;
-        };
-
         /// Constructs a parser that will read from a IStream.
         explicit HTTPParser(IStream& stream, Role role)     :HTTPParser(&stream, role) { }
 
         /// Constructs a parser that will be fed data by calling `parseData`.
         explicit HTTPParser(Role role)                      :HTTPParser(nullptr, role) { }
 
-        HTTPParser(HTTPParser&&);
+        HTTPParser(HTTPParser&&) noexcept;
+        HTTPParser& operator=(HTTPParser&&) noexcept;
         ~HTTPParser();
 
         /// Reads from the stream until the request headers are parsed.
@@ -188,4 +182,9 @@ namespace crouton {
         bool        _upgraded = false;          // True on protocol upgrade (WebSocket etc.)
     };
 
+
+    template <> struct ErrorDomainInfo<HTTPStatus> {
+        static constexpr string_view name = "HTTP";
+        static string description(errorcode_t);
+    };
 }

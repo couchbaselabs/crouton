@@ -31,35 +31,37 @@ using namespace crouton;
 static constexpr uint16_t kPort = 34567;
 
 
-static Future<void> serveRoot(HTTPHandler::Request const& req, HTTPHandler::Response& res) {
+staticASYNC<void> serveRoot(HTTPHandler::Request const& req, HTTPHandler::Response& res) {
     res.writeHeader("Content-Type", "text/plain");
     AWAIT res.writeToBody("Hi!\r\n");
+    RETURN noerror;
 }
 
 
-static Future<void> serveWebSocket(HTTPHandler::Request const& req, HTTPHandler::Response& res) {
-    ServerWebSocket ws;
-    if (! AWAIT ws.connect(req, res))
-        RETURN;
+staticASYNC<void> serveWebSocket(HTTPHandler::Request const& req, HTTPHandler::Response& res) {
+    ws::ServerWebSocket socket;
+    if (! AWAIT socket.connect(req, res))
+        RETURN noerror;
 
     spdlog::info("-- Opened WebSocket");
-    while (!ws.readyToClose()) {
-        WebSocket::Message msg = AWAIT ws.receive();
+    while (!socket.readyToClose()) {
+        ws::Message msg = AWAIT socket.receive();
         spdlog::info("\treceived {}", msg);
         switch (msg.type) {
-            case WebSocket::Text:
-            case WebSocket::Binary:
-                (void) ws.send(msg); // no need to wait
+            case ws::Message::Text:
+            case ws::Message::Binary:
+                (void) socket.send(msg); // no need to wait
                 break;
-            case WebSocket::Close:
-                AWAIT ws.send(msg); // echo the close request to complete the close.
+            case ws::Message::Close:
+                AWAIT socket.send(msg); // echo the close request to complete the close.
                 break;
             default:
                 break;              // WebSocket itself handles Ping and Pong
         }
     }
     spdlog::info("-- Closing WebSocket");
-    AWAIT ws.close();
+    AWAIT socket.close();
+    RETURN noerror;
 }
 
 

@@ -107,9 +107,10 @@ namespace crouton::mbed {
                 char vrfy_buf[512];
                 mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "", verify_flags);
                 LNet->warn("Cert verify failed: {}", vrfy_buf);
-                throw MbedError(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, "verifying cert");
+                check(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, "verifying cert");
             }
             _tlsOpen = true;
+            RETURN noerror;
         }
 
 
@@ -117,7 +118,7 @@ namespace crouton::mbed {
         Future<void> write(ConstBytes buf) {
             //cerr << "TLSStream write(" << buf.size() << ") ...\n";
             if (buf.size() == 0)
-                RETURN;
+                RETURN noerror;
             while (true) {
                 int result = mbedtls_ssl_write(&_ssl,  (const uint8_t*)buf.data(), buf.size());
                 if (result == MBEDTLS_ERR_SSL_WANT_READ || result == MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -133,7 +134,7 @@ namespace crouton::mbed {
                 } else {
                     // Done!
                     //cerr << "\tTLSStream.write done" << endl;
-                    RETURN;
+                    RETURN noerror;
                 }
             }
         }
@@ -184,6 +185,7 @@ namespace crouton::mbed {
                 _tcpOpen = false;
                 //cerr << "TLSStream is now closed.\n";
             }
+            RETURN noerror;
         }
 
     private:
@@ -255,6 +257,7 @@ namespace crouton::mbed {
                     _pendingRead.reset();
                 }
             }
+            RETURN noerror;
         }
 
 
@@ -315,7 +318,7 @@ namespace crouton::mbed {
             _inputBuf->size = uint32_t(len);
             _inputBuf->used = 0;
             if (_inputBuf->empty())
-                RETURN {};  // Reached EOF
+                RETURN ConstBytes{};  // Reached EOF
         }
         RETURN peek ? _inputBuf->data : _inputBuf->read(maxLen);
     }
@@ -328,11 +331,13 @@ namespace crouton::mbed {
     Future<void> TLSSocket::close()  {
         NotReentrant nr(_busy);
         AWAIT _impl->close(true);
+        RETURN noerror;
     }
 
     Future<void> TLSSocket::closeWrite()  {
         NotReentrant nr(_busy);
         AWAIT _impl->close(false);
+        RETURN noerror;
     }
 
 }

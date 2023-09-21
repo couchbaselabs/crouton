@@ -17,12 +17,12 @@
 //
 
 #pragma once
+#include "Error.hh"
 #include "Future.hh"
 #include "EventLoop.hh"
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -33,15 +33,12 @@ struct uv_timer_s;
 namespace crouton {
     class Task;
 
-    /** Exception thrown by libuv errors. */
-    class UVError : public std::runtime_error {
-    public:
-        explicit UVError(const char* what, int err);
-        const char* what() const noexcept override;
+    /** Enum for using libuv errors with Error. */
+    enum class UVError : errorcode_t { };
 
-        int err; ///< libuv error code
-    private:
-        mutable string _message;
+    template <> struct ErrorDomainInfo<UVError> {
+        static constexpr string_view name = "libuv";
+        static string description(errorcode_t);
     };
 
 
@@ -89,7 +86,7 @@ namespace crouton {
         static void after(double delaySecs, std::function<void()> fn);
 
         /// Returns a Future that completes after the given delay.
-        [[nodiscard]] static Future<void> sleep(double delaySecs);
+        staticASYNC<void> sleep(double delaySecs);
 
     private:
         void _start(double delaySecs, double repeatSecs);

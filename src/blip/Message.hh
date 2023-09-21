@@ -24,13 +24,6 @@ namespace crouton::blip {
     using MessageInRef = std::shared_ptr<MessageIn>;
 
 
-    struct Error {
-        const string   domain;
-        const int      code = 0;
-        const string   message;
-    };
-
-
     /** Abstract base class of messages */
     class Message : public std::enable_shared_from_this<Message> {
       public:
@@ -47,6 +40,12 @@ namespace crouton::blip {
 
         // exposed for testing:
         FrameFlags flags() const { return _flags; }
+
+        struct Error {
+            const string   domain;
+            const int      code = 0;
+            const string   message;
+        };
 
       protected:
 

@@ -43,16 +43,16 @@ namespace crouton {
     :_url(std::move(url))
     {
         if (_url.hostname.empty())
-            throw invalid_argument("HTTPConnection URL must have a hostname");
+            Error::raise(CroutonError::InvalidArgument, "HTTPConnection URL must have a hostname");
         if (!_url.query.empty())
-            throw invalid_argument("HTTPConnection URL must not have a query");
+            Error::raise(CroutonError::InvalidArgument, "HTTPConnection URL must not have a query");
         bool tls;
         if (string scheme = _url.normalizedScheme(); scheme == "http" || scheme == "ws")
             tls = false;
         else if (scheme == "https" || scheme == "wss")
             tls = true;
         else
-            throw invalid_argument("Non-HTTP URL");
+            Error::raise(CroutonError::InvalidArgument, "Non-HTTP URL");
         uint16_t port = _url.port;
         if (port == 0)
             port = tls ? 443 : 80;
@@ -70,15 +70,15 @@ namespace crouton {
     Future<HTTPResponse> HTTPConnection::send(HTTPRequest& req) {
         //TODO: Support multiple requests over same socket using keepalive.
         if (_sent)
-            throw std::logic_error("HTTPConnection can only send one request, for now");
+            Error::raise(CroutonError::LogicError, "HTTPConnection can only send one request, for now");
         _sent = true;
 
         if (req.method == HTTPMethod::GET) {
             if (req.bodyStream || !req.body.empty())
-                throw invalid_argument("GET request may not have a body");
+                Error::raise(CroutonError::InvalidArgument, "GET request may not have a body");
         } else {
             if (req.bodyStream && !req.headers.contains("Content-Length"))
-                throw invalid_argument("HTTPRequest with body stream must have a Content-Length");
+                Error::raise(CroutonError::InvalidArgument, "HTTPRequest with body stream must have a Content-Length");
         }
 
         if (!_socket->isOpen())
@@ -151,17 +151,23 @@ namespace crouton {
     ,_parser(*connection._stream, HTTPParser::Response)
     { }
 
-    HTTPResponse::HTTPResponse(HTTPResponse&& r)
+    HTTPResponse::HTTPResponse(HTTPResponse&& r) noexcept
     :_connection(r._connection)
     ,_parser(std::move(r._parser))
     { }
+
+    HTTPResponse& HTTPResponse::operator=(HTTPResponse&& r) noexcept {
+        _connection = r._connection;
+        _parser = std::move(r._parser);
+        return *this;
+    }
 
     Future<void> HTTPResponse::close() {
         return _connection->closeResponse();
     }
 
     Future<void> HTTPResponse::closeWrite() {
-        throw logic_error("HTTPReponse is not writeable");
+        Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
     Future<ConstBytes> HTTPResponse::readNoCopy(size_t maxLen) {
@@ -183,7 +189,7 @@ namespace crouton {
     }
 
     Future<void> HTTPResponse::write(ConstBytes) {
-        throw logic_error("HTTPReponse is not writeable");
+        Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
     IStream& HTTPResponse::upgradedStream() {

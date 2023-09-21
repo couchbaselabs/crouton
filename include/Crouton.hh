@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Actor.hh"
+#include "Error.hh"
 #include "EventLoop.hh"
 #include "Future.hh"
 #include "Generator.hh"

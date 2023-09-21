@@ -15,6 +15,7 @@
 
 
 #include "Codec.hh"
+#include "BLIPProtocol.hh"
 #include "Endian.hh"
 #include "Logging.hh"
 #include <algorithm>
@@ -55,10 +56,10 @@ namespace crouton::blip {
         uint32_t chk;
         static_assert(kChecksumSize == sizeof(chk), "kChecksumSize is wrong");
         if (!input.readAll(&chk, sizeof(chk)))
-            throw runtime_error("BLIP message ends before checksum");
+            Error::raise(BLIPError::InvalidFrame, "BLIP message ends before checksum");
         chk = endian::decodeBig(chk);
         if (chk != _checksum)
-            throw runtime_error("BLIP message invalid checksum");
+            Error::raise(BLIPError::BadChecksum);
     }
 
     // Uncompressed write: just copies input bytes to output (updating checksum)
@@ -73,8 +74,10 @@ namespace crouton::blip {
     }
 
     void ZlibCodec::check(int ret) const {
-        if (ret < 0 && ret != Z_BUF_ERROR)
-            throw runtime_error(fmt::format("zlib error {}: {}", ret, (_z.msg ? _z.msg : "???")));
+        if (ret < 0 && ret != Z_BUF_ERROR) {
+            string msg = fmt::format("zlib error {}: {}", ret, (_z.msg ? _z.msg : "???"));
+            Error::raise(BLIPError::CompressionError, msg);
+        }
     }
 
     void ZlibCodec::_write(const char* operation, ConstBytes& input, MutableBytes& output, Mode mode,
@@ -125,7 +128,7 @@ namespace crouton::blip {
                 _writeAndFlush(input, output);
                 break;
             default:
-                throw invalid_argument("invalid Codec mode");
+                Error::raise(CroutonError::InvalidArgument, "invalid Codec mode");
         }
 
         if (kZlibRawDeflate) 

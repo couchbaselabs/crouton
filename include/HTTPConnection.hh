@@ -80,7 +80,8 @@ namespace crouton {
     class HTTPResponse : public IStream {
     public:
         explicit HTTPResponse(HTTPConnection&);
-        HTTPResponse(HTTPResponse&&);
+        HTTPResponse(HTTPResponse&&) noexcept;
+        HTTPResponse& operator=(HTTPResponse&&) noexcept;
 
         /// The HTTP status code.
         HTTPStatus status() const               {return _parser.status;}

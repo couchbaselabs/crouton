@@ -57,6 +57,7 @@ namespace crouton {
         AWAIT req;
 
         opened((uv_stream_t*)tcpHandle);
+        RETURN noerror;
     }
 
 }
