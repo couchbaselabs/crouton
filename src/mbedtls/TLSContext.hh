@@ -127,16 +127,27 @@ namespace crouton::mbed {
             Error::raise(MbedError(err), what);
     }
 
+    // mbedTLS log levels (from doc-comment of mbedtls_debug_set_threshold):
+    // - 0 No debug
+    // - 1 Error
+    // - 2 State change
+    // - 3 Informational
+    // - 4 Verbose
+    // spdlog levels:
+    // - SPDLOG_LEVEL_TRACE 0
+    // - SPDLOG_LEVEL_DEBUG 1
+    // - SPDLOG_LEVEL_INFO 2
+    // - SPDLOG_LEVEL_WARN 3
+    // - SPDLOG_LEVEL_ERROR 4
+    // - SPDLOG_LEVEL_CRITICAL 5
+    // - SPDLOG_LEVEL_OFF 6
 
     // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
     static shared_ptr<spdlog::logger> LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
 
 
     // spdlog level values corresponding to ones used by mbedTLS
-    static constexpr int kSpdToMbedLogLevel[] = {
-        SPDLOG_LEVEL_OFF, SPDLOG_LEVEL_ERROR, SPDLOG_LEVEL_INFO,
-        SPDLOG_LEVEL_DEBUG, SPDLOG_LEVEL_TRACE
-    };
+    static constexpr int kSpdToMbedLogLevel[] = {4, 3, 2, 1, 1, 1, 0};
 
 
     static void mbedLogCallback(void *ctx, int level, const char *file, int line, const char *msg) {
