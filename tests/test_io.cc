@@ -88,10 +88,10 @@ Future<string> readFile(string const& path) {
             cerr << "File read error " << len << endl;
         if (len <= 0)
             break;
-        cerr << "Read " << len << "bytes" << endl;
+        cerr << "(" << len << "bytes) ";
         contents.append(buffer, len);
     }
-    //cerr << "Returning contents\n";
+    cerr << endl;
     RETURN contents;
 }
 

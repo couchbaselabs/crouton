@@ -56,11 +56,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--break"
+            argument = "-r consoleplus"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "--verbosity high"
+            argument = "--break"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

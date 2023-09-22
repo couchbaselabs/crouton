@@ -22,7 +22,6 @@
 		272A85272A96DCB30083D947 /* URL.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272A85252A96DCB30083D947 /* URL.cc */; };
 		272A852A2A97B2090083D947 /* HTTPConnection.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272A85282A97B2090083D947 /* HTTPConnection.hh */; };
 		272A852B2A97B2090083D947 /* HTTPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272A85292A97B2090083D947 /* HTTPConnection.cc */; };
-		272A852D2A97F9760083D947 /* ListReporter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272A852C2A97F9760083D947 /* ListReporter.cc */; };
 		272A85302A982DE50083D947 /* WebSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272A852E2A982DE50083D947 /* WebSocket.hh */; };
 		272A85312A982DE50083D947 /* WebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272A852F2A982DE50083D947 /* WebSocket.cc */; };
 		275A5F152AAFB3B1009791E8 /* Memoized.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A5F132AAFB3B1009791E8 /* Memoized.hh */; };
@@ -34,6 +33,7 @@
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
 		277E8A462ABA7A1800E78CB1 /* Error.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A452ABA7A1800E78CB1 /* Error.hh */; };
 		277E8A482ABB537D00E78CB1 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A472ABB537D00E78CB1 /* Error.cc */; };
+		277E8A4C2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A4B2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc */; };
 		278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F76782A9FEF54005B12F2 /* TLSSocket.hh */; };
 		278F767B2A9FEF54005B12F2 /* TLSSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F76792A9FEF54005B12F2 /* TLSSocket.cc */; };
 		278F7E322AA015B1005B12F2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
@@ -309,7 +309,6 @@
 		272A85252A96DCB30083D947 /* URL.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = URL.cc; sourceTree = "<group>"; };
 		272A85282A97B2090083D947 /* HTTPConnection.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPConnection.hh; sourceTree = "<group>"; };
 		272A85292A97B2090083D947 /* HTTPConnection.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPConnection.cc; sourceTree = "<group>"; };
-		272A852C2A97F9760083D947 /* ListReporter.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ListReporter.cc; sourceTree = "<group>"; };
 		272A852E2A982DE50083D947 /* WebSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WebSocket.hh; sourceTree = "<group>"; };
 		272A852F2A982DE50083D947 /* WebSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocket.cc; sourceTree = "<group>"; };
 		272A85332A99451B0083D947 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -320,6 +319,8 @@
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
 		277E8A452ABA7A1800E78CB1 /* Error.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		277E8A472ABB537D00E78CB1 /* Error.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
+		277E8A4A2ABDF94A00E78CB1 /* ConsoleReporterPlus.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ConsoleReporterPlus.hh; sourceTree = "<group>"; };
+		277E8A4B2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConsoleReporterPlus.cc; sourceTree = "<group>"; };
 		278F76782A9FEF54005B12F2 /* TLSSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSSocket.hh; sourceTree = "<group>"; };
 		278F76792A9FEF54005B12F2 /* TLSSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSSocket.cc; sourceTree = "<group>"; };
 		278F76822A9FF0C4005B12F2 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
@@ -787,7 +788,8 @@
 			children = (
 				272728D42A8D6575000CCA22 /* catch_amalgamated.cpp */,
 				272728D52A8D6575000CCA22 /* catch_amalgamated.hpp */,
-				272A852C2A97F9760083D947 /* ListReporter.cc */,
+				277E8A4A2ABDF94A00E78CB1 /* ConsoleReporterPlus.hh */,
+				277E8A4B2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc */,
 			);
 			path = catch2;
 			sourceTree = "<group>";
@@ -1575,7 +1577,7 @@
 				27F49CCF2A9D011B00BFB24C /* test_io.cc in Sources */,
 				27B3306E2AB4BD0B0066C8DA /* test_blip.cc in Sources */,
 				278F7E3D2AA16D46005B12F2 /* test_http.cc in Sources */,
-				272A852D2A97F9760083D947 /* ListReporter.cc in Sources */,
+				277E8A4C2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc in Sources */,
 				272728D62A8D65BE000CCA22 /* catch_amalgamated.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

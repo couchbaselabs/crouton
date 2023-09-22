@@ -190,6 +190,7 @@ if (NOT CROUTON_IOS)
         tests/test_http.cc
         tests/test_io.cc
         vendor/catch2/catch_amalgamated.cpp
+        vendor/catch2/ConsoleReporterPlus.cc
     )
 
     target_include_directories( CroutonTests PRIVATE
