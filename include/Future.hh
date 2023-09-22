@@ -227,7 +227,6 @@ namespace crouton {
     public:
         Future()                :_state(std::make_shared<FutureState<void>>()) {_state->setResult();}
         explicit Future(FutureProvider<void> p) :_state(std::move(p)) {assert(_state);}
-        template <class X>
         Future(Error err) :_state(std::make_shared<FutureState<void>>()) {_state->setResult(err);}
         Future(Future&&) = default;
         ~Future()                        {this->setHandle(nullptr);} // don't destroy handle

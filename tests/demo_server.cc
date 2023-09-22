@@ -17,7 +17,7 @@
 //
 
 #include "Crouton.hh"
-#include "Handler.hh"
+#include "HTTPHandler.hh"
 #include "Logging.hh"
 #include <functional>
 #include <iomanip>

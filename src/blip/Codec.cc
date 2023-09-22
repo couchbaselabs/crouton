@@ -48,7 +48,7 @@ namespace crouton::blip {
 
     void Codec::writeChecksum(MutableBytes& output) const {
         uint32_t chk = endian::encodeBig(_checksum);
-        bool ok = output.write(&chk, sizeof(chk));
+        __unused bool ok = output.write(&chk, sizeof(chk));
         assert(ok);
     }
 
