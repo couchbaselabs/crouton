@@ -20,7 +20,6 @@
 #include "HTTPParser.hh"
 #include "IStream.hh"
 #include "ISocket.hh"
-#include "UVBase.hh"
 #include <iosfwd>
 #include <memory>
 #include <utility>

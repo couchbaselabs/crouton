@@ -18,7 +18,6 @@
 
 #pragma once
 #include "Future.hh"
-#include "UVBase.hh"
 
 struct addrinfo;
 struct sockaddr;

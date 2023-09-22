@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "UVBase.hh"
+#include "Base.hh"
 #include <functional>
 #include <memory>
 

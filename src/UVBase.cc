@@ -17,6 +17,7 @@
 //
 
 #include "UVBase.hh"
+#include "EventLoop.hh"
 #include "Logging.hh"
 #include "Task.hh"
 #include "UVInternal.hh"
@@ -34,6 +35,28 @@ namespace crouton {
     };
 
     
+    /** Implementation of EventLoop for libuv.*/
+    class UVEventLoop final : public EventLoop {
+    public:
+        UVEventLoop();
+        void run() override;
+        bool runOnce(bool waitForIO =true) override;
+        void stop(bool threadSafe) override;
+        void perform(std::function<void()>) override;
+
+        ASYNC<void> sleep(double delaySecs);
+
+        void ensureWaits();
+        uv_loop_s* uvLoop() {return _loop.get();}
+    private:
+        bool _run(int mode);
+
+        std::unique_ptr<uv_loop_s> _loop;
+        std::unique_ptr<uv_async_s> _async;
+        std::unique_ptr<uv_timer_s> _distantFutureTimer;
+    };
+
+
     EventLoop* Scheduler::newEventLoop() {
         auto loop = new UVEventLoop();
         loop->ensureWaits();

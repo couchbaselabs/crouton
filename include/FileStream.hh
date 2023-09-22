@@ -19,7 +19,6 @@
 #pragma once
 #include "IStream.hh"
 #include "Generator.hh"
-#include "UVBase.hh"
 #include <memory>
 
 namespace crouton {
