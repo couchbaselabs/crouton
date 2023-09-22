@@ -77,6 +77,7 @@ namespace crouton::apple {
         size_t              _contentUsed;
         bool                _useTLS = false;
         bool                _isOpen = false;
+        bool                _canceled = false;
         bool                _eof = false;
     };
 }

@@ -124,9 +124,12 @@ namespace crouton::apple {
 
 
     Future<void> NWConnection::close() {
-        if (_conn)
-            nw_connection_cancel(_conn);
-        else if (!_onClose->hasResult())
+        if (_conn) {
+            if (!_canceled) {
+                _canceled = true;
+                nw_connection_cancel(_conn);
+            }
+        } else if (!_onClose->hasResult())
             _onClose->setResult();
         return Future<void>(_onClose);
     }
@@ -134,8 +137,10 @@ namespace crouton::apple {
 
     void NWConnection::_close() {
         if (_conn) {
-            nw_connection_set_state_changed_handler(_conn, nullptr);
-            nw_connection_force_cancel(_conn);
+            if (!_canceled) {
+                nw_connection_set_state_changed_handler(_conn, nullptr);
+                nw_connection_force_cancel(_conn);
+            }
             nw_release(_conn);
             _conn = nullptr;
         }
