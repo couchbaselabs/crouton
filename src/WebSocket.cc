@@ -80,7 +80,7 @@ namespace crouton::ws {
         // Note: This method is not a coroutine, and it passes the message to _stream->write
         // as a `string`, so the caller does not need to keep the data valid.
         if (_closeSent || !_stream)
-            Error::raise(CroutonError::LogicError, "WebSocket is already closing");
+            return Error(CroutonError::LogicError, "WebSocket is already closing");
         if (type == Message::Close)
             _closeSent = true;
         string frame(message.size() + 10, 0);
@@ -226,7 +226,7 @@ namespace crouton::ws {
 
         _responseHeaders = response.headers();
         if (auto status = response.status(); status != http::Status::SwitchingProtocols)
-            Error::raise(status, "Server returned wrong status for WebSocket upgrade");
+            RETURN Error(status, "Server returned wrong status for WebSocket upgrade");
         if (!equalIgnoringCase(_responseHeaders.get("Connection"), "upgrade") ||
                 !equalIgnoringCase(_responseHeaders.get("Upgrade"), "websocket"))
             protocolError("Server did not upgrade to WebSocket protocol");

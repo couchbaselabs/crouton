@@ -67,7 +67,8 @@ namespace crouton {
     Future<size_t> FileStream::_preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset) {
         assert(isOpen());
         static constexpr size_t kMaxBufs = 8;
-        if (nbufs > kMaxBufs) Error::raise(CroutonError::InvalidArgument, "too many bufs");
+        if (nbufs > kMaxBufs) 
+            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
@@ -126,7 +127,8 @@ namespace crouton {
         assert(isOpen());
 
         static constexpr size_t kMaxBufs = 8;
-        if (nbufs > kMaxBufs) Error::raise(CroutonError::InvalidArgument, "too many bufs");
+        if (nbufs > kMaxBufs) 
+            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);

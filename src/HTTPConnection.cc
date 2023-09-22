@@ -70,15 +70,15 @@ namespace crouton::http {
     Future<Response> Connection::send(Request& req) {
         //TODO: Support multiple requests over same socket using keepalive.
         if (_sent)
-            Error::raise(CroutonError::LogicError, "HTTPConnection can only send one request, for now");
+            RETURN Error(CroutonError::LogicError, "HTTPConnection can only send one request, for now");
         _sent = true;
 
         if (req.method == Method::GET) {
             if (req.bodyStream || !req.body.empty())
-                Error::raise(CroutonError::InvalidArgument, "GET request may not have a body");
+                RETURN Error(CroutonError::InvalidArgument, "GET request may not have a body");
         } else {
             if (req.bodyStream && !req.headers.contains("Content-Length"))
-                Error::raise(CroutonError::InvalidArgument, "HTTPRequest with body stream must have a Content-Length");
+                RETURN Error(CroutonError::InvalidArgument, "HTTPRequest with body stream must have a Content-Length");
         }
 
         if (!_socket->isOpen())
@@ -167,7 +167,7 @@ namespace crouton::http {
     }
 
     Future<void> Response::closeWrite() {
-        Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
+        return Error(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
     Future<ConstBytes> Response::readNoCopy(size_t maxLen) {
@@ -189,7 +189,7 @@ namespace crouton::http {
     }
 
     Future<void> Response::write(ConstBytes) {
-        Error::raise(CroutonError::LogicError, "HTTPReponse is not writeable");
+        RETURN Error(CroutonError::LogicError, "HTTPReponse is not writeable");
     }
 
     IStream& Response::upgradedStream() {

@@ -130,14 +130,14 @@ namespace crouton {
     private:
         Error(errorcode_t code, uint8_t domain) :_code(code), _domain(domain) {assert(_code == code);}
 
-        static constexpr int kNDomains = (1<<6);
-
         // NOTE: I'm keeping the size of Error down to 3 bytes so that Result<T>, which consists of
         // a std::variant one of whose types is Error, can be as small as 4 bytes.
         errorcode_t _code   :18 {0};    // The error code, or 0 if no error
         uint8_t     _domain : 6 {0};    // Index of the domain in sDomains
 
         //---- Static stuff for managing metadata about each ErrorDomain enum:
+
+        static constexpr int kNDomains = (1<<6);
 
         template <ErrorDomain T>
         static uint8_t domainID() {

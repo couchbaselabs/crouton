@@ -140,7 +140,7 @@ namespace crouton {
             if (err == UV_EOF || err == UV_EINVAL)
                 return BufferRef();
             else
-                Error::raise(UVError(err), "reading from the network");
+                return Error(UVError(err), "reading from the network");
         } else {
             // Start an async read:
             read_start();
@@ -232,7 +232,8 @@ namespace crouton {
         assert(isOpen());
 
         static constexpr size_t kMaxBufs = 8;
-        if (nbufs > kMaxBufs) Error::raise(CroutonError::InvalidArgument, "too many bufs");
+        if (nbufs > kMaxBufs)
+            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
