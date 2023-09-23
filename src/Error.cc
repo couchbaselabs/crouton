@@ -121,6 +121,7 @@ namespace crouton {
             {errorcode_t(InvalidArgument), "internal error (invalid argument)"},
             {errorcode_t(InvalidState), "internal error (invalid state)"},
             {errorcode_t(LogicError), "internal error (logic error)"},
+            {errorcode_t(EmptyResult), "internal error (accessed empty Result)"},
             {errorcode_t(Cancelled), "operation was cancelled"},
             {errorcode_t(InvalidURL), "invalid URL"},
             {errorcode_t(HTTPParseError), "invalid HTTP request/response"},

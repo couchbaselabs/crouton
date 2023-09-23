@@ -194,17 +194,21 @@ TEST_CASE("WebSocket", "[uv]") {
         cerr << "-- Test Sending Message...\n";
         AWAIT ws.send(ConstBytes("This is a test of WebSockets in Crouton."), ws::Message::Text);
 
+        Generator<ws::Message> receiver = ws.receive();
         cerr << "-- Test Receiving Message...\n";
-        auto msg = AWAIT ws.receive();
-        cerr << "-- Received type " << int(msg.type) << ": " << msg << endl;
-        CHECK(msg.type == ws::Message::Text);
-        CHECK(msg == "This is a test of WebSockets in Crouton.");
+        auto msg = AWAIT receiver;
+        REQUIRE(msg);
+        cerr << "-- Received type " << int(msg->type) << ": " << msg << endl;
+        CHECK(msg->type == ws::Message::Text);
+        CHECK(*msg == "This is a test of WebSockets in Crouton.");
 
         cerr << "-- Closing...\n";
         AWAIT ws.send(ws::Message(ws::CloseCode::Normal, "bye"));
-        msg = AWAIT ws.receive();
-        CHECK(msg.type == ws::Message::Close);
-        CHECK(msg.closeCode() == ws::CloseCode::Normal);
+        msg = AWAIT receiver;
+        REQUIRE(msg);
+        CHECK(msg->type == ws::Message::Close);
+        CHECK(msg->closeCode() == ws::CloseCode::Normal);
+
         CHECK(ws.readyToClose());
         AWAIT ws.close();
         RETURN noerror;

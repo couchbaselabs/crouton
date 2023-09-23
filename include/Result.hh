@@ -30,6 +30,8 @@ namespace crouton {
     template <typename T>
     class Result {
     public:
+        Result()                        :_value(noerror) { }
+        
         template <typename U> requires std::constructible_from<T, U>
         Result(U&& val)                 :_value(std::forward<U>(val)) { }
 
@@ -47,8 +49,28 @@ namespace crouton {
         /// True if there is a T value.
         bool ok() const                             {return _value.index() == 0;}
 
+        /// True if there is neither a value nor an error.
+        bool empty() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err && !*err;
+        }
+
         /// True if there is an error.
-        bool isError() const                        {return _value.index() != 0;}
+        bool isError() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err && *err;
+        }
+
+        /// True if there's a value, false if empty. If there's an error, raises it.
+        explicit operator bool() const {
+            if (Error const* err = std::get_if<Error>(&_value)) {
+                if (*err)
+                    err->raise();
+                return false;
+            } else {
+                return true;
+            }
+        }
 
         /// Returns the value, or throws the error as an exception.
         T const& value() const & {
@@ -57,12 +79,24 @@ namespace crouton {
             return std::get<T>(_value);
         }
 
+        T& value() & {
+            if (!ok())
+                raise();
+            return std::get<T>(_value);
+        }
+
         /// Returns the value, or throws the error as an exception.
+        /// If the Result is empty, throws CroutonError::EmptyResult.
         T&& value() && {
             if (!ok())
                 raise();
             return std::get<T>(std::move(_value));
         }
+
+        T& operator*()              {return value();}
+        T const& operator*() const  {return value();}
+
+        T* operator->()             {return &value();}
 
         /// Returns the error, if any, else an empty Error.
         Error error() const {
@@ -70,8 +104,20 @@ namespace crouton {
             return err ? *err : Error{};
         }
 
+        friend std::ostream& operator<<(std::ostream& out, Result const& r) {
+            if (r.ok())
+                return out << r.value();
+            else
+                return out << r.error();
+        }
+
     private:
-        [[noreturn]] void raise() const       {std::get<Error>(_value).raise();}
+        [[noreturn]] void raise() const {
+            Error err = std::get<Error>(_value);
+            if (!err)
+                err = CroutonError::EmptyResult;
+            err.raise();
+        }
 
         std::variant<T,Error> _value;
     };

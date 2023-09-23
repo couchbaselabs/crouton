@@ -19,7 +19,6 @@
 #pragma once
 #include "IStream.hh"
 #include <memory>
-#include <optional>
 #include <vector>
 
 struct uv_stream_s;

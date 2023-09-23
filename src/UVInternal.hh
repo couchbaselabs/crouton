@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <concepts>
 #include <memory>
-#include <optional>
 
 #include <uv.h>
 // On Windows <uv.h> drags in <windows.h>, which defines `min` and `max` as macros,

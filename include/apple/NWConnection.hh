@@ -22,7 +22,6 @@
 #include "Error.hh"
 #include "ISocket.hh"
 #include "IStream.hh"
-#include <optional>
 
 struct dispatch_data_s;
 struct dispatch_queue_s;

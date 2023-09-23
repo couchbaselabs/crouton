@@ -175,6 +175,7 @@ namespace crouton {
         InvalidArgument = 1,
         InvalidState,
         LogicError,
+        EmptyResult,
         Cancelled,
         InvalidURL,
         HTTPParseError,

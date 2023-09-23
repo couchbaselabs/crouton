@@ -45,16 +45,17 @@ staticASYNC<void> serveWebSocket(Handler::Request const& req, Handler::Response&
         RETURN noerror;
 
     spdlog::info("-- Opened WebSocket");
-    while (!socket.readyToClose()) {
-        ws::Message msg = AWAIT socket.receive();
+    Generator<ws::Message> rcvr = socket.receive();
+    Result<ws::Message> msg;
+    while ((msg = AWAIT rcvr)) {
         spdlog::info("\treceived {}", msg);
-        switch (msg.type) {
+        switch (msg->type) {
             case ws::Message::Text:
             case ws::Message::Binary:
-                (void) socket.send(msg); // no need to wait
+                (void) socket.send(*msg); // no need to wait
                 break;
             case ws::Message::Close:
-                AWAIT socket.send(msg); // echo the close request to complete the close.
+                AWAIT socket.send(*msg); // echo the close request to complete the close.
                 break;
             default:
                 break;              // WebSocket itself handles Ping and Pong

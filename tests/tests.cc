@@ -103,6 +103,7 @@ static Generator<int64_t> fibonacci(int64_t limit) {
     int64_t a = 1, b = 1;
     YIELD a;
     while (b <= limit) {
+
         YIELD b;
         tie(a, b) = pair{b, a + b};
     }
@@ -112,7 +113,7 @@ static Generator<int64_t> fibonacci(int64_t limit) {
 // A filter that passes only even numbers. Also takes int64 and produces int
 static Generator<int64_t> onlyEven(Generator<int64_t> source) {
     // In a coroutine, you co_await a Generator instead of calling next():
-    optional<int64_t> value;
+    Result<int64_t> value;
     while ((value = AWAIT source)) {
         if (*value % 2 == 0)
             YIELD *value;
@@ -122,13 +123,30 @@ static Generator<int64_t> onlyEven(Generator<int64_t> source) {
 
 // Converts int to string
 static Generator<string> toString(Generator <int64_t> source) {
-    while (optional<int> value = AWAIT source) {
+    while (Result<int64_t> value = AWAIT source) {
         YIELD to_string(*value) + "i";
     }
 }
 
 
-TEST_CASE("Generator coroutine", "[coroutines]") {
+TEST_CASE("Generator") {
+    RunCoroutine([]() -> Future<void> {
+        Generator<int64_t> fib = fibonacci(100);
+        vector<int64_t> results;
+        Result<int64_t> n;
+        while ((n = AWAIT fib)) {
+            cerr << n << ' ';
+            results.push_back(n.value());
+        }
+        cerr << endl;
+        CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });
+        RETURN noerror;
+    });
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("Generators", "[coroutines]") {
     {
         cerr << "Creating Generator...\n";
         Generator fib = toString( onlyEven( fibonacci(100000) ) );
@@ -213,7 +231,7 @@ public:
         auto fib = fibonacci(INT_MAX);
         for (int i = 0; i < n; i++) {
             AWAIT Timer::sleep(0.1);
-            optional<int64_t> f;
+            Result<int64_t> f;
             if ((f = AWAIT fib))
                 sum += f.value();
             else

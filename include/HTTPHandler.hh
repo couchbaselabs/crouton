@@ -23,7 +23,6 @@
 #include "Task.hh"
 #include <functional>
 #include <memory>
-#include <optional>
 #include <regex>
 #include <tuple>
 #include <vector>

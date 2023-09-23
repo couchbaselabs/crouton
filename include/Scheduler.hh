@@ -22,7 +22,6 @@
 #include <atomic>
 #include <deque>
 #include <functional>
-#include <optional>
 #include <ranges>
 #include <unordered_map>
 #include <cassert>

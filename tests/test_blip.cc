@@ -49,7 +49,7 @@ TEST_CASE("BLIP Send Message", "[blip]") {
         Future<MessageInRef> fReply = b.sendRequest(msg);
         CHECK(!fReply.hasResult());
 
-        optional<string> frame = AWAIT b.output();
+        Result<string> frame = AWAIT b.output();
         REQUIRE(frame);
         CHECK(hexString(*frame) == kTestFrameHex);
 
@@ -58,7 +58,7 @@ TEST_CASE("BLIP Send Message", "[blip]") {
 
         b.stop();
         frame = AWAIT b.output();
-        CHECK(frame == nullopt);
+        CHECK(!frame);
         RETURN noerror;
     });
 }
@@ -99,7 +99,7 @@ staticASYNC<void> testSendReceive(initializer_list<MessageBuilder::property> pro
     vector<string> frames;
     size_t size = 0;
     while (true) {
-        optional<string> frame = AWAIT sender.output();
+        Result<string> frame = AWAIT sender.output();
         if (!frame)
             break;
         frames.push_back(frame.value());

@@ -18,7 +18,6 @@
 
 #pragma once
 #include "CoroLifecycle.hh"
-#include <optional>
 #include <vector>
 
 namespace crouton {

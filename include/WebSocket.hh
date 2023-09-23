@@ -19,6 +19,7 @@
 #pragma once
 #include "Bytes.hh"
 #include "Coroutine.hh"
+#include "Generator.hh"
 #include "HTTPConnection.hh"
 #include "HTTPHandler.hh"
 #include <cstring>
@@ -86,11 +87,11 @@ namespace crouton::ws {
     /** Abstract base class of WebSocket connections. */
     class WebSocket {
     public:
-        /// Returns the next incoming WebSocket binary message, asynchronously.
+        /// Produces incoming WebSocket binary messages, asynchronously.
         /// - If there's a connection error, the Future will hold it (and throw when resolved.)
         /// - If the peer decides to close the socket, or after you call `close`, a message of
         ///   type `Close` will arrive. No further messages will arrive; don't call receive again.
-        ASYNC<Message> receive();
+        Generator<Message> receive();
 
         /// Sends a binary message, asynchronously.
         /// @note The data is copied and does not need to remain valid after the call.

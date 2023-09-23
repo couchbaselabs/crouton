@@ -250,7 +250,7 @@ namespace crouton::blip {
         LBLIP->debug("Starting frameGenerator loop...");
         while (_sendOpen || hasOutput()) {
             // Await the next message, if any, from the queue:
-            optional<MessageOutRef> msgp = AWAIT generator;
+            Result<MessageOutRef> msgp = AWAIT generator;
             if (!msgp)
                 break;  // stop when I close
 

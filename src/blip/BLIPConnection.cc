@@ -47,7 +47,7 @@ namespace crouton::blip {
 
     Task BLIPConnection::outputTask() {
         do {
-            optional<string> frame = AWAIT _io.output();
+            Result<string> frame = AWAIT _io.output();
             if (!frame)
                 break; // BLIPIO's send side has closed.
             AWAIT _socket->send(*frame, ws::Message::Binary);
@@ -58,12 +58,12 @@ namespace crouton::blip {
 
     Task BLIPConnection::inputTask() {
         do {
-            ws::Message frame = AWAIT _socket->receive();
-            if (frame.type == ws::Message::Close) {
+            Result<ws::Message> frame = AWAIT _socket->receive();
+            if (!frame || frame->type == ws::Message::Close) {
                 LBLIP->info("BLIPConnection received WebSocket CLOSE");
                 break;
             }
-            MessageInRef msg = _io.receive(frame);
+            MessageInRef msg = _io.receive(*frame);
             if (msg)
                 dispatchRequest(std::move(msg));
         } while (YIELD true);

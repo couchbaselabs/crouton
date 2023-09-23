@@ -90,14 +90,14 @@ namespace crouton::ws {
     }
 
 
-    Future<Message> WebSocket::receive() {
-        if (_closeReceived || !_stream)
-            RETURN Error(CroutonError::InvalidState, "WebSocket is closed");
-        while (true) {
+    Generator<Message> WebSocket::receive() {
+        while (_stream && !_closeReceived) {
             while (_incoming.empty()) {
                 ConstBytes data = AWAIT _stream->readNoCopy(100000);
-                if (data.size() == 0)
-                    RETURN Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
+                if (data.size() == 0) {
+                    YIELD Message(CloseCode::Abnormal, "WebSocket closed unexpectedly");
+                    RETURN;
+                }
                 // Pass the data to the 3rd-party WebSocket parser, which will call handleFragment.
                 consume(data);
             }
@@ -112,12 +112,14 @@ namespace crouton::ws {
                     [[fallthrough]];
                 case Text:
                 case Binary:
-                    RETURN msg;     // Got a message!
+                    YIELD msg;     // Got a message!
+                    break;
                 case Ping:
                     (void) send(ConstBytes{}, Pong);
                     break;
                 case Pong:
                     //TODO: Send periodic Pings and disconnect if no Pong received in time
+                    break;
                 default:
                     LNet->warn("WebSocket received unknown message type {}", int(msg.type));
                     break;
