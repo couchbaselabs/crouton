@@ -1,6 +1,8 @@
 //
 // ISocket.hh
 //
+// Copyright 2023-Present Couchbase, Inc. All rights reserved.
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -43,10 +45,10 @@ namespace crouton {
         virtual void keepAlive(unsigned intervalSecs)   {_binding->keepAlive = intervalSecs;}
 
         /// Opens the socket to the bound address. Resolves once opened.
-        [[nodiscard]] virtual Future<void> open() =0;
+        virtualASYNC<void> open() =0;
 
         /// Equivalent to bind + open.
-        [[nodiscard]] virtual Future<void> connect(string const& address, uint16_t port) {
+        virtualASYNC<void> connect(string const& address, uint16_t port) {
             bind(address, port);
             return open();
         }
@@ -57,7 +59,7 @@ namespace crouton {
         /// The socket's data stream.
         virtual IStream& stream() =0;
 
-        [[nodiscard]] virtual Future<void> close() =0;
+        virtualASYNC<void> close() =0;
 
         /// Convenience function that calls `close`, waits for completion, then deletes.
         static Task closeAndFree(std::unique_ptr<ISocket>);

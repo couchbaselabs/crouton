@@ -105,7 +105,8 @@ namespace crouton {
         NotReentrant nr(_inEventLoopTask);
         while(true) {
             eventLoop().runOnce(isIdle());    // only block on I/O if no tasks are ready
-            YIELD true;
+            if (bool ok = YIELD true; !ok)
+                break;
         }
     }
 
@@ -213,6 +214,20 @@ namespace crouton {
         assert(!isReady(h));
         auto [i, added] = _suspended.try_emplace(h.address(), h, this);
         return &i->second;
+    }
+
+    void Scheduler::destroying(coro_handle h) {
+        LSched->debug("destroying {}", logCoro{h});
+        assert(isCurrent());
+        if (auto i = _suspended.find(h.address()); i != _suspended.end()) {
+            Suspension& sus = i->second;
+            if (sus._wakeMe.test_and_set()) {
+                // The holder of the Suspension already tried to wake it, so it's OK to delete it:
+                _suspended.erase(i);
+            } else {
+                sus._handle = nullptr;
+            }
+        }
     }
 
     /// Called from "normal" code.

@@ -17,54 +17,11 @@
 //
 
 #pragma once
+#include "Bytes.hh"
 #include "Future.hh"
 #include <initializer_list>
-#include <memory>
-#include <span>
-
-struct uv_buf_t;
 
 namespace crouton {
-
-    /** Low-level struct pointing to mutable data.
-        Usually serves as the destination argument of a `read`. */
-    class MutableBytes : public std::span<std::byte> {
-    public:
-        using span::span;       // inherits all of std::span's constructors
-        using span::operator=;
-        MutableBytes(string& str) :span((std::byte*)str.data(), str.size()) { }
-        MutableBytes(uv_buf_t);
-
-        template <typename T>
-        MutableBytes(T* begin, size_t n)  :span((std::byte*)begin, n * sizeof(T)) { }
-        MutableBytes(void* begin, size_t n) :span((std::byte*)begin, n) { }
-
-        explicit operator string_view() const {
-            return string_view((const char*)data(), size());
-        }
-        explicit operator uv_buf_t() const;
-    };
-
-    
-    /** Low-level struct pointing to immutable data.
-        Usually serves as the source of a `write`, or as a returned buffer from `readNoCopy`. */
-    class ConstBytes : public std::span<const std::byte> {
-    public:
-        using span::span;       // inherits all of std::span's constructors
-        using span::operator=;
-        ConstBytes(string_view str) :span((const std::byte*)str.data(), str.size()) { }
-        ConstBytes(uv_buf_t);
-
-        template <typename T>
-        ConstBytes(const T* begin, size_t n)  :span((const std::byte*)begin, n * sizeof(T)) { }
-        ConstBytes(const void* begin, size_t n) :span((const std::byte*)begin, n) { }
-
-        explicit operator string_view() const {
-            return string_view((const char*)data(), size());
-        }
-        explicit operator uv_buf_t() const;
-    };
-
 
     /** Abstract interface of an asynchronous bidirectional stream.
         It has concrete read/write methods, which are merely conveniences that call the
@@ -79,13 +36,13 @@ namespace crouton {
         virtual bool isOpen() const =0;
 
         /// Resolves once the stream has opened.
-        [[nodiscard]] virtual Future<void> open() = 0;
+        virtualASYNC<void> open() = 0;
 
         /// Closes the stream; resolves when it's closed.
-        [[nodiscard]] virtual Future<void> close() = 0;
+        virtualASYNC<void> close() = 0;
 
         /// Closes the write side, but not the read side. (Like a socket's `shutdown`.)
-        [[nodiscard]] virtual Future<void> closeWrite() = 0;
+        virtualASYNC<void> closeWrite() = 0;
 
         //---- Reading:
 
@@ -94,7 +51,7 @@ namespace crouton {
         /// @warning The returned buffer belongs to the stream, and is only valid until the next
         ///          read or close call.
         /// @note This is an abstract method that subclasses must implement.
-        [[nodiscard]] virtual Future<ConstBytes> readNoCopy(size_t maxLen = 65536) =0;
+        virtualASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) =0;
 
         /// Returns the next available unread bytes, always at least 1 byte except at EOF.
         /// Unlike `readNoCopy`, the returned bytes are _not consumed_ -- they will
@@ -103,11 +60,11 @@ namespace crouton {
         /// @warning The returned buffer belongs to the stream, and is only valid until the next
         ///          read or close call.
         /// @note This is an abstract method that subclasses must implement.
-        [[nodiscard]] virtual Future<ConstBytes> peekNoCopy() =0;
+        virtualASYNC<ConstBytes> peekNoCopy() =0;
 
         /// Reads `len` bytes, copying into memory starting at `dst` (which must remain valid.)
         /// Will always read the full number of bytes unless it hits EOF.
-        [[nodiscard]] virtual Future<size_t> read(MutableBytes buf);
+        virtualASYNC<size_t> read(MutableBytes buf);
 
         /// Reads `len` bytes, returning them as a string.
         /// Will always read the full number of bytes unless it hits EOF.
@@ -129,7 +86,7 @@ namespace crouton {
         /// Writes all the bytes.
         /// @warning The memory must remain valid until this call completes.
         /// @note This is the abstract write method that subclasses must implement.
-        [[nodiscard]] virtual Future<void> write(ConstBytes) =0;
+        virtualASYNC<void> write(ConstBytes) =0;
 
         /// Writes data, fully. The string is copied, so the caller doesn't need to keep it.
         ASYNC<void> write(string);
@@ -139,7 +96,7 @@ namespace crouton {
         /// @note  The default implementation makes `nBuffers` calls to `write(ConstBytes)`.
         ///        A subclass that natively supports multi-buffer write ("writev") may override
         ///        this method as an optimization.
-        [[nodiscard]] virtual Future<void> write(const ConstBytes buffers[], size_t nBuffers);
+        virtualASYNC<void> write(const ConstBytes buffers[], size_t nBuffers);
 
         ASYNC<void> write(std::initializer_list<ConstBytes> buffers);
     };

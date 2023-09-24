@@ -1,5 +1,5 @@
 //
-// testclient.cc
+// demo_client.cc
 //
 // Copyright 2023-Present Couchbase, Inc. All rights reserved.
 //
@@ -21,9 +21,10 @@
 
 using namespace std;
 using namespace crouton;
+using namespace crouton::http;
 
 
-static Future<int> run() {
+staticASYNC<int> run() {
     // Read flags:
     auto args = MainArgs();
     bool includeHeaders = false;
@@ -47,12 +48,12 @@ static Future<int> run() {
     }
 
     // Send HTTP request:
-    HTTPConnection client{string(url.value())};
-    HTTPRequest req;
-    HTTPResponse resp = AWAIT client.send(req);
+    Connection client{string(url.value())};
+    Request req;
+    Response resp = AWAIT client.send(req);
 
     // Display result:
-    bool ok = (resp.status() == HTTPStatus::OK);
+    bool ok = (resp.status() == Status::OK);
     if (!ok) {
         cout << "*** " << int(resp.status()) << " " << resp.statusMessage() << " ***" << endl;
     }

@@ -17,6 +17,7 @@
 //
 
 #include "UVBase.hh"
+#include "EventLoop.hh"
 #include "Logging.hh"
 #include "Task.hh"
 #include "UVInternal.hh"
@@ -26,29 +27,40 @@
 namespace crouton {
     using namespace std;
 
+    string ErrorDomainInfo<UVError>::description(errorcode_t code) {
+        switch (code) {
+            case UV__EAI_NONAME:    return "unknown host";
+            default:                return uv_strerror(code);
+        }
+    };
+
+    
+    /** Implementation of EventLoop for libuv.*/
+    class UVEventLoop final : public EventLoop {
+    public:
+        UVEventLoop();
+        void run() override;
+        bool runOnce(bool waitForIO =true) override;
+        void stop(bool threadSafe) override;
+        void perform(std::function<void()>) override;
+
+        ASYNC<void> sleep(double delaySecs);
+
+        void ensureWaits();
+        uv_loop_s* uvLoop() {return _loop.get();}
+    private:
+        bool _run(int mode);
+
+        std::unique_ptr<uv_loop_s> _loop;
+        std::unique_ptr<uv_async_s> _async;
+        std::unique_ptr<uv_timer_s> _distantFutureTimer;
+    };
+
+
     EventLoop* Scheduler::newEventLoop() {
         auto loop = new UVEventLoop();
         loop->ensureWaits();
         return loop;
-    }
-
-    UVError::UVError(const char* what, int status)
-    :std::runtime_error(what)
-    ,err(status)
-    {
-        SPDLOG_WARN("UVError({}, \"{}\")", uv_strerror(status), what);
-    }
-
-    const char* UVError::what() const noexcept {
-        if (_message.empty()) {
-            const char* errStr;
-            switch (err) {
-                case UV__EAI_NONAME:    errStr = "unknown host";  break;
-                default:                errStr = uv_strerror(err);
-            }
-            _message = "Error "s + runtime_error::what() + ": " + errStr;
-        }
-        return _message.c_str();
     }
 
     
@@ -198,7 +210,7 @@ namespace crouton {
         }, [](uv_work_t *req, int status) noexcept {
             auto work = static_cast<QueuedWork*>(req);
             if (work->exception)
-                work->provider->setResult(work->exception);
+                work->provider->setResult(Error(work->exception));
             else
                 work->provider->setResult();
             delete work;

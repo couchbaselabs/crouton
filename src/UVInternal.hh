@@ -17,9 +17,10 @@
 //
 
 #pragma once
+#include "CoCondition.hh"
 #include "Coroutine.hh"
 #include "Internal.hh"
-#include "IStream.hh"
+#include "Bytes.hh"
 #include "Logging.hh"
 #include "Scheduler.hh"
 #include "UVBase.hh"
@@ -27,8 +28,6 @@
 #include <algorithm>
 #include <concepts>
 #include <memory>
-#include <optional>
-#include <stdexcept>
 
 #include <uv.h>
 // On Windows <uv.h> drags in <windows.h>, which defines `min` and `max` as macros,
@@ -42,12 +41,12 @@ namespace crouton {
 
     /// Checks a libuv function result and throws a UVError exception if it's negative.
     static inline void check(std::signed_integral auto status, const char* what) {
-        if (status < 0) {
-            UVError x(what, int(status));
-            spdlog::info("** libuv error: {}", x.what());
-            throw x;
-        }
+        if (status < 0)
+            Error::raise(UVError(status), what);
     }
+
+    #define CHECK_RETURN(STATUS, WHAT) \
+        if (auto _status_ = (STATUS); _status_ >= 0) {} else co_return Error(UVError(_status_), (WHAT))
 
 
     /// Convenience function that returns `Scheduler::current().uvLoop()`.
@@ -70,7 +69,7 @@ namespace crouton {
 
     /** An Awaitable subclass of a libUV request type, such as uv_fs_t. */
     template <class UV_REQUEST_T>
-    class Request : public UV_REQUEST_T, public CoCondition<int> {
+    class Request : public UV_REQUEST_T, public Blocker<int> {
     public:
         explicit Request(const char* what)  :_what(what) { }
 
@@ -86,7 +85,7 @@ namespace crouton {
         }
 
         int await_resume() noexcept {
-            int result = CoCondition<int>::await_resume();
+            int result = Blocker<int>::await_resume();
             check(result, _what);
             return result;
         }

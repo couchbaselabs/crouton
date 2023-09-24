@@ -104,3 +104,6 @@ namespace crouton {
 
 }
 
+#if CROUTON_LIFECYCLES
+void dumpCoros();
+#endif

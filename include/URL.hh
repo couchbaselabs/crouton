@@ -42,7 +42,7 @@ namespace crouton {
         /// Parses a URL, updating the properties. Returns false on error.
         [[nodiscard]] bool tryParse(const char*);
 
-        /// Parses a URL, updating the properties. Throws std::invalid_argument on error.
+        /// Parses a URL, updating the properties. Throws CroutonError::InvalidURL on error.
         void parse(const char*);
 
         string_view scheme;

@@ -43,6 +43,7 @@ namespace crouton {
         Request<uv_shutdown_t> req("closing connection");
         check( uv_shutdown(&req, _stream, req.callbackWithStatus), "closing connection");
         AWAIT req;
+        RETURN noerror;
     }
 
 
@@ -74,7 +75,6 @@ namespace crouton {
     Future<ConstBytes> Stream::readNoCopy(size_t maxLen) {
         assert(isOpen());
         NotReentrant nr(_readBusy);
-#if 1
         if (_inputBuf && !_inputBuf->empty()) {
             // Advance _inputBuf->used and return the pointer:
             return _inputBuf->read(maxLen);
@@ -86,15 +86,6 @@ namespace crouton {
                     return ConstBytes{};  // Reached EOF
             });
         }
-#else
-        if (!_inputBuf || _inputBuf->empty()) {
-            (void) AWAIT fillInputBuf();
-            if (!_inputBuf)
-                RETURN {};  // Reached EOF
-        }
-        // Advance _inputBuf->used and return the pointer:
-        RETURN _inputBuf->read(maxLen);
-#endif
     }
 
 
@@ -139,7 +130,7 @@ namespace crouton {
             if (err == UV_EOF || err == UV_EINVAL)
                 return BufferRef();
             else
-                throw UVError("reading from the network", err);
+                return Error(UVError(err), "reading from the network");
         } else {
             // Start an async read:
             read_start();
@@ -205,7 +196,7 @@ namespace crouton {
             else if (err == UV_EOF || err == UV_EINVAL)
                 _futureBuf->setResult(nullptr);
             else
-                _futureBuf->setResult(UVError("reading from the network", err));
+                _futureBuf->setResult(UVError(err));
             _futureBuf = nullptr;
         } else {
             // If this is an unrequested read, queue it up for later:
@@ -231,7 +222,8 @@ namespace crouton {
         assert(isOpen());
 
         static constexpr size_t kMaxBufs = 8;
-        if (nbufs > kMaxBufs) throw invalid_argument("too many bufs");
+        if (nbufs > kMaxBufs)
+            RETURN Error(CroutonError::InvalidArgument, "too many bufs");
         uv_buf_t uvbufs[kMaxBufs];
         for (size_t i = 0; i < nbufs; ++i)
             uvbufs[i] = uv_buf_t(bufs[i]);
@@ -240,6 +232,7 @@ namespace crouton {
         check(uv_write(&req, _stream, uvbufs, unsigned(nbufs), req.callbackWithStatus),
               "sending to the network");
         AWAIT req;
+        RETURN noerror;
     }
 
 

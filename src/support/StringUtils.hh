@@ -9,6 +9,8 @@
 #include <cassert>
 
 namespace crouton {
+    class ConstBytes;
+
 
     /// Plain-ASCII version of `tolower`, with no nonsense about locales or ints.
     inline char toLower(char c) {
@@ -32,10 +34,7 @@ namespace crouton {
         return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
     }
 
-    inline bool isURLSafe(char c) {
-        return isAlphanumeric(c) || strchr("-_.~", c) != nullptr;
-    }
-
+    /// Converts an ASCII hex digit to its numeric value.
     inline int hexDigitToInt(char c) {
         if (c < 'A') 
             return c - '0';
@@ -44,6 +43,7 @@ namespace crouton {
         return c - 'a' + 10;
     }
 
+    /// Returns a number 0..15 converted to an ASCII hex digit.
     inline char asHexDigit(int n) {
         assert(n >= 0 && n < 16);
         if (n < 10) 
@@ -51,41 +51,32 @@ namespace crouton {
         return 'A' + char(n - 10);
     }
 
+    /// True if a character can safely be used in a URL without escaping.
+    inline bool isURLSafe(char c) {
+        return isAlphanumeric(c) || strchr("-_.~", c) != nullptr;
+    }
+
     /// Lowercases a string.
-    static inline string toLower(string str) {
+    inline string toLower(string str) {
         for (char &c : str)
             c = toLower(c);
         return str;
     }
 
-    static inline bool equalIgnoringCase(string_view a, string_view b) {
-        size_t len = a.size();
-        if (len != b.size())
-            return false;
-        for (size_t i = 0; i < len; i++) {
-            if (toLower(a[i]) != toLower(b[i]))
-                return false;
-        }
-        return true;
-    }
+    /// Returns a string of hex
+    string hexString(ConstBytes bytes);
 
-    inline std::pair<string_view,string_view>
-    split(string_view str, char c) {
-        if (auto p = str.find(c); p != string::npos)
-            return {str.substr(0, p), str.substr(p + 1)};
-        else
-            return {str, ""};
-    }
+    /// Converts a hex string to binary.
+    string decodeHexString(string_view);
 
-    inline void replaceStringInPlace(string &str,
-                                            string_view substring,
-                                            string_view replacement)
-    {
-        string::size_type pos = 0;
-        while((pos = str.find(substring, pos)) != string::npos) {
-            str.replace(pos, substring.size(), replacement);
-            pos += replacement.size();
-        }
-    }
+    /// Case-insensitive equality comparison (ASCII only!)
+    bool equalIgnoringCase(string_view a, string_view b);
 
+    /// Splits a string around the first occurrence of `c`, or else at its end.
+    std::pair<string_view,string_view> split(string_view str, char c);
+
+    /// Replaces all occurrences of `substring` with `replacement`, in-place.
+    void replaceStringInPlace(string &str,
+                              string_view substring,
+                              string_view replacement);
 }

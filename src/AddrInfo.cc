@@ -67,9 +67,9 @@ namespace crouton {
         }
 
         getaddrinfo_request req("looking up hostname");
-        check(uv_getaddrinfo(curLoop(), &req, req.callback,
+        CHECK_RETURN(uv_getaddrinfo(curLoop(), &req, req.callback,
                                  hostName.c_str(), service, &hints),
-                  "looking up hostname");
+                     "looking up hostname");
         AWAIT req;
 
         RETURN AddrInfo(req.info);
@@ -95,7 +95,7 @@ namespace crouton {
         if (auto addr = _primaryAddress(af))
             return *addr;
         else
-            throw UVError("getting address of hostname", UV__EAI_ADDRFAMILY);
+            Error::raise(UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
     }
 
     sockaddr const& AddrInfo::primaryAddress() const {
@@ -105,7 +105,7 @@ namespace crouton {
         if (addr)
             return *addr;
         else
-            throw UVError("getting address of hostname", UV__EAI_ADDRFAMILY);
+            Error::raise(UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
     }
 
     string AddrInfo::primaryAddressString() const {

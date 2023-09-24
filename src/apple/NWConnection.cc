@@ -21,23 +21,53 @@
 #include "NWConnection.hh"
 #include "Logging.hh"
 #include <Network/Network.h>
+#include <Security/SecBase.h>
 #include <algorithm>
+
+namespace crouton {
+    string ErrorDomainInfo<apple::POSIXError>::description(errorcode_t err) {
+        return strerror(err);
+    }
+
+    string ErrorDomainInfo<apple::DNSError>::description(errorcode_t err) {
+        return ""; //TODO: I can't find a function in <dns_sd.h> that returns an error message
+    }
+
+    string ErrorDomainInfo<apple::TLSError>::description(errorcode_t err) {
+        CFStringRef cfStr = SecCopyErrorMessageString(err, nullptr);
+        if (!cfStr)
+            return "";
+        char buf[256];
+        if (! CFStringGetCString(cfStr, buf, 256, kCFStringEncodingUTF8))
+            buf[0] = '\0';
+        CFRelease(cfStr);
+        return buf;
+    }
+}
 
 namespace crouton::apple {
     using namespace std;
 
 
-    static string to_string(nw_error_t err) {
-        const char* kDomains[4] = {"invalid", "POSIX", "DNS", "TLS"};
-        auto domain = nw_error_get_error_domain(err);
-        auto code = nw_error_get_error_code(err);
-        char buf[50];
-        snprintf(buf, sizeof(buf), "NWError(%s, %d)", kDomains[domain], code);
-        return string(buf);
+    static Error toError(nw_error_t err) {
+        if (int code = nw_error_get_error_code(err)) {
+            switch (nw_error_get_error_domain(err)) {
+                case nw_error_domain_posix:
+                    return POSIXError(code);
+                case nw_error_domain_dns:
+                    // "mDNS Error codes are in the range FFFE FF00 (-65792) to FFFE FFFF (-65537)"
+                    code -= -65537;
+                    assert(errorcode_t(code) == code);
+                    return DNSError(code);
+                case nw_error_domain_tls:
+                    return TLSError(code);
+                case nw_error_domain_invalid:
+                default:
+                    break;
+            }
+        }
+        return Error{};
     }
-
-    NWError::NWError(nw_error* err) :std::runtime_error(to_string(err)) { }
-
 
 
     NWConnection::~NWConnection() {
@@ -77,12 +107,12 @@ namespace crouton::apple {
                     break;
                 case nw_connection_state_cancelled:
                     if (!onOpen->hasResult())
-                        onOpen->setResult(runtime_error("cancelled"));
+                        onOpen->setResult(CroutonError::Cancelled);
                     _onClose->setResult();
                     break;
                 case nw_connection_state_failed:
                     if (!onOpen->hasResult())
-                        onOpen->setResult(NWError(error));
+                        onOpen->setResult(toError(error));
                     break;
                 default:
                     break;
@@ -94,9 +124,12 @@ namespace crouton::apple {
 
 
     Future<void> NWConnection::close() {
-        if (_conn)
-            nw_connection_cancel(_conn);
-        else if (!_onClose->hasResult())
+        if (_conn) {
+            if (!_canceled) {
+                _canceled = true;
+                nw_connection_cancel(_conn);
+            }
+        } else if (!_onClose->hasResult())
             _onClose->setResult();
         return Future<void>(_onClose);
     }
@@ -104,8 +137,10 @@ namespace crouton::apple {
 
     void NWConnection::_close() {
         if (_conn) {
-            nw_connection_set_state_changed_handler(_conn, nullptr);
-            nw_connection_force_cancel(_conn);
+            if (!_canceled) {
+                nw_connection_set_state_changed_handler(_conn, nullptr);
+                nw_connection_force_cancel(_conn);
+            }
             nw_release(_conn);
             _conn = nullptr;
         }
@@ -166,7 +201,7 @@ namespace crouton::apple {
                         spdlog::debug("NWConnection read {} bytes", size);
                         onRead->setResult(_contentBuf);
                     } else if (error) {
-                        onRead->setResult(NWError(error));
+                        onRead->setResult(toError(error));
                     } else if (is_complete) {
                         onRead->setResult(ConstBytes{});
                     }
@@ -188,7 +223,7 @@ namespace crouton::apple {
                                ^(nw_error_t error) {
                 assert(released);
                 if (error)
-                    onWrite->setResult(NWError(error));
+                    onWrite->setResult(toError(error));
                 else
                     onWrite->setResult();
             });

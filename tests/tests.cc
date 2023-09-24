@@ -17,6 +17,79 @@
 //
 
 #include "tests.hh"
+#include "UVBase.hh"
+
+
+TEST_CASE("Randomize") {
+    InitLogging(); //FIXME: Put this somewhere where it gets run before any test
+
+    uint8_t buf[10];
+    ::memset(buf, 0, sizeof(buf));
+    for (int pass = 0; pass < 5; ++pass) {
+        Randomize(buf, sizeof(buf));
+        for (int i = 0; i < 10; ++i)
+            printf("%02x ", buf[i]);
+        printf("\n");
+    }
+}
+
+
+TEST_CASE("Empty Error", "[error]") {
+    Error err;
+    CHECK(!err);
+    CHECK(err.code() == 0);
+    CHECK(err.domain() == "");
+    CHECK(err.brief() == "(no error)");
+    CHECK(err.description() == "(no error)");
+    err.raise_if("shouldn't raise");
+}
+
+
+TEST_CASE("Error", "[error]") {
+    Error err(CroutonError::LogicError);
+    CHECK(err);
+    CHECK(err.code() == errorcode_t(CroutonError::LogicError));
+    CHECK(err.domain() == "Crouton");
+    CHECK(err.brief() == "Crouton error 3");
+    CHECK(err.description() == "internal error (logic error)");
+    CHECK(err.is<CroutonError>());
+    CHECK(!err.is<http::Status>());
+    CHECK(err == CroutonError::LogicError);
+    CHECK(err.as<CroutonError>() == CroutonError::LogicError);
+    CHECK(err.as<http::Status>() == http::Status{0});
+    CHECK(err != http::Status::OK);
+
+    Exception x(err);
+    CHECK(x.error() == err);
+    CHECK(x.what() == "internal error (logic error)"s);
+}
+
+
+TEST_CASE("Error Types", "[error]") {
+    // Make sure multiple error domains can be registered and aren't confused with each other.
+    Error croutonErr(CroutonError::LogicError);
+    Error httpError(http::Status::NotFound);
+    Error wsError(ws::CloseCode::ProtocolError);
+    CHECK(croutonErr == croutonErr);
+    CHECK(httpError != croutonErr);
+    CHECK(wsError != httpError);
+    CHECK(croutonErr.domain() == "Crouton");
+    CHECK(httpError.domain() == "HTTP");
+    CHECK(httpError.brief() == "HTTP error 404");
+    CHECK(wsError.domain() == "WebSocket");
+    CHECK(wsError.brief() == "WebSocket error 1002");
+}
+
+
+TEST_CASE("Exception To Error", "[error]") {
+    Error xerr(std::runtime_error("oops"));
+    CHECK(xerr);
+    CHECK(xerr.domain() == "exception");
+    CHECK(xerr.code() == errorcode_t(CppError::runtime_error));
+    CHECK(xerr == CppError::runtime_error);
+    CHECK(xerr.as<CppError>() == CppError::runtime_error);
+}
+
 
 void RunCoroutine(Future<void> (*test)()) {
     Future<void> f = test();
@@ -30,6 +103,7 @@ static Generator<int64_t> fibonacci(int64_t limit) {
     int64_t a = 1, b = 1;
     YIELD a;
     while (b <= limit) {
+
         YIELD b;
         tie(a, b) = pair{b, a + b};
     }
@@ -39,7 +113,7 @@ static Generator<int64_t> fibonacci(int64_t limit) {
 // A filter that passes only even numbers. Also takes int64 and produces int
 static Generator<int64_t> onlyEven(Generator<int64_t> source) {
     // In a coroutine, you co_await a Generator instead of calling next():
-    optional<int64_t> value;
+    Result<int64_t> value;
     while ((value = AWAIT source)) {
         if (*value % 2 == 0)
             YIELD *value;
@@ -49,14 +123,30 @@ static Generator<int64_t> onlyEven(Generator<int64_t> source) {
 
 // Converts int to string
 static Generator<string> toString(Generator <int64_t> source) {
-    while (optional<int> value = AWAIT source) {
+    while (Result<int64_t> value = AWAIT source) {
         YIELD to_string(*value) + "i";
     }
 }
 
 
-TEST_CASE("Generator coroutine", "[coroutines]") {
-    InitLogging(); //FIXME: Put this somewhere where it gets run before any test
+TEST_CASE("Generator") {
+    RunCoroutine([]() -> Future<void> {
+        Generator<int64_t> fib = fibonacci(100);
+        vector<int64_t> results;
+        Result<int64_t> n;
+        while ((n = AWAIT fib)) {
+            cerr << n << ' ';
+            results.push_back(n.value());
+        }
+        cerr << endl;
+        CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });
+        RETURN noerror;
+    });
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("Generators", "[coroutines]") {
     {
         cerr << "Creating Generator...\n";
         Generator fib = toString( onlyEven( fibonacci(100000) ) );
@@ -82,7 +172,7 @@ TEST_CASE("Generator coroutine", "[coroutines]") {
 
 
 #if 0
-static Future<void> waitFor(chrono::milliseconds ms) {
+staticASYNC<void> waitFor(chrono::milliseconds ms) {
     FutureProvider<void> f;
     Timer::after(ms.count() / 1000.0, [f] {
         cerr << "\tTimer fired\n";
@@ -115,7 +205,7 @@ TEST_CASE("Waiter coroutine") {
 }
 
 
-static Future<int> futuristicSquare(int n) {
+staticASYNC<int> futuristicSquare(int n) {
     AWAIT waitFor(500ms);
     RETURN n * n;
 }
@@ -141,7 +231,7 @@ public:
         auto fib = fibonacci(INT_MAX);
         for (int i = 0; i < n; i++) {
             AWAIT Timer::sleep(0.1);
-            optional<int64_t> f;
+            Result<int64_t> f;
             if ((f = AWAIT fib))
                 sum += f.value();
             else
@@ -161,21 +251,9 @@ TEST_CASE("Actor") {
         Future<int64_t> sum20 = actor->fibonacciSum(20);
         cerr << "Sum10 is " << (AWAIT sum10) << endl;
         cerr << "Sum20 is " << (AWAIT sum20) << endl;
-        RETURN;
+        RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
 #endif // __clang__
-
-
-TEST_CASE("Randomize") {
-    uint8_t buf[10];
-    ::memset(buf, 0, sizeof(buf));
-    for (int pass = 0; pass < 5; ++pass) {
-        Randomize(buf, sizeof(buf));
-        for (int i = 0; i < 10; ++i)
-            printf("%02x ", buf[i]);
-        printf("\n");
-    }
-}

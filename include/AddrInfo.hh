@@ -18,7 +18,6 @@
 
 #pragma once
 #include "Future.hh"
-#include "UVBase.hh"
 
 struct addrinfo;
 struct sockaddr;
@@ -29,8 +28,8 @@ namespace crouton {
     class AddrInfo {
     public:
 
-        /// Does a DNS lookup of the given hostname, returning an AddrInfo or an exception.
-        [[nodiscard]] static Future<AddrInfo> lookup(string hostname, uint16_t port =0);
+        /// Does a DNS lookup of the given hostname, returning an AddrInfo or an error.
+        staticASYNC<AddrInfo> lookup(string hostname, uint16_t port =0);
 
         /// Returns the primary address, which may be either IPv4 or IPv6.
         sockaddr const& primaryAddress() const;

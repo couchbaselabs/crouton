@@ -54,6 +54,7 @@
 
 #pragma once
 
+#include "Error.hh"
 #include "Logging.hh"
 
 #if defined(_WIN32)
@@ -99,17 +100,54 @@
 #endif
 
 namespace crouton::mbed {
+    /// Domain for mbedTLS error codes.
+    enum class MbedError : errorcode_t { };
+}
+
+namespace crouton {
+    template <> struct ErrorDomainInfo<mbed::MbedError> {
+        static constexpr string_view name = "mbedTLS";
+        static string description(errorcode_t code) {
+            char msg[100];
+            mbedtls_strerror(code, msg, sizeof(msg));
+            //if (withCode) {
+            size_t len = strlen(msg);
+            snprintf(msg + len, sizeof(msg) - len, " (-0x%04x)", -code);
+            //}
+            return string(msg);
+        }
+    };
+}
+
+namespace crouton::mbed {
     using namespace std;
+
+    static void check(int err, string_view what) {
+        if (err)
+            Error::raise(MbedError(err), what);
+    }
+
+    // mbedTLS log levels (from doc-comment of mbedtls_debug_set_threshold):
+    // - 0 No debug
+    // - 1 Error
+    // - 2 State change
+    // - 3 Informational
+    // - 4 Verbose
+    // spdlog levels:
+    // - SPDLOG_LEVEL_TRACE 0
+    // - SPDLOG_LEVEL_DEBUG 1
+    // - SPDLOG_LEVEL_INFO 2
+    // - SPDLOG_LEVEL_WARN 3
+    // - SPDLOG_LEVEL_ERROR 4
+    // - SPDLOG_LEVEL_CRITICAL 5
+    // - SPDLOG_LEVEL_OFF 6
 
     // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
     static shared_ptr<spdlog::logger> LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
 
 
     // spdlog level values corresponding to ones used by mbedTLS
-    static constexpr int kSpdToMbedLogLevel[] = {
-        SPDLOG_LEVEL_OFF, SPDLOG_LEVEL_ERROR, SPDLOG_LEVEL_INFO,
-        SPDLOG_LEVEL_DEBUG, SPDLOG_LEVEL_TRACE
-    };
+    static constexpr int kSpdToMbedLogLevel[] = {4, 3, 2, 1, 1, 1, 0};
 
 
     static void mbedLogCallback(void *ctx, int level, const char *file, int line, const char *msg) {
@@ -128,40 +166,6 @@ namespace crouton::mbed {
                 file = lastSlash + 1;
 
             LMbed->log(spdlog::source_loc(file, line, "?"), spdLevel, msgStr);
-        }
-    }
-
-
-    /// Errors thrown by this TLS implementation.
-    class MbedError : public runtime_error {
-    public:
-        explicit MbedError(int code_, const char* what)
-            :runtime_error(to_string(code_) + " in " + what)
-            ,code(code_) { }
-
-        static string messageFor(int code, bool withCode) {
-            char msg[100];
-            mbedtls_strerror(code, msg, sizeof(msg));
-            if (withCode) {
-                size_t len = strlen(msg);
-                snprintf(msg + len, sizeof(msg) - len, " (-0x%04x)", -code);
-            }
-            return string(msg);
-        }
-
-        static string codeToString(int status) {
-            char msg[20];
-            return string(msg);
-        }
-
-        /// mbedTLS status code
-        int code;
-    };
-
-    static void check(int err, const char *what) {
-        if (err) {
-            spdlog::error("MBEDTLS EXCEPTION: {}", MbedError::messageFor(err, true));
-            throw MbedError(err, what);
         }
     }
 
@@ -245,9 +249,7 @@ namespace crouton::mbed {
                 int ret = mbedtls_ctr_drbg_seed(&s_random_ctx, mbedtls_entropy_func, &s_entropy,
                                                 (const uint8_t *)k_entropy_personalization,
                                                 strlen(k_entropy_personalization));
-                if (ret != 0) {
-                    throw MbedError(ret, "mbedtls_ctr_drbg_seed");
-                }
+                check(ret, "mbedtls_ctr_drbg_seed");
             });
             return &s_random_ctx;
         }
@@ -277,7 +279,7 @@ namespace crouton::mbed {
             if (ret > 0 && !partialOk)
                 ret = MBEDTLS_ERR_X509_CERT_VERIFY_FAILED;
             if (ret < 0)
-                throw MbedError(ret, "mbedtls_x509_crt_parse");
+                check(ret, "mbedtls_x509_crt_parse");
             return c;
         }
 

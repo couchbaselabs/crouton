@@ -74,10 +74,12 @@ TEST_CASE("URLs", "[uv]") {
 }
 
 
-static Future<string> readFile(string const& path) {
+Future<string> readFile(string const& path) {
     string contents;
     FileStream f(path);
-    AWAIT f.open();
+    Result<void> r = AWAIT NoThrow(f.open());
+    if (!r.ok())
+        RETURN r.error();
     char buffer[100];
     while (true) {
         auto readFuture = f.read({&buffer[0], sizeof(buffer)});
@@ -86,10 +88,10 @@ static Future<string> readFile(string const& path) {
             cerr << "File read error " << len << endl;
         if (len <= 0)
             break;
-        cerr << "Read " << len << "bytes" << endl;
+        cerr << "(" << len << "bytes) ";
         contents.append(buffer, len);
     }
-    cerr << "Returning contents\n";
+    cerr << endl;
     RETURN contents;
 }
 
@@ -100,6 +102,19 @@ TEST_CASE("Read a file", "[uv]") {
         //cerr << "File contents: \n--------\n" << contents << "\n--------"<< endl;
         CHECK(contents.size() > 500);
         CHECK(contents.size() < 10000);
+        RETURN noerror;
+    });
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("Fail to read a file", "[uv][error]") {
+    RunCoroutine([]() -> Future<void> {
+        Result<string> contents = AWAIT NoThrow(readFile("nosuchfile"));
+        cout << "Returned: " << contents.error() << endl;
+        CHECK(contents.isError());
+        CHECK(contents.error().domain() == "libuv");
+        RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }
@@ -112,6 +127,7 @@ TEST_CASE("DNS lookup", "[uv]") {
         auto ip4addr = addr.primaryAddress(4);
         CHECK(ip4addr.sa_family == AF_INET);
         CHECK(addr.primaryAddressString() == "93.184.216.34");
+        RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }
@@ -133,6 +149,7 @@ TEST_CASE("Read a socket", "[uv]") {
         CHECK(result.starts_with("HTTP/1.1 "));
         CHECK(result.size() > 1000);
         CHECK(result.size() < 2000);
+        RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }
@@ -155,13 +172,14 @@ TEST_CASE("Read a TLS socket", "[uv]") {
         cerr << "-- Test Read: " << result << endl;
 
         AWAIT tlsStream.close();
+        RETURN noerror;
     });
 }
 
 
 TEST_CASE("WebSocket", "[uv]") {
     auto test = []() -> Future<void> {
-        ClientWebSocket ws("wss://ws.postman-echo.com/raw");
+        ws::ClientWebSocket ws("wss://ws.postman-echo.com/raw");
         cerr << "-- Test Connecting...\n";
         try {
             AWAIT ws.connect();
@@ -174,21 +192,26 @@ TEST_CASE("WebSocket", "[uv]") {
         for (auto &h : ws.responseHeaders())
             cout << '\t' << h.first << ": " << h.second << endl;
         cerr << "-- Test Sending Message...\n";
-        AWAIT ws.send(ConstBytes("This is a test of WebSockets in Crouton."), WebSocket::Text);
+        AWAIT ws.send(ConstBytes("This is a test of WebSockets in Crouton."), ws::Message::Text);
 
+        Generator<ws::Message> receiver = ws.receive();
         cerr << "-- Test Receiving Message...\n";
-        auto msg = AWAIT ws.receive();
-        cerr << "-- Received type " << int(msg.type) << ": " << msg << endl;
-        CHECK(msg.type == WebSocket::Text);
-        CHECK(msg == "This is a test of WebSockets in Crouton.");
+        auto msg = AWAIT receiver;
+        REQUIRE(msg);
+        cerr << "-- Received type " << int(msg->type) << ": " << msg << endl;
+        CHECK(msg->type == ws::Message::Text);
+        CHECK(*msg == "This is a test of WebSockets in Crouton.");
 
         cerr << "-- Closing...\n";
-        AWAIT ws.send(WebSocket::Message(WebSocket::CloseCode::Normal, "bye"));
-        msg = AWAIT ws.receive();
-        CHECK(msg.type == WebSocket::Close);
-        CHECK(msg.closeCode() == WebSocket::CloseCode::Normal);
+        AWAIT ws.send(ws::Message(ws::CloseCode::Normal, "bye"));
+        msg = AWAIT receiver;
+        REQUIRE(msg);
+        CHECK(msg->type == ws::Message::Close);
+        CHECK(msg->closeCode() == ws::CloseCode::Normal);
+
         CHECK(ws.readyToClose());
         AWAIT ws.close();
+        RETURN noerror;
     };
     waitFor(test());
     REQUIRE(Scheduler::current().assertEmpty());
@@ -206,7 +229,7 @@ TEST_CASE("readdir", "[uv]") {
 
 #ifdef __APPLE__
 
-static Future<string> readNWSocket(const char* hostname, bool tls) {
+staticASYNC<string> readNWSocket(const char* hostname, bool tls) {
     cerr << "Connecting...\n";
     apple::NWConnection socket;
     socket.bind(hostname, (tls ? 443 : 80));

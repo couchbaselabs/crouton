@@ -19,7 +19,6 @@
 #include "Process.hh"
 #include "Logging.hh"
 #include "Task.hh"
-#include "UVBase.hh"
 #include "UVInternal.hh"
 
 namespace crouton {

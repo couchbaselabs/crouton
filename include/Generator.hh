@@ -18,9 +18,9 @@
 
 #pragma once
 #include "Coroutine.hh"
+#include "Result.hh"
 #include <exception>
 #include <iterator>
-#include <optional>
 #include <utility>
 
 namespace crouton {
@@ -29,8 +29,8 @@ namespace crouton {
 
     /** Public face of a coroutine that produces values by calling `co_yield`.
 
-        Awaiting a Generator returns the next value, wrapped in an `optional`, or `nullopt`
-        at the end when the coroutine exits.
+        Awaiting a Generator returns the next value, wrapped in a `Result`,
+        or an empty Result when the Generator finishes, or an error Result on failure.
 
         A Generator can also be iterated synchronously via its begin/end methods,
         or with a `for(:)` loop.*/
@@ -40,7 +40,7 @@ namespace crouton {
         /// Blocks until the Generator next yields a value, then returns it.
         /// Returns `nullopt` when the Generator is complete (its coroutine has exited.)
         /// \warning Do not call this from a coroutine! Instead, `co_await` the Generator.
-        std::optional<T> next()                     {return this->impl().next();}
+        Result<T> next()                            {return this->impl().next();}
 
         // Generator is iterable, but only once.
         class iterator;
@@ -60,7 +60,7 @@ namespace crouton {
             return lifecycle::suspendingTo(suspending, typeid(this), this, impl.handle());// Generator's coroutine takes over
         }
 
-        std::optional<T> await_resume() {
+        Result<T> await_resume() {
             return this->impl().yieldedValue();
         }
 
@@ -80,14 +80,17 @@ namespace crouton {
         iterator& operator++()      {_value = _gen.next(); return *this;}
         T const& operator*() const  {return _value.value();}
         T& operator*()              {return _value.value();}
-        friend bool operator== (iterator const& i, std::default_sentinel_t)   {return !i._value;}
+        
+        friend bool operator== (iterator const& i, std::default_sentinel_t) {
+            return i._value.empty();
+        }
 
     private:
         friend class Generator;
         explicit iterator(Generator& gen)   :_gen(gen), _value(gen.next()) { }
 
-        Generator&       _gen;
-        std::optional<T> _value;
+        Generator&  _gen;
+        Result<T>   _value;
     };
 
 
@@ -102,23 +105,23 @@ namespace crouton {
         GeneratorImpl() = default;
 
         void clear() {
-            _yielded_value = std::nullopt;
+            _yielded_value = noerror;
             _exception = nullptr;
         }
 
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
-        std::optional<T> next() {
+        Result<T> next() {
             clear();
             auto h = this->handle();
             if(h.done())
-                return std::nullopt;
+                return noerror;
             while (!_ready)
                 lifecycle::resume(h);
             return yieldedValue();
         }
 
         // Returns the value yielded by the coroutine function after it's run.
-        std::optional<T> yieldedValue() {
+        Result<T> yieldedValue() {
             assert(_ready);
             _ready = false;
             if (auto x = _exception) {
@@ -157,7 +160,7 @@ namespace crouton {
         void return_void()                          {lifecycle::returning(this->handle());}
 
         SuspendFinalTo final_suspend() noexcept {
-            _yielded_value = std::nullopt;
+            _yielded_value = noerror;
             _ready = true;
             return SuspendFinalTo{_consumer};
         }
@@ -168,10 +171,10 @@ namespace crouton {
         // Tells me which coroutine should resume after I co_yield the next value.
         void returnControlTo(coro_handle consumer) {_consumer = consumer;}
 
-        std::optional<T>    _yielded_value;                    // Latest value yielded
-        std::exception_ptr  _exception = nullptr;             // Latest exception thrown
+        Result<T>           _yielded_value;                     // Latest value yielded
+        std::exception_ptr  _exception = nullptr;               // Latest exception thrown
         coro_handle         _consumer = CORO_NS::noop_coroutine(); // Coroutine awaiting my value
-        bool                _ready = false;                    // True when a value is available
+        bool                _ready = false;                     // True when a value is available
     };
 
 }

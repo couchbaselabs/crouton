@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD            11)
 set(CMAKE_C_STANDARD_REQUIRED   ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
 #### CMAKE SUBPROJECTS
 
@@ -74,6 +75,7 @@ else()
         add_compile_options(
             -Wno-gnu-zero-variadic-macro-arguments
             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
+            -Wno-gnu-statement-expression-from-macro-expansion  # Allow `({...})`
         )
     endif()
 endif()
@@ -102,6 +104,7 @@ add_library( LibCrouton STATIC
     src/AddrInfo.cc
     src/Coroutine.cc
     src/CoroLifecycle.cc
+    src/Error.cc
     src/FileStream.cc
     src/Filesystem.cc
     src/Future.cc
@@ -123,6 +126,7 @@ add_library( LibCrouton STATIC
     src/mbedtls/TLSSocket.cc
     src/support/Backtrace.cc
     src/support/Memoized.cc
+    src/support/StringUtils.cc
 )
 
 set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
@@ -157,19 +161,19 @@ endif()
 
 if (NOT CROUTON_IOS)
 
-    add_executable( testclient
-        tests/testclient.cc
+    add_executable( demo_client
+        tests/demo_client.cc
     )
 
-    target_link_libraries( testclient
+    target_link_libraries( demo_client
         LibCrouton
     )
 
-    add_executable( testserver
-        tests/testserver.cc
+    add_executable( demo_server
+        tests/demo_server.cc
     )
 
-    target_link_libraries( testserver
+    target_link_libraries( demo_server
         LibCrouton
     )
 
@@ -186,6 +190,7 @@ if (NOT CROUTON_IOS)
         tests/test_http.cc
         tests/test_io.cc
         vendor/catch2/catch_amalgamated.cpp
+        vendor/catch2/ConsoleReporterPlus.cc
     )
 
     target_include_directories( CroutonTests PRIVATE

@@ -24,8 +24,8 @@ namespace crouton {
     bool FutureStateBase::checkEmpty() {
         switch (_state.load()) {
             case Empty:   return true;
-            case Waiting: throw std::logic_error("Another coroutine is already awaiting this Future");
-            case Chained: throw std::logic_error("This Future already has a `then(...)` callback");
+            case Waiting: Error::raise(CroutonError::LogicError, "Another coroutine is already awaiting this Future");
+            case Chained: Error::raise(CroutonError::LogicError, "This Future already has a `then(...)` callback");
             case Ready:   break;
         }
         return false;
@@ -41,7 +41,7 @@ namespace crouton {
         else if (state == Ready)
             return false;
         else
-            throw std::logic_error("Race condition: two threads awaiting the same Future");
+            Error::raise(CroutonError::LogicError, "Race condition: two threads awaiting the same Future");
     }
 
 
@@ -95,20 +95,20 @@ namespace crouton {
                 resolveChain();
                 break;
             case Ready:
-                throw std::logic_error("Future already has a result");
+                Error::raise(CroutonError::LogicError, "Future already has a result");
         }
     }
 
 
     // Updates the chained FutureState based on my `then` callback.
     void FutureStateBase::resolveChain() {
-        if (auto x = getException()) {
-            _chainedFuture->setException(x);
+        if (auto x = getError()) {
+            _chainedFuture->setError(x);
         } else {
             try {
                 _chainedCallback(*_chainedFuture, *this);
             } catch(...) {
-                _chainedFuture->setException(std::current_exception());
+                _chainedFuture->setError(Error(std::current_exception()));
             }
         }
         _chainedFuture = nullptr;

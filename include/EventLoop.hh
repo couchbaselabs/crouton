@@ -17,8 +17,10 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "Future.hh"
 #include <functional>
+
+struct uv_timer_s;
 
 namespace crouton {
     template <typename T> class Future;
@@ -53,5 +55,55 @@ namespace crouton {
         virtual ~EventLoop();
         bool _running = false;
     };
+
+
+
+    /** A repeating or one-shot timer. */
+    class Timer {
+    public:
+        Timer(std::function<void()> fn);
+        ~Timer();
+
+        /// Calls the function once after a delay.
+        void once(double delaySecs)                         {_start(delaySecs, 0);}
+
+        /// Calls the function repeatedly.
+        void start(double intervalSecs)                     {_start(intervalSecs, intervalSecs);}
+
+        /// Calls the function repeatedly after a delay.
+        void start(double delaySecs, double intervalSecs)   {_start(delaySecs, intervalSecs);}
+
+        /// Stops any future calls. The timer's destruction also stops calls.
+        void stop();
+
+        /// Static method, that calls the given function after the given delay.
+        static void after(double delaySecs, std::function<void()> fn);
+
+        /// Returns a Future that completes after the given delay.
+        staticASYNC<void> sleep(double delaySecs);
+
+    private:
+        void _start(double delaySecs, double repeatSecs);
+
+        std::function<void()>   _fn;
+        uv_timer_s*             _handle = nullptr;
+        bool                    _deleteMe = false;
+    };
+
+
+    /// Calls the given function on a background thread managed by libuv.
+    ASYNC<void> OnBackgroundThread(std::function<void()> fn);
+
+
+    /// Calls the given function on a background thread from a pool,
+    /// returning its value (or exception) asynchronously.
+    template <typename T>
+    ASYNC<T> OnBackgroundThread(std::function<T()> fn) {
+        std::optional<T> result;
+        AWAIT OnBackgroundThread([&]() -> void {
+            result = fn();
+        });
+        RETURN std::move(result.value());
+    }
 
 }

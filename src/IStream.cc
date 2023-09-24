@@ -24,11 +24,11 @@ namespace crouton {
     using namespace std;
 
 
-    MutableBytes::MutableBytes(uv_buf_t buf) :span((byte*)buf.base, buf.len) { }
-    ConstBytes::ConstBytes(uv_buf_t buf)     :span((const byte*)buf.base, buf.len) { }
+    ConstBytes::ConstBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
+    MutableBytes::MutableBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
 
-    MutableBytes::operator uv_buf_t() const { return uv_buf_init((char*)data(), unsigned(size())); }
     ConstBytes::operator uv_buf_t() const   { return uv_buf_init((char*)data(), unsigned(size())); }
+    MutableBytes::operator uv_buf_t() const { return uv_buf_init((char*)data(), unsigned(size())); }
 
     Future<size_t> IStream::read(MutableBytes buf) {
         size_t bytesRead = 0;
@@ -117,7 +117,7 @@ namespace crouton {
     Future<void> IStream::write(string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
         AWAIT write(ConstBytes(str));
-        RETURN;
+        RETURN noerror;
     }
 
 
@@ -125,6 +125,7 @@ namespace crouton {
         for (size_t i = 0; i < nBuffers; ++i) {
             AWAIT write(buffers[i]);
         }
+        RETURN noerror;
     }
 
 

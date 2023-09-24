@@ -18,76 +18,108 @@
 
 #pragma once
 #include "Base.hh"
-#include <stdexcept>
+#include "Error.hh"
 #include <cassert>
-#include <exception>    
-#include <utility>      
+#include <utility>
 #include <variant>
 
 namespace crouton {
 
-    template <class X> concept Exceptional = std::derived_from<X, std::exception>;
-
-
-    /** A Result holds either a value of type T, an exception, or nothing. */
+    /** A `Result<T>` holds either a value of type T or an Error.
+        It's used as a return value, and as the contents of a `Future<T>`. */
     template <typename T>
     class Result {
     public:
-        Result()                        :_value(std::exception_ptr{}) { }
-        Result(T&& t)                   :_value(std::move(t)) { }
-        Result(T const& t)              :_value(t) { }
-        Result(std::exception_ptr x)    :_value(x) { }
-        Result(Exceptional auto x)      :_value(std::make_exception_ptr(std::move(x))) { }
+        Result()                        :_value(noerror) { }
+        
+        template <typename U> requires std::constructible_from<T, U>
+        Result(U&& val)                 :_value(std::forward<U>(val)) { }
 
-        /** Sets a value of type T, or a subclass of `std::exception`, or a `std::exception_ptr`.
-            @note In `Result<void>`, to set a regular value call `set()` with no args. */
-        void set(T&& t)                 {_value.template emplace<T>(std::move(t));}
-        void set(T const& t)            {_value = t;}
-        void set(nullptr_t)             {_value = T(nullptr);}
-        void set(std::exception_ptr x)  {assert(x); _value = x;}
-        void set(Exceptional auto x)    {_value= std::make_exception_ptr(std::move(x));}
+        Result(Error err)               :_value(err) { }
 
+        template <typename U> requires std::constructible_from<T, U>
+        Result& operator=(U&& val)      {_value = std::forward<U>(val); return *this;}
+        Result& operator=(Error err)    {_value = err; return *this;}
+
+        Result(Result&& r) noexcept = default;
+        Result(Result const& r) = default;
         Result& operator=(Result const& r) = default;
-        Result& operator=(Result&& r) = default;
-        template <typename U>
-            Result& operator=(U&& val)  {set(std::forward<U>(val)); return *this;}
+        Result& operator=(Result&& r) noexcept = default;
 
-        /// True if no value or exception has been set yet.
+        /// True if there is a T value.
+        bool ok() const                             {return _value.index() == 0;}
+
+        /// True if there is neither a value nor an error.
         bool empty() const {
-            auto x = std::get_if<std::exception_ptr>(&_value);
-            return x && *x == nullptr;
+            Error const* err = std::get_if<Error>(&_value);
+            return err && !*err;
         }
 
-        /// True if non-empty.
-        explicit operator bool() const              {return !empty();}
+        /// True if there is an error.
+        bool isError() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err && *err;
+        }
 
-        /// Returns the value, or throws the exception. Throws logic_error if empty.
+        /// True if there's a value, false if empty. If there's an error, raises it.
+        explicit operator bool() const {
+            if (Error const* err = std::get_if<Error>(&_value)) {
+                if (*err)
+                    err->raise();
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        /// Returns the value, or throws the error as an exception.
         T const& value() const & {
-            if (_value.index() == 1)
-                return std::get<T>(_value);
-            else if (auto x = std::get<std::exception_ptr>(_value))
-                std::rethrow_exception(x);
-            else
-                throw std::logic_error("Result has no value");
+            if (!ok())
+                raise();
+            return std::get<T>(_value);
         }
 
+        T& value() & {
+            if (!ok())
+                raise();
+            return std::get<T>(_value);
+        }
+
+        /// Returns the value, or throws the error as an exception.
+        /// If the Result is empty, throws CroutonError::EmptyResult.
         T&& value() && {
-            if (_value.index() == 1)
-                return std::get<T>(std::move(_value));
-            else if (auto x = std::get<std::exception_ptr>(_value))
-                std::rethrow_exception(x);
-            else
-                throw std::logic_error("Result has no value");
+            if (!ok())
+                raise();
+            return std::get<T>(std::move(_value));
         }
 
-        /// Returns the exception, or null if none.
-        std::exception_ptr exception() const {
-            auto x = std::get_if<std::exception_ptr>(&_value);
-            return x ? *x : nullptr;
+        T& operator*()              {return value();}
+        T const& operator*() const  {return value();}
+
+        T* operator->()             {return &value();}
+
+        /// Returns the error, if any, else an empty Error.
+        Error error() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err ? *err : Error{};
+        }
+
+        friend std::ostream& operator<<(std::ostream& out, Result const& r) {
+            if (r.ok())
+                return out << r.value();
+            else
+                return out << r.error();
         }
 
     private:
-        std::variant<std::exception_ptr,T> _value;
+        [[noreturn]] void raise() const {
+            Error err = std::get<Error>(_value);
+            if (!err)
+                err = CroutonError::EmptyResult;
+            err.raise();
+        }
+
+        std::variant<T,Error> _value;
     };
 
 
@@ -95,45 +127,41 @@ namespace crouton {
     template <>
     class Result<void> {
     public:
+        /// A default `Result<void>` has a (void) value and no error.
         Result() = default;
-        Result(std::exception_ptr x)    :_value(x) { }
-        Result(Exceptional auto x)      :_value(std::make_exception_ptr(std::move(x))) { }
+        Result(Error err)                           :_value(err) { }
+        bool ok() const                             {return _value.index() == 0;}
+        bool isError() const                        {return _value.index() != 0;}
 
-        void set()                      {_value = std::monostate{};}
-        void set(std::exception_ptr x)  {assert(x); _value = x;}
-        void set(Exceptional auto x)    {_value= std::make_exception_ptr(std::move(x));}
-
-        Result& operator=(Result const& r) = default;
-        Result& operator=(Result&& r) = default;
-        template <typename U>
-        Result& operator=(U&& val)      {set(std::forward<U>(val)); return *this;}
-
-        bool empty() const {
-            auto x = std::get_if<std::exception_ptr>(&_value);
-            return x && *x == nullptr;
-        }
-
-        explicit operator bool() const              {return !empty();}
-
+        /// There's no value to return, but this checks for an error and if so throws it.
         void value() const {
-            if (_value.index() == 0) {
-                if (auto x = std::get<std::exception_ptr>(_value))
-                    std::rethrow_exception(x);
-                else
-                    throw std::logic_error("Result has no value");
-            }
+            if (_value.index() != 0)
+                std::get<Error>(_value).raise();
         }
 
-        std::exception_ptr exception() const {
-            auto x = std::get_if<std::exception_ptr>(&_value);
-            return x ? *x : nullptr;
+        Error error() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err ? *err : Error{};
         }
 
     private:
-        std::variant<std::exception_ptr,std::monostate> _value;
+        std::variant<std::monostate,Error> _value;
     };
 
 
 
+    /// Syntactic sugar to handle a `Result<T>`, similar to Swift's `try`.
+    /// - If R has a value, evaluates to its value.
+    /// - If R has an error, `co_return`s the error from the current coroutine.
+    #define UNWRAP(R) \
+        ({ auto _r_ = (R); \
+           if (_r_.isError())  co_return _r_.error(); \
+           std::move(_r_).value(); })
+    //FIXME: MSVC doesn't support `({...})`, AFAIK
 
+
+    /// Syntactic sugar to await a Future without throwing exceptions.
+    /// - If the future returns a value, evaluates to that value.
+    /// - If the future returns an error, `co_return`s the error.
+    #define TRY_AWAIT(F)    UNWRAP(AWAIT NoThrow(F))
 }

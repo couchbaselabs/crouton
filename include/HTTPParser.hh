@@ -17,7 +17,8 @@
 //
 
 #pragma once
-#include "IStream.hh"
+#include "Bytes.hh"
+#include "Future.hh"
 #include "URL.hh"
 #include <iosfwd>
 #include <memory>
@@ -27,11 +28,14 @@
 
 struct llhttp_settings_s;
 struct llhttp__internal_s;
-
 namespace crouton {
+    class IStream;
+}
 
-    /// HTTP response status codes.
-    enum class HTTPStatus : int {
+namespace crouton::http {
+
+    /// HTTP response status codes. Can be used as an ErrorDomain.
+    enum class Status : int {
         Unknown = 0,
         SwitchingProtocols = 101,
         OK = 200,
@@ -43,7 +47,7 @@ namespace crouton {
     };
 
     /// HTTP request methods.
-    enum class HTTPMethod : uint8_t {     // !!! values must match enum `llhttp_method` in llhttp.h
+    enum class Method : uint8_t {     // !!! values must match enum `llhttp_method` in llhttp.h
         DELETE = 0,
         GET,
         HEAD,
@@ -53,12 +57,12 @@ namespace crouton {
         OPTIONS,
     };
 
-    std::ostream& operator<< (std::ostream&, HTTPStatus);
-    std::ostream& operator<< (std::ostream&, HTTPMethod);
+    std::ostream& operator<< (std::ostream&, Status);
+    std::ostream& operator<< (std::ostream&, Method);
 
 
     /// A map of HTTP header names->values. Inherits from `unordered_map`.
-    class HTTPHeaders : public std::unordered_map<string,string> {
+    class Headers : public std::unordered_map<string,string> {
     public:
         using unordered_map::unordered_map;
 
@@ -93,8 +97,8 @@ namespace crouton {
 
 
     /** A class that reads an HTTP request or response from a stream; identifies the metadata
-        like method, status headers; and decodes the body if any. */
-    class HTTPParser {
+     like method, status headers; and decodes the body if any. */
+    class Parser {
     public:
         /// Identifies whether a request or response is to be parsed.
         enum Role {
@@ -102,21 +106,15 @@ namespace crouton {
             Response
         };
 
-        /// Exception thrown on a parse error.
-        class Error : public std::runtime_error {
-        public:
-            explicit Error(int code, const char* reason);
-            int code;
-        };
-
         /// Constructs a parser that will read from a IStream.
-        explicit HTTPParser(IStream& stream, Role role)     :HTTPParser(&stream, role) { }
+        explicit Parser(IStream& stream, Role role)     :Parser(&stream, role) { }
 
         /// Constructs a parser that will be fed data by calling `parseData`.
-        explicit HTTPParser(Role role)                      :HTTPParser(nullptr, role) { }
+        explicit Parser(Role role)                      :Parser(nullptr, role) { }
 
-        HTTPParser(HTTPParser&&);
-        ~HTTPParser();
+        Parser(Parser&&) noexcept;
+        Parser& operator=(Parser&&) noexcept;
+        ~Parser();
 
         /// Reads from the stream until the request headers are parsed.
         /// The `status`, `statusMessage`, `headers` fields are not populated until this occurs.
@@ -135,19 +133,19 @@ namespace crouton {
         //---- Metadata
 
         /// The HTTP request method.
-        HTTPMethod requestMethod;
+        Method requestMethod;
 
         /// The HTTP request URI (path + query)
         std::optional<URL> requestURI;
 
         /// The HTTP response status code.
-        HTTPStatus status = HTTPStatus::Unknown;
+        Status status = Status::Unknown;
 
         /// The HTTP response status message.
         string statusMessage;
 
         /// All the HTTP headers.
-        HTTPHeaders headers;
+        Headers headers;
 
         /// Returns the value of an HTTP header. (Case-insensitive.)
         string_view getHeader(const char* name);
@@ -167,13 +165,13 @@ namespace crouton {
         string latestBodyData()    {return std::move(_body);}
 
     private:
-        HTTPParser(IStream*, Role role);
+        Parser(IStream*, Role role);
         int gotBody(const char* data, size_t length);
         int addHeader(string value);
 
         using SettingsRef = std::unique_ptr<llhttp_settings_s>;
         using ParserRef   = std::unique_ptr<llhttp__internal_s>;
-        
+
         IStream*    _stream;                    // Input Stream, if any
         Role        _role;                      // Request or Response
         SettingsRef _settings;                  // llhttp settings
@@ -186,4 +184,11 @@ namespace crouton {
         bool        _upgraded = false;          // True on protocol upgrade (WebSocket etc.)
     };
 
+}
+
+namespace crouton {
+    template <> struct ErrorDomainInfo<http::Status> {
+        static constexpr string_view name = "HTTP";
+        static string description(errorcode_t);
+    };
 }

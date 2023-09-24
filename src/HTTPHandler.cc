@@ -21,18 +21,18 @@
 #include <llhttp.h>
 #include <sstream>
 
-namespace crouton {
+namespace crouton::http {
     using namespace std;
 
-    HTTPHandler::HTTPHandler(std::shared_ptr<ISocket> socket, vector<Route> const& routes)
+    Handler::Handler(std::shared_ptr<ISocket> socket, vector<Route> const& routes)
     :_socket(std::move(socket))
     ,_stream(_socket->stream())
-    ,_parser(_stream, HTTPParser::Request)
+    ,_parser(_stream, Parser::Request)
     ,_routes(routes)
     { }
 
 
-    Future<void> HTTPHandler::run() {
+    Future<void> Handler::run() {
         // Read the request:
         AWAIT _parser.readHeaders();
 
@@ -40,19 +40,19 @@ namespace crouton {
         string path(uri.path);
         spdlog::info("HTTPHandler: Request is {} {}", _parser.requestMethod, string(uri));
 
-        HTTPHeaders responseHeaders;
+        Headers responseHeaders;
         responseHeaders.set("User-Agent", "Crouton");
         responseHeaders.set("Connection", "close");
 
         // Find a matching route:
-        auto status = HTTPStatus::MethodNotAllowed;
+        auto status = Status::MethodNotAllowed;
         for (auto &route : _routes) {
             if (route.method == _parser.requestMethod) {
-                status = HTTPStatus::NotFound;
+                status = Status::NotFound;
                 if (regex_match(path, route.pathPattern)) {
                     // Call the handler:
                     AWAIT handleRequest(std::move(responseHeaders), route.handler);
-                    RETURN;
+                    RETURN noerror;
                 }
             }
         }
@@ -60,10 +60,11 @@ namespace crouton {
         // No matching route; return an error:
         AWAIT writeHeaders(status, "", responseHeaders);
         AWAIT endBody();
+        RETURN noerror;
     }
 
 
-    Future<void> HTTPHandler::handleRequest(HTTPHeaders responseHeaders,
+    Future<void> Handler::handleRequest(Headers responseHeaders,
                                             HandlerFunction const& handler)
     {
         string body = AWAIT _parser.entireBody();   //TODO: Let handler fn read at its own pace
@@ -78,13 +79,13 @@ namespace crouton {
         AWAIT handled;
         AWAIT response.finishHeaders();
         AWAIT endBody();
-        RETURN;
+        RETURN noerror;
     }
 
 
-    Future<void> HTTPHandler::writeHeaders(HTTPStatus status,
+    Future<void> Handler::writeHeaders(Status status,
                                            string_view statusMsg,
-                                           HTTPHeaders const& headers)
+                                           Headers const& headers)
     {
         if (statusMsg.empty())
             statusMsg = llhttp_status_name(llhttp_status_t(status));
@@ -97,12 +98,12 @@ namespace crouton {
     }
 
 
-    Future<void> HTTPHandler::writeToBody(string str) {
+    Future<void> Handler::writeToBody(string str) {
         return _stream.write(std::move(str));   //TODO: Write via the Parser
     }
 
 
-    Future<void> HTTPHandler::endBody() {
+    Future<void> Handler::endBody() {
         return _stream.close();
     }
 
@@ -110,30 +111,32 @@ namespace crouton {
 #pragma mark - RESPONSE:
 
 
-    HTTPHandler::Response::Response(HTTPHandler* h, HTTPHeaders&& headers)
+    Handler::Response::Response(Handler* h, Headers&& headers)
     :_handler(h)
     ,_headers(std::move(headers))
     { }
 
-    void HTTPHandler::Response::writeHeader(string_view name, string_view value) {
+    void Handler::Response::writeHeader(string_view name, string_view value) {
         assert(!_sentHeaders);
         _headers.set(string(name), string(value));
     }
 
-    Future<void> HTTPHandler::Response::writeToBody(string str) {
+    Future<void> Handler::Response::writeToBody(string str) {
         AWAIT finishHeaders();
         AWAIT _handler->writeToBody(std::move(str));
+        RETURN noerror;
     }
 
-    Future<void> HTTPHandler::Response::finishHeaders() {
+    Future<void> Handler::Response::finishHeaders() {
         if (!_sentHeaders) {
             spdlog::info("HTTPHandler: Sending {} response", status);
             AWAIT _handler->writeHeaders(status, statusMessage, _headers);
         }
         _sentHeaders = true;
+        RETURN noerror;
     }
 
-    Future<IStream*> HTTPHandler::Response::rawStream() {
+    Future<IStream*> Handler::Response::rawStream() {
         AWAIT finishHeaders();
         RETURN &_handler->_stream;
     }
