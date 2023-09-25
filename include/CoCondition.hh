@@ -71,10 +71,15 @@ namespace crouton {
             return lifecycle::suspendingTo(h, typeid(*this), this);
         }
 
-        T&& await_resume() noexcept     {return std::move(_value).value();}
+        T await_resume() noexcept {
+            T result = std::move(_value).value();
+            _value = std::nullopt;
+            return result;
+        }
 
         template <typename U>
         void notify(U&& val) {
+            assert(!_value);
             _value.emplace(std::forward<U>(val));
             if (auto s = _suspension) {
                 _suspension = nullptr;

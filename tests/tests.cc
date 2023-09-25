@@ -98,6 +98,13 @@ void RunCoroutine(Future<void> (*test)()) {
 }
 
 
+// An example Generator of successive integers.
+static Generator<int64_t> counter(int64_t start, int64_t limit) {
+    for (int64_t i = start; i <= limit; i++)
+        YIELD i;
+}
+
+
 // An example Generator of Fibonacci numbers.
 static Generator<int64_t> fibonacci(int64_t limit) {
     int64_t a = 1, b = 1;
@@ -146,6 +153,21 @@ TEST_CASE("Generator") {
 }
 
 
+TEST_CASE("Generator without coroutine") {
+    {
+        Generator<int64_t> fib = fibonacci(100);
+        vector<int64_t> results;
+        for (Result<int64_t> n : fib) {
+            cerr << n << ' ';
+            results.push_back(n.value());
+        }
+        cerr << endl;
+        CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });
+    }
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
 TEST_CASE("Generators", "[coroutines]") {
     {
         cerr << "Creating Generator...\n";
@@ -167,6 +189,39 @@ TEST_CASE("Generators", "[coroutines]") {
         cerr << "Done!\n";
         CHECK(results == vector<string>{ "2i", "8i", "34i", "144i", "610i", "2584i", "10946i", "46368i" });
     }
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("Generators in parallel") {
+    RunCoroutine([]() -> Future<void> {
+        Generator<int64_t> count = counter(-100, -90);
+        Generator<int64_t> fib = fibonacci(100);
+
+        AsyncQueue<int64_t> q;
+
+        auto onResult = [&](Result<int64_t> r) {
+            if (r)
+                q.push(r.value());
+            else
+                q.close();
+            return true;
+        };
+        count.onNextResult(onResult);
+        fib.onNextResult(onResult);
+
+        Generator<int64_t> gen = q.generate();
+        vector<int64_t> results;
+        for (Result<int64_t> r; (r = AWAIT gen); ) {
+            cerr << *r << ", ";
+            results.push_back(*r);
+        }
+        cerr << endl;
+        CHECK(results == vector<int64_t>{ 
+            -100, 1, -99, 1, -98, 2, -97, 3, -96, 5, -95, 8, -94, 13, -93, 21, -92, 34,
+            -91, 55, -90 });
+        RETURN noerror;
+    });
     REQUIRE(Scheduler::current().assertEmpty());
 }
 
