@@ -25,19 +25,23 @@
 
 namespace crouton {
 
-    /** A `Result<T>` holds either a value of type T or an Error.
+    /** A `Result<T>` is either empty, or holds a value of type T or an `Error`.
+        (A `Result<void>` has no explicit value, but still distinguishes between empty/nonempty.)
         It's used as a return value, and as the contents of a `Future<T>`. */
     template <typename T>
     class Result {
     public:
+        using TT = std::conditional_t<std::is_void_v<T>, std::monostate, T>;
+
         Result()                        :_value(noerror) { }
         Result(Error err)               :_value(err) { }
 
-        template <typename U> requires std::constructible_from<T, U>
+        template <typename U> requires (!std::is_void_v<T> && std::constructible_from<T, U>)
         Result(U&& val)                 :_value(std::forward<U>(val)) { }
 
-        template <typename U> requires std::constructible_from<T, U>
+        template <typename U> requires (!std::is_void_v<T> && std::constructible_from<T, U>)
         Result& operator=(U&& val)      {set(std::forward<U>(val)); return *this;}
+
         Result& operator=(Error err)    {_value = err; return *this;}
 
         Result(Result&& r) noexcept = default;
@@ -45,11 +49,13 @@ namespace crouton {
         Result& operator=(Result const& r) = default;
         Result& operator=(Result&& r) noexcept = default;
 
-        template <typename U> requires std::constructible_from<T, U>
-        void set(U&& val)               {_value = std::forward<U>(val);}
+        template <typename U> requires (!std::is_void_v<T> && std::constructible_from<T, U>)
+        void set(U&& val)                           {_value = std::forward<U>(val);}
+
+        void set()  requires (std::is_void_v<T>)    {_value = TT();}
 
         /// True if there is a T value.
-        bool ok() const                 {return _value.index() == 0;}
+        bool ok() const                             {return _value.index() == 0;}
 
         /// True if there is neither a value nor an error.
         bool empty() const {
@@ -74,90 +80,56 @@ namespace crouton {
             }
         }
 
+        /// Returns the error, if any, else `noerror`.
+        Error error() const {
+            Error const* err = std::get_if<Error>(&_value);
+            return err ? *err : noerror;
+        }
+
         /// Returns the value, or throws the error as an exception.
-        T const& value() const & {
-            if (!ok())
-                raise();
+        TT const& value() const &  requires (!std::is_void_v<T>) {
+            raise_if();
             return std::get<T>(_value);
         }
 
-        T& value() & {
-            if (!ok())
-                raise();
+        TT& value() &  requires (!std::is_void_v<T>) {
+            raise_if();
             return std::get<T>(_value);
         }
 
         /// Returns the value, or throws the error as an exception.
         /// If the Result is empty, throws CroutonError::EmptyResult.
-        T&& value() && {
-            if (!ok())
-                raise();
+        TT&& value() &&  requires (!std::is_void_v<T>) {
+            raise_if();
             return std::get<T>(std::move(_value));
         }
 
-        T& operator*()              {return value();}
-        T const& operator*() const  {return value();}
-
-        T* operator->()             {return &value();}
-
-        /// Returns the error, if any, else an empty Error.
-        Error error() const {
-            Error const* err = std::get_if<Error>(&_value);
-            return err ? *err : Error{};
+        /// There's no value to return, but this checks for an error and if so throws it.
+        void value() const &  requires (std::is_void_v<T>) {
+            raise_if();
         }
+
+        TT& operator*()              requires (!std::is_void_v<T>)  {return value();}
+        TT const& operator*() const  requires (!std::is_void_v<T>)  {return value();}
+        TT* operator->()             requires (!std::is_void_v<T>)  {return &value();}
 
         friend std::ostream& operator<<(std::ostream& out, Result const& r) {
-            if (r.ok())
-                return out << r.value();
-            else
+            if (r.ok()) {
+                return out << std::get<T>(r._value);
+            } else {
                 return out << r.error();
+            }
         }
 
     private:
-        [[noreturn]] void raise() const {
-            Error err = std::get<Error>(_value);
-            if (!err)
-                err = CroutonError::EmptyResult;
-            err.raise();
+        void raise_if() const {
+            if (Error const* errp = std::get_if<Error>(&_value)) {
+                Error err = *errp ? *errp : CroutonError::EmptyResult;
+                err.raise();
+            }
         }
 
-        std::variant<T,Error> _value;
-    };
-
-
-
-    template <>
-    class Result<void> {
-    public:
-        /// A default `Result<void>` has a (void) value and no error.
-        Result()                                    :_value(noerror) { }
-        Result(Error err)                           :_value(err) { }
-
-        Result& operator=(Error err)    {_value = err; return *this;}
-
-        Result(Result&& r) noexcept = default;
-        Result(Result const& r) = default;
-        Result& operator=(Result const& r) = default;
-        Result& operator=(Result&& r) noexcept = default;
-
-        void set()                                  {_value = std::monostate();}
-
-        bool ok() const                             {return _value.index() == 0;}
-        bool isError() const                        {return _value.index() != 0;}
-
-        /// There's no value to return, but this checks for an error and if so throws it.
-        void value() const {
-            if (_value.index() != 0)
-                std::get<Error>(_value).raise();
-        }
-
-        Error error() const {
-            Error const* err = std::get_if<Error>(&_value);
-            return err ? *err : Error{};
-        }
-
-    private:
-        std::variant<std::monostate,Error> _value;
+        std::variant<TT,Error> _value;
     };
 
 
@@ -170,6 +142,7 @@ namespace crouton {
            if (_r_.isError())  co_return _r_.error(); \
            std::move(_r_).value(); })
     //FIXME: MSVC doesn't support `({...})`, AFAIK
+
 
 
     /// Syntactic sugar to await a Future without throwing exceptions.
