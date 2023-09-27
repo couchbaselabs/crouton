@@ -77,6 +77,19 @@ namespace crouton {
     }
 
 
+    void FutureStateBase::onReady(ISelectable::OnReadyFn fn) {
+        if (!fn) {
+            _hasOnReady = false;
+            _onReady = nullptr;
+        } else if (_state == Ready) {
+            fn();
+        } else {
+            _onReady = std::move(fn);
+            _hasOnReady = true;
+        }
+    }
+
+
     // Changes the state to Ready and notifies any waiting coroutine or chained FutureState.
     void FutureStateBase::_notify() {
         switch (_state.exchange(Ready)) {
@@ -96,6 +109,14 @@ namespace crouton {
                 break;
             case Ready:
                 Error::raise(CroutonError::LogicError, "Future already has a result");
+        }
+        
+        if (_hasOnReady) {
+            //FIXME: the management of _onReady is probably not correctly thread-safe
+            auto onReady = std::move(_onReady);
+            _onReady = nullptr;
+            _hasOnReady = false;
+            onReady();
         }
     }
 

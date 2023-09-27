@@ -20,6 +20,7 @@
 #include "Coroutine.hh"
 #include "Result.hh"
 #include "Scheduler.hh"
+#include "Select.hh"
 #include <exception>
 #include <iterator>
 #include <utility>
@@ -28,8 +29,7 @@ namespace crouton {
     template <typename T> class GeneratorImpl;
 
 
-    template <typename T>
-    using OnResultFn = std::function<bool(Result<T>)>;
+    using OnReadyFn = std::function<void()>;
 
 
     /** Public face of a coroutine that produces values by calling `co_yield`.
@@ -40,7 +40,7 @@ namespace crouton {
         A Generator can also be iterated synchronously via its begin/end methods,
         or with a `for(:)` loop.*/
     template <typename T>
-    class Generator : public Coroutine<GeneratorImpl<T>> {
+    class Generator : public Coroutine<GeneratorImpl<T>>, public ISelectable {
     public:
         /// Blocks until the Generator next yields a value, then returns it.
         /// Returns `nullopt` when the Generator is complete (its coroutine has exited.)
@@ -52,25 +52,18 @@ namespace crouton {
         iterator begin()                            {return iterator(*this);}
         std::default_sentinel_t end()               {return std::default_sentinel_t{};}
 
-        /// Registers a callback function to be called with the Generator's next value.
-        /// If the callback returns true, it stays registered and will be called again with the
-        /// next value.
-        /// @warning  This cannot be combined with `co_await`: only one can be used at a time.
-        void onNextResult(OnResultFn<T> fn)             {this->impl().onNextResult(std::move(fn));}
+        void onReady(OnReadyFn fn) override         {this->impl().onReady(std::move(fn));}
 
         //---- Generator is awaitable:
 
-        // Invoked during the `co_await` call to ask if the current coroutine should keep going.
-        bool await_ready()                          {return false;}
+        bool await_ready()                          {return this->impl().isReady();}
 
         coro_handle await_suspend(coro_handle cur) {
             coro_handle next = this->impl().generateFor(cur);
             return lifecycle::suspendingTo(cur, typeid(this), this, next);
         }
 
-        Result<T> await_resume() {
-            return this->impl().yieldedValue();
-        }
+        Result<T> await_resume()                    {return this->impl().yieldedValue();}
 
     private:
         friend class GeneratorImpl<T>;
@@ -112,9 +105,9 @@ namespace crouton {
 
         GeneratorImpl() = default;
 
-        void clear() {
-            _yielded_value = noerror;
-        }
+        void clear()            {_yielded_value = noerror;}
+
+        bool isReady() const    {return _ready;}
 
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
         Result<T> next() {
@@ -145,21 +138,13 @@ namespace crouton {
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
         template <std::convertible_to<T> From>
         YielderTo yield_value(From&& value) {
+            _yielded_value = std::forward<From>(value);
+            ready();
             auto resumer = _consumer;
-            if (resumer) {
+            if (resumer)
                 _consumer = nullptr;
-                _yielded_value = std::forward<From>(value);
-            } else {
+            else
                 resumer = CORO_NS::noop_coroutine();
-                if (auto onResult = std::move(_onNextResult)) {
-                    _onNextResult = nullptr;
-                    if (onResult(std::forward<From>(value)))
-                        onNextResult(std::move(onResult));
-                } else {
-                    _yielded_value = std::forward<From>(value);
-                }
-            }
-            _ready = true;
             return YielderTo{resumer};
         }
 
@@ -167,28 +152,26 @@ namespace crouton {
         void unhandled_exception() {
             this->super::unhandled_exception();
             _yielded_value = Error(std::current_exception());
-            _ready = true;
+            ready();
         }
 
         // Invoked when the coroutine fn returns, implicitly or via co_return.
         void return_void() {
-            _yielded_value = noerror;
-            _ready = true;
+            if (!_ready) {
+                _yielded_value = noerror;
+                ready();
+            }
             lifecycle::returning(this->handle());
         }
 
         // Invoked when the coroutine is done.
         SuspendFinalTo final_suspend() noexcept {
+            assert(_ready);
             auto resumer = _consumer;
-            if (resumer) {
+            if (resumer)
                 _consumer = nullptr;
-            } else {
+            else
                 resumer = CORO_NS::noop_coroutine();
-                if (auto onResult = std::move(_onNextResult))
-                    onResult(std::move(_yielded_value));
-                _ready = true;
-            }
-            _ready = true;
             return SuspendFinalTo{resumer};
         }
 
@@ -197,23 +180,37 @@ namespace crouton {
 
         // Tells me which coroutine should resume after I co_yield the next value.
         coro_handle generateFor(coro_handle consumer) {
-            assert(!_consumer && !_onNextResult); // multiple awaiters not supported
+            assert(!_consumer); // multiple awaiters not supported
             _consumer = consumer;
             clear();
             return this->handle();
         }
 
         // Implementation of Generator::onNextResult(). Schedules a callback.
-        void onNextResult(OnResultFn<T> fn) {
-            assert(!_consumer && !_onNextResult); // multiple awaiters not supported
-            _onNextResult = std::move(fn);
-            clear();
-            Scheduler::current().schedule(this->handle());
+        void onReady(OnReadyFn fn) {
+            if (!fn) {
+                _onReady = nullptr;
+            } else if (_ready) {
+                fn();
+            } else {
+                if (!_onReady)
+                    Scheduler::current().schedule(this->handle());
+                _onReady = std::move(fn);
+                clear();
+            }
+        }
+
+        void ready() {
+            _ready = true;
+            if (auto onReady = std::move(_onReady)) {
+                _onReady = nullptr;
+                onReady();
+            }
         }
 
         Result<T>           _yielded_value;                     // Latest value yielded
         coro_handle         _consumer;                          // Coroutine awaiting my value
-        OnResultFn<T>       _onNextResult;                      // Callback awaiting my value
+        OnReadyFn           _onReady;                           // Callback when ready
         bool                _ready = false;                     // True when a value is available
     };
 

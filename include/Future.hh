@@ -20,6 +20,7 @@
 #include "Coroutine.hh"
 #include "Result.hh"
 #include "Scheduler.hh"
+#include "Select.hh"
 #include <atomic>
 #include <exception>
 #include <functional>
@@ -59,7 +60,7 @@ namespace crouton {
 
         A regular function that gets a Future can call `then()` to register a callback. */
     template <typename T = void>
-    class Future : public Coroutine<FutureImpl<T>> {
+    class Future : public Coroutine<FutureImpl<T>>, public ISelectable {
     public:
         /// Creates a Future from a FutureProvider.
         explicit Future(FutureProvider<T> state)   :_state(std::move(state)) {assert(_state);}
@@ -97,6 +98,9 @@ namespace crouton {
         ///        Instead the returned Future's result will be the same exception.
         template <typename FN, typename U = std::invoke_result_t<FN,T>>
         [[nodiscard]] Future<U> then(FN fn);
+
+        /// From ISelectable interface.
+        virtual void onReady(OnReadyFn fn)  {_state->onReady(std::move(fn));}
 
         //---- These methods make Future awaitable:
         bool await_ready() {
@@ -148,6 +152,8 @@ namespace crouton {
             return Future<U>(std::move(provider));
         }
 
+        void onReady(ISelectable::OnReadyFn);
+
     protected:
         enum State : uint8_t {
             Empty,      // initial state
@@ -166,6 +172,8 @@ namespace crouton {
         Suspension*                      _suspension = nullptr;  // coro that's awaiting result
         std::shared_ptr<FutureStateBase> _chainedFuture;         // Future of a 'then' callback
         ChainCallback                    _chainedCallback;       // 'then' callback
+        ISelectable::OnReadyFn           _onReady;               // `onReady` callback
+        std::atomic<bool>                _hasOnReady = false;
         std::atomic<State>               _state = Empty;         // Current state, for thread-safety
     };
 
@@ -223,7 +231,7 @@ namespace crouton {
 
 
     template <>
-    class Future<void> : public Coroutine<FutureImpl<void>> {
+    class Future<void> : public Coroutine<FutureImpl<void>>, public ISelectable {
     public:
         Future()                :_state(std::make_shared<FutureState<void>>()) {_state->setResult();}
         explicit Future(FutureProvider<void> p) :_state(std::move(p)) {assert(_state);}
@@ -232,6 +240,7 @@ namespace crouton {
         ~Future()                        {this->setHandle(nullptr);} // don't destroy handle
         bool hasResult() const           {return _state->hasResult();}
         void result() const              {_state->resultValue();}
+        virtual void onReady(OnReadyFn fn)  {_state->onReady(std::move(fn));}
         template <typename FN, typename U = std::invoke_result_t<FN>>
         Future<U> then(FN);
         bool await_ready()              {return _state->hasResult();}

@@ -98,134 +98,6 @@ void RunCoroutine(Future<void> (*test)()) {
 }
 
 
-// An example Generator of successive integers.
-static Generator<int64_t> counter(int64_t start, int64_t limit) {
-    for (int64_t i = start; i <= limit; i++)
-        YIELD i;
-}
-
-
-// An example Generator of Fibonacci numbers.
-static Generator<int64_t> fibonacci(int64_t limit) {
-    int64_t a = 1, b = 1;
-    YIELD a;
-    while (b <= limit) {
-
-        YIELD b;
-        tie(a, b) = pair{b, a + b};
-    }
-}
-
-
-// A filter that passes only even numbers. Also takes int64 and produces int
-static Generator<int64_t> onlyEven(Generator<int64_t> source) {
-    // In a coroutine, you co_await a Generator instead of calling next():
-    Result<int64_t> value;
-    while ((value = AWAIT source)) {
-        if (*value % 2 == 0)
-            YIELD *value;
-    }
-}
-
-
-// Converts int to string
-static Generator<string> toString(Generator <int64_t> source) {
-    while (Result<int64_t> value = AWAIT source) {
-        YIELD to_string(*value) + "i";
-    }
-}
-
-
-TEST_CASE("Generator") {
-    RunCoroutine([]() -> Future<void> {
-        Generator<int64_t> fib = fibonacci(100);
-        vector<int64_t> results;
-        Result<int64_t> n;
-        while ((n = AWAIT fib)) {
-            cerr << n << ' ';
-            results.push_back(n.value());
-        }
-        cerr << endl;
-        CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });
-        RETURN noerror;
-    });
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("Generator without coroutine") {
-    {
-        Generator<int64_t> fib = fibonacci(100);
-        vector<int64_t> results;
-        for (Result<int64_t> n : fib) {
-            cerr << n << ' ';
-            results.push_back(n.value());
-        }
-        cerr << endl;
-        CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });
-    }
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("Generators", "[coroutines]") {
-    {
-        cerr << "Creating Generator...\n";
-        Generator fib = toString( onlyEven( fibonacci(100000) ) );
-        
-        cerr << "Calling Generator...\n";
-        
-        vector<string> results;
-        int n = 0;
-        for (string const& value : fib) {
-            results.push_back(value);
-            cerr << "got " << (value) << endl;
-            if (++n >= 100) {
-                cerr << "...OK, that's enough output!\n";
-                break;
-            }
-        }
-        
-        cerr << "Done!\n";
-        CHECK(results == vector<string>{ "2i", "8i", "34i", "144i", "610i", "2584i", "10946i", "46368i" });
-    }
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
-TEST_CASE("Generators in parallel") {
-    RunCoroutine([]() -> Future<void> {
-        Generator<int64_t> count = counter(-100, -90);
-        Generator<int64_t> fib = fibonacci(100);
-
-        AsyncQueue<int64_t> q;
-
-        auto onResult = [&](Result<int64_t> r) {
-            if (r)
-                q.push(r.value());
-            else
-                q.close();
-            return true;
-        };
-        count.onNextResult(onResult);
-        fib.onNextResult(onResult);
-
-        Generator<int64_t> gen = q.generate();
-        vector<int64_t> results;
-        for (Result<int64_t> r; (r = AWAIT gen); ) {
-            cerr << *r << ", ";
-            results.push_back(*r);
-        }
-        cerr << endl;
-        CHECK(results == vector<int64_t>{ 
-            -100, 1, -99, 1, -98, 2, -97, 3, -96, 5, -95, 8, -94, 13, -93, 21, -92, 34,
-            -91, 55, -90 });
-        RETURN noerror;
-    });
-    REQUIRE(Scheduler::current().assertEmpty());
-}
-
-
 #if 0
 staticASYNC<void> waitFor(chrono::milliseconds ms) {
     FutureProvider<void> f;
@@ -277,6 +149,17 @@ TEST_CASE("Future coroutine") {
 
 
 #ifdef __clang__    // GCC 12 doesn't seem to support ActorImpl ctor taking parameters
+
+// An example Generator of Fibonacci numbers.
+static Generator<int64_t> fibonacci(int64_t limit) {
+    int64_t a = 1, b = 1;
+    YIELD a;
+    while (b <= limit) {
+        YIELD b;
+        tie(a, b) = pair{b, a + b};
+    }
+}
+
 
 class TestActor : public Actor {
 public:

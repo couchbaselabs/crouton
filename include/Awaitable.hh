@@ -1,5 +1,5 @@
 //
-// Crouton.hh
+// Awaitable.hh
 //
 // Copyright 2023-Present Couchbase, Inc. All rights reserved.
 //
@@ -17,27 +17,20 @@
 //
 
 #pragma once
-#include "Actor.hh"
-#include "Bytes.hh"
-#include "CoCondition.hh"
-#include "Error.hh"
-#include "EventLoop.hh"
-#include "Future.hh"
-#include "Generator.hh"
-#include "Logging.hh"
-#include "Queue.hh"
-#include "Result.hh"
-#include "Scheduler.hh"
-#include "Select.hh"
-#include "Task.hh"
+#include "Base.hh"
 
-#include "AddrInfo.hh"
-#include "FileStream.hh"
-#include "Filesystem.hh"
-#include "HTTPConnection.hh"
-#include "Process.hh"
-#include "TCPSocket.hh"
-#include "TCPServer.hh"
-#include "TLSSocket.hh"
-#include "URL.hh"
-#include "WebSocket.hh"
+namespace crouton {
+
+    /** Pure-virtual interface declaring the coroutine methods needed to support `co_await`
+        returning type `T`. */
+    template <typename T>
+    class IAwaitable {
+    public:
+        virtual ~IAwaitable() = default;
+
+        virtual bool await_ready() = 0;
+        virtual coro_handle await_suspend(coro_handle cur) = 0;
+        virtual T await_resume() =0;
+    };
+
+}

@@ -19,6 +19,7 @@
 #pragma once
 #include "CoCondition.hh"
 #include "Generator.hh"
+#include "Task.hh"
 #include <optional>
 
 namespace crouton {
@@ -195,6 +196,23 @@ namespace crouton {
             RETURN push(std::move(t));
         }
 
+        /// Starts a coroutine that awaits values from the Generator and pushes them to the queue.
+        /// When the Generator ends, it calls `closeWhenEmpty`.
+        Task pushGenerator(Generator<T> gen) {
+            while (this->state() == super::Open) {
+                Result<T> result = AWAIT gen;
+                if (result.ok()) {
+                    if (! AWAIT this->asyncPush(std::move(result).value()))
+                        break;
+                } else {
+                    this->closeWhenEmpty();
+                    break;
+                }
+                if (!(YIELD 0))
+                    break;
+            }
+        }
+
         //---- Overrides:
 
         void closePush() override {
@@ -238,4 +256,29 @@ namespace crouton {
         CoCondition   _pushCond;
     };
 
+
+#if 0
+    template <typename T, typename U>
+    using MergedResult = Result<std::variant<Result<T>,Result<U>>>;
+
+
+    template <typename T, typename U>
+    class MergedQueue : public AsyncQueue<MergedResult<T,U>> {
+    public:
+        MergedQueue(Generator<T>& genT, Generator<U>& genU) {
+            genT.onNextResult([this](Result<T> result) {return this->onResult(std::move(result));});
+            genU.onNextResult([this](Result<U> result) {return this->onResult(std::move(result));});
+        }
+
+    private:
+        template <typename R>
+        bool onResult(Result<R> r) {
+            if (r)
+                this->push(std::move(r.value()));
+            else
+                this->close();
+            return true;
+        }
+    };
+#endif
 }
