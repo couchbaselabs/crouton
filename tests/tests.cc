@@ -17,7 +17,7 @@
 //
 
 #include "tests.hh"
-#include "UVBase.hh"
+#include "io/UVBase.hh"
 
 
 TEST_CASE("Randomize") {

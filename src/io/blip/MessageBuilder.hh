@@ -14,8 +14,6 @@
 #include "Message.hh"
 #include <functional>
 #include <initializer_list>
-#include <memory>
-#include <utility>
 #include <sstream>
 
 namespace crouton::io::blip {

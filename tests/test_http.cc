@@ -17,7 +17,7 @@
 //
 
 #include "tests.hh"
-#include "HTTPParser.hh"
+#include "io/HTTPParser.hh"
 
 using namespace std;
 using namespace crouton::io::http;

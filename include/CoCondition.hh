@@ -19,7 +19,9 @@
 #pragma once
 #include "LinkedList.hh"
 #include "Scheduler.hh"
+
 #include <concepts>
+#include <optional>
 
 namespace crouton {
 
@@ -40,14 +42,14 @@ namespace crouton {
         ~CoCondition() {assert(_awaiters.empty());}
 
 
-        struct awaiter : public CORO_NS::suspend_always, private Link {
+        struct awaiter : public CORO_NS::suspend_always, private util::Link {
             awaiter(CoCondition* cond) :_cond(cond) { }
 
             coro_handle await_suspend(coro_handle h) noexcept;
 
         private:
             friend class CoCondition;
-            friend class LinkList;
+            friend class util::LinkList;
             void wakeUp();
 
             CoCondition* _cond;
@@ -57,7 +59,7 @@ namespace crouton {
     private:
         void remove(awaiter* a);
 
-        LinkedList<awaiter> _awaiters;
+        util::LinkedList<awaiter> _awaiters;
     };
 
 

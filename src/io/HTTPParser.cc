@@ -16,9 +16,9 @@
 // limitations under the License.
 //
 
-#include "HTTPParser.hh"
+#include "io/HTTPParser.hh"
+#include "io/IStream.hh"
 #include "Future.hh"
-#include "IStream.hh"
 #include "StringUtils.hh"
 #include "llhttp.h"
 

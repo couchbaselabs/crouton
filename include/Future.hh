@@ -21,12 +21,10 @@
 #include "Result.hh"
 #include "Scheduler.hh"
 #include "Select.hh"
+
 #include <atomic>
 #include <exception>
 #include <functional>
-#include <memory>
-#include <utility>
-#include <cassert>
 
 /// Macro for declaring a function that returns a Future, e.g. `ASYNC<void> close();`
 /// It's surprisingly easy to forget to await the Future, especially `Future<void>`,

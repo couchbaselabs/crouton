@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>    // Makes custom types loggable via `operator <<` overloads
 

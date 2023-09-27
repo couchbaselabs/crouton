@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+
 #include <array>
 #include <concepts>
 #include <exception>

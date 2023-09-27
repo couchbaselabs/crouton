@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "HTTPHandler.hh"
+#include "io/HTTPHandler.hh"
 #include "Logging.hh"
 #include <llhttp.h>
 #include <sstream>

@@ -17,8 +17,8 @@
 //
 
 #include "BLIPConnection.hh"
+#include "io/WebSocket.hh"
 #include "Task.hh"
-#include "WebSocket.hh"
 
 namespace crouton::io::blip {
     using namespace std;

@@ -17,6 +17,7 @@
 //
 
 #include "Future.hh"
+#include "Logging.hh"
 
 namespace crouton {
 

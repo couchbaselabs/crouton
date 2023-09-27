@@ -17,9 +17,9 @@
 //
 
 #pragma once
-#include "ISocket.hh"
-#include "IStream.hh"
-#include <memory>
+#include "io/ISocket.hh"
+#include "io/IStream.hh"
+
 
 namespace crouton::io {
     struct Buffer;

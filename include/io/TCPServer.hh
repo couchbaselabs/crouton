@@ -18,8 +18,8 @@
 
 #pragma once
 #include "Base.hh"
+
 #include <functional>
-#include <memory>
 
 struct uv_tcp_s;
 

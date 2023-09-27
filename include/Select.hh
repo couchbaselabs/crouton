@@ -18,7 +18,11 @@
 
 #pragma once
 #include "Scheduler.hh"
+
+#include <array>
 #include <bitset>
+#include <functional>
+#include <initializer_list>
 
 namespace crouton {
 

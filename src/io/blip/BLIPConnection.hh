@@ -18,10 +18,10 @@
 
 #pragma once
 #include "BLIPIO.hh"
+#include "io/WebSocket.hh"
 #include "CoCondition.hh"
 #include "Message.hh"
 #include "Task.hh"
-#include "WebSocket.hh"
 
 namespace crouton::io::blip {
     class MessageBuilder;

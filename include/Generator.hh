@@ -21,9 +21,10 @@
 #include "Result.hh"
 #include "Scheduler.hh"
 #include "Select.hh"
+
 #include <exception>
+#include <functional>
 #include <iterator>
-#include <utility>
 
 namespace crouton {
     template <typename T> class GeneratorImpl;
@@ -139,7 +140,7 @@ namespace crouton {
 
         // Called when the public Generator<T> is destructed.
         void stop() {
-            LCoro->info("Generator {} told to stop", logCoro{this->handle()});
+            //LCoro->info("Generator {} told to stop", logCoro{this->handle()});
             // TODO: Communicate this to the function somehow...
         }
 

@@ -18,6 +18,9 @@
 
 #pragma once
 #include "Base.hh"
+
+#include <algorithm>
+#include <cstring>
 #include <span>
 
 struct uv_buf_t;

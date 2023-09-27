@@ -23,11 +23,10 @@
 #include "Bytes.hh"
 #include "Logging.hh"
 #include "Scheduler.hh"
-#include "UVBase.hh"
+#include "io/UVBase.hh"
 
 #include <algorithm>
 #include <concepts>
-#include <memory>
 
 #include <uv.h>
 // On Windows <uv.h> drags in <windows.h>, which defines `min` and `max` as macros,

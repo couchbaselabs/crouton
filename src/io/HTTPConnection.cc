@@ -16,10 +16,9 @@
 // limitations under the License.
 //
 
-#include "HTTPConnection.hh"
-#include "NWConnection.hh"
-#include "TLSSocket.hh"
-#include "TCPSocket.hh"
+#include "io/HTTPConnection.hh"
+#include "io/TCPSocket.hh"
+#include "io/mbed/TLSSocket.hh"
 #include "UVInternal.hh"
 #include "llhttp.h"
 #include <sstream>

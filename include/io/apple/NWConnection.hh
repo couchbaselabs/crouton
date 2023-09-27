@@ -19,9 +19,9 @@
 #pragma once
 #ifdef __APPLE__
 
+#include "io/ISocket.hh"
+#include "io/IStream.hh"
 #include "Error.hh"
-#include "ISocket.hh"
-#include "IStream.hh"
 
 struct dispatch_data_s;
 struct dispatch_queue_s;

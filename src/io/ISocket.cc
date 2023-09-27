@@ -16,12 +16,12 @@
 // limitations under the License.
 //
 
-#include "ISocket.hh"
-#include "TCPSocket.hh"
-#include "TLSSocket.hh"
+#include "io/ISocket.hh"
+#include "io/TCPSocket.hh"
+#include "io/mbed/TLSSocket.hh"
 
 #ifdef __APPLE__
-#include "NWConnection.hh"
+#include "io/apple/NWConnection.hh"
 #endif
 
 namespace crouton::io {

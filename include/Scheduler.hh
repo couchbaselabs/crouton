@@ -18,15 +18,13 @@
 
 #pragma once
 #include "Coroutine.hh"
+
 #include <algorithm>
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <ranges>
 #include <unordered_map>
-#include <cassert>
-
-#include "Logging.hh"//TEMP
 
 namespace crouton {
     class EventLoop;

@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "FileStream.hh"
+#include "io/FileStream.hh"
 #include "UVInternal.hh"
 
 namespace crouton::io {

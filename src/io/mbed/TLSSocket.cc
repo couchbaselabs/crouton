@@ -16,9 +16,9 @@
 // limitations under the License.
 //
 
-#include "TLSSocket.hh"
+#include "io/mbed/TLSSocket.hh"
+#include "io/TCPSocket.hh"
 #include "TLSContext.hh"
-#include "TCPSocket.hh"
 #include "UVInternal.hh"
 
 // Code adapted from Couchbase's fork of sockpp:

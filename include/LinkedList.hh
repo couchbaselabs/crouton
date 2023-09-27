@@ -19,7 +19,7 @@
 #pragma once
 #include "Base.hh"
 
-namespace crouton {
+namespace crouton::util {
 
     /** A link in a doubly-linked circular list.
         Generally used as a base class of the actual list item class. 

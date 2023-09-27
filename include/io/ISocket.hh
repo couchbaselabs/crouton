@@ -19,8 +19,7 @@
 #pragma once
 #include "Future.hh"
 #include "Task.hh"
-#include <memory>
-#include <cassert>
+
 
 namespace crouton::io {
     class IStream;

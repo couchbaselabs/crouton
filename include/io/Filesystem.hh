@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Generator.hh"
+
 #include <vector>
 
 namespace crouton::io::fs {

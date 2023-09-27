@@ -16,8 +16,8 @@
 // limitations under the License.
 //
 
-#include "TCPSocket.hh"
-#include "AddrInfo.hh"
+#include "io/TCPSocket.hh"
+#include "io/AddrInfo.hh"
 #include "UVInternal.hh"
 
 namespace crouton::io {

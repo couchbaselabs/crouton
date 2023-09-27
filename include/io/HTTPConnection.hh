@@ -17,12 +17,10 @@
 //
 
 #pragma once
-#include "HTTPParser.hh"
-#include "IStream.hh"
-#include "ISocket.hh"
-#include <iosfwd>
-#include <memory>
-#include <utility>
+#include "io/HTTPParser.hh"
+#include "io/IStream.hh"
+#include "io/ISocket.hh"
+
 
 namespace crouton::io::http {
     struct Request;

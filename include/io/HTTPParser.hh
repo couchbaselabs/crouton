@@ -19,12 +19,10 @@
 #pragma once
 #include "Bytes.hh"
 #include "Future.hh"
-#include "URL.hh"
-#include <iosfwd>
-#include <memory>
+#include "io/URL.hh"
+
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 struct llhttp_settings_s;
 struct llhttp__internal_s;

@@ -63,6 +63,10 @@
             argument = "--break"
             isEnabled = "YES">
          </CommandLineArgument>
+         <CommandLineArgument
+            argument = "[generator]"
+            isEnabled = "NO">
+         </CommandLineArgument>
       </CommandLineArguments>
       <EnvironmentVariables>
          <EnvironmentVariable
@@ -72,7 +76,7 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "SPDLOG_LEVEL"
-            value = "info,Coro=trace,Sched=info"
+            value = "info,Coro=trace,Sched=debug"
             isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>

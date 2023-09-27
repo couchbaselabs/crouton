@@ -19,8 +19,8 @@
 #pragma once
 #include "Future.hh"
 #include "Logging.hh"
+
 #include <deque>
-#include <memory>
 
 namespace crouton {
 

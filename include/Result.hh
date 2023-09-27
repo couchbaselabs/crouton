@@ -19,8 +19,7 @@
 #pragma once
 #include "Base.hh"
 #include "Error.hh"
-#include <cassert>
-#include <utility>
+
 #include <variant>
 
 namespace crouton {

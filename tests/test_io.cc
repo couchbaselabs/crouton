@@ -17,8 +17,9 @@
 //
 
 #include "tests.hh"
-#include "HTTPParser.hh"
-#include "NWConnection.hh"
+#include "io/HTTPParser.hh"
+#include "io/apple/NWConnection.hh"
+#include "io/mbed/TLSSocket.hh"
 
 #if defined(_WIN32)
 #   include <winsock2.h>

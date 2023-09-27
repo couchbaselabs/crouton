@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "IStream.hh"
+#include "io/IStream.hh"
 #include "UVInternal.hh"
 #include <cstring> // for memcpy
 

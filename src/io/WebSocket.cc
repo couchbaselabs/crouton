@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "WebSocket.hh"
+#include "io/WebSocket.hh"
 #include "Logging.hh"
 #include "StringUtils.hh"
 #include "UVInternal.hh"

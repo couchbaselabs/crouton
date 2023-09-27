@@ -16,10 +16,10 @@
 // limitations under the License.
 //
 
-#include "Process.hh"
+#include "io/Process.hh"
+#include "UVInternal.hh"
 #include "Logging.hh"
 #include "Task.hh"
-#include "UVInternal.hh"
 
 namespace crouton::io {
     using namespace std;

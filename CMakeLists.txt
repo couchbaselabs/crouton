@@ -18,6 +18,7 @@ set(CMAKE_C_STANDARD_REQUIRED   ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
+
 #### CMAKE SUBPROJECTS
 
 
@@ -92,46 +93,49 @@ include_directories( SYSTEM
 )
 
 
-include_directories(
-    include/
-    include/io/
-    include/io/apple/
-    include/io/mbedtls/
-    src/
-    src/io/
-    src/support/
-)
-
 add_library( LibCrouton STATIC
-    src/io/AddrInfo.cc
-    src/Coroutine.cc
+    src/CoCondition.cc
     src/CoroLifecycle.cc
+    src/Coroutine.cc
     src/Error.cc
+    src/Future.cc
+    src/Logging.cc
+    src/Scheduler.cc
+    src/Select.cc
+
+    src/io/AddrInfo.cc
     src/io/FileStream.cc
     src/io/Filesystem.cc
-    src/Future.cc
     src/io/HTTPConnection.cc
     src/io/HTTPHandler.cc
     src/io/HTTPParser.cc
     src/io/ISocket.cc
     src/io/IStream.cc
-    src/Logging.cc
     src/io/Pipe.cc
     src/io/Process.cc
-    src/Scheduler.cc
     src/io/Stream.cc
     src/io/TCPServer.cc
     src/io/TCPSocket.cc
     src/io/URL.cc
     src/io/UVBase.cc
     src/io/WebSocket.cc
-    src/io/mbedtls/TLSSocket.cc
+
+    src/io/mbed/TLSSocket.cc
+
     src/support/Backtrace.cc
     src/support/Memoized.cc
     src/support/StringUtils.cc
 )
 
-set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
+target_include_directories( LibCrouton PUBLIC
+    include/
+)
+
+target_include_directories( LibCrouton PRIVATE
+    src/
+    src/io/
+    src/support/
+)
 
 target_link_libraries( LibCrouton INTERFACE
     uv_a
@@ -140,7 +144,9 @@ target_link_libraries( LibCrouton INTERFACE
     spdlog
 )
 
-if(APPLE)
+set_property(TARGET LibCrouton  PROPERTY OUTPUT_NAME Crouton)
+
+if (APPLE)
     target_sources( LibCrouton PRIVATE
         src/io/apple/NWConnection.cc
     )
@@ -158,11 +164,39 @@ if (MSVC)
     )
 endif()
 
+
+#### BLIP
+
+
+add_library( BLIP STATIC
+    src/io/blip/BLIPConnection.cc
+    src/io/blip/BLIPIO.cc
+    src/io/blip/Message.cc
+    src/io/blip/MessageBuilder.cc
+    src/io/blip/MessageOut.cc
+    src/io/blip/Codec.cc
+)
+
+target_include_directories( LibCrouton PUBLIC
+    src/io/blip/
+)
+
+target_include_directories( BLIP PRIVATE
+    src/
+    src/io/
+    src/support/
+)
+
+target_link_libraries( BLIP
+    LibCrouton
+    z
+)
+
+
 #### DEMO TOOLS
 
 
 if (NOT CROUTON_IOS)
-
     add_executable( demo_client
         tests/demo_client.cc
     )
@@ -178,7 +212,6 @@ if (NOT CROUTON_IOS)
     target_link_libraries( demo_server
         LibCrouton
     )
-
 endif()
 
 
@@ -186,22 +219,24 @@ endif()
 
 
 if (NOT CROUTON_IOS)
-
     add_executable( CroutonTests
         tests/tests.cc
-        tests/test_http.cc
+        tests/test_generator.cc
         tests/test_io.cc
+        tests/test_http.cc
+        tests/test_blip.cc
         vendor/catch2/catch_amalgamated.cpp
         vendor/catch2/ConsoleReporterPlus.cc
     )
 
     target_include_directories( CroutonTests PRIVATE
+        src/support/
         vendor/catch2/
     )
 
     target_link_libraries( CroutonTests
         LibCrouton
+        BLIP
     )
-
 endif()
 

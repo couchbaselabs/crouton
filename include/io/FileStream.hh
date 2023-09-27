@@ -17,9 +17,9 @@
 //
 
 #pragma once
-#include "IStream.hh"
+#include "io/IStream.hh"
 #include "Generator.hh"
-#include <memory>
+
 
 namespace crouton::io {
     struct Buffer;

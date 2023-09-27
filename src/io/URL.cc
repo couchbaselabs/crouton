@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "URL.hh"
+#include "io/URL.hh"
 #include "Error.hh"
 #include "StringUtils.hh"
 #include <cstring>

@@ -33,6 +33,7 @@ IPHONEOS_DEPLOYMENT_TARGET                     = 15.0
 MACOSX_DEPLOYMENT_TARGET                       = 10.15
 
 // Search paths
+HEADER_SEARCH_PATHS                            = $(inherited) include
 SYSTEM_HEADER_SEARCH_PATHS                     = $(inherited) vendor/spdlog/include
 ALWAYS_SEARCH_USER_PATHS                       = NO
 

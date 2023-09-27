@@ -668,6 +668,7 @@
 				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
+				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
 				278F7F222AAA98FE005B12F2 /* Logging.hh */,
 				27B3306C2AB3C3B40066C8DA /* Queue.hh */,
 				27BA40742AA502DD0011BB86 /* Result.hh */,
@@ -992,8 +993,6 @@
 		2788E3562AC4E31700254A88 /* io */ = {
 			isa = PBXGroup;
 			children = (
-				278F7E362AA1168A005B12F2 /* apple */,
-				278F7E372AA11696005B12F2 /* mbedtls */,
 				279D5D402A8FE08D005C3066 /* AddrInfo.hh */,
 				272730502A8EC61D000CCA22 /* FileStream.hh */,
 				278F7E4D2AA2ADFD005B12F2 /* Filesystem.hh */,
@@ -1010,6 +1009,8 @@
 				272A85242A96DCB30083D947 /* URL.hh */,
 				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
 				272A852E2A982DE50083D947 /* WebSocket.hh */,
+				278F7E362AA1168A005B12F2 /* apple */,
+				278F7E372AA11696005B12F2 /* mbed */,
 			);
 			path = io;
 			sourceTree = "<group>";
@@ -1017,9 +1018,6 @@
 		2788E3572AC4E34100254A88 /* io */ = {
 			isa = PBXGroup;
 			children = (
-				278F7E352AA1165C005B12F2 /* apple */,
-				27B3304C2AB2763B0066C8DA /* blip */,
-				278F7E292A9FF3DA005B12F2 /* mbedtls */,
 				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
 				272730512A8EC61D000CCA22 /* FileStream.cc */,
 				278F7E4E2AA2ADFD005B12F2 /* Filesystem.cc */,
@@ -1038,6 +1036,9 @@
 				272730492A8D99B0000CCA22 /* UVInternal.hh */,
 				272A852F2A982DE50083D947 /* WebSocket.cc */,
 				278F7E4B2AA28642005B12F2 /* WebSocketProtocol.hh */,
+				278F7E352AA1165C005B12F2 /* apple */,
+				27B3304C2AB2763B0066C8DA /* blip */,
+				278F7E292A9FF3DA005B12F2 /* mbed */,
 			);
 			path = io;
 			sourceTree = "<group>";
@@ -1134,13 +1135,13 @@
 			path = mbedtls;
 			sourceTree = "<group>";
 		};
-		278F7E292A9FF3DA005B12F2 /* mbedtls */ = {
+		278F7E292A9FF3DA005B12F2 /* mbed */ = {
 			isa = PBXGroup;
 			children = (
 				278F76792A9FEF54005B12F2 /* TLSSocket.cc */,
 				278F7E302A9FF7FA005B12F2 /* TLSContext.hh */,
 			);
-			path = mbedtls;
+			path = mbed;
 			sourceTree = "<group>";
 		};
 		278F7E352AA1165C005B12F2 /* apple */ = {
@@ -1159,12 +1160,12 @@
 			path = apple;
 			sourceTree = "<group>";
 		};
-		278F7E372AA11696005B12F2 /* mbedtls */ = {
+		278F7E372AA11696005B12F2 /* mbed */ = {
 			isa = PBXGroup;
 			children = (
 				278F76782A9FEF54005B12F2 /* TLSSocket.hh */,
 			);
-			path = mbedtls;
+			path = mbed;
 			sourceTree = "<group>";
 		};
 		278F7E612AAA91C1005B12F2 /* spdlog */ = {
@@ -1357,7 +1358,6 @@
 				27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
 				27B330692AB388960066C8DA /* Endian.hh */,
-				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
 				275A5F132AAFB3B1009791E8 /* Memoized.hh */,
 				275A5F142AAFB3B1009791E8 /* Memoized.cc */,
 				278F7E3E2AA24FEE005B12F2 /* StringUtils.hh */,

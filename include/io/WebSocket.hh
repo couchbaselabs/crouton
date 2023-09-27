@@ -20,11 +20,11 @@
 #include "Bytes.hh"
 #include "Coroutine.hh"
 #include "Generator.hh"
-#include "HTTPConnection.hh"
-#include "HTTPHandler.hh"
+#include "io/HTTPConnection.hh"
+#include "io/HTTPHandler.hh"
+
 #include <cstring>
 #include <deque>
-#include <memory>
 #include <optional>
 
 namespace uWS {
