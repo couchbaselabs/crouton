@@ -199,7 +199,7 @@ namespace crouton {
     private:
         void unlock();
 
-        std::vector<Suspension*> _waiters;
+        std::vector<Suspension> _waiters;
         bool _locked = false;
     };
 

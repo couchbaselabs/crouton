@@ -56,7 +56,7 @@ namespace crouton {
             _suspension = sched.suspend(coro);
             if (!changeState(Waiting)) {
                 // Oops, provider set a value while I was suspending; wake immediately:
-                _suspension->wakeUp();
+                _suspension.wakeUp();
             }
             return sched.next();
         } else {
@@ -69,12 +69,11 @@ namespace crouton {
     void FutureStateBase::noFuture() {
         //TODO: Make this fully thread-safe
         if (_suspension) {
-            LCoro->info("Future dealloced with _suspension {} of {}",
-                        (void*)_suspension, logCoro{_suspension->handle()});
+            LCoro->info("Future dealloced with _suspension of {}",
+                        logCoro{_suspension.handle()});
             State state = Waiting;
             _state.compare_exchange_strong(state, Empty);
-            _suspension->cancel();
-            _suspension = nullptr;
+            _suspension.cancel();
         }
     }
 
@@ -112,10 +111,7 @@ namespace crouton {
                 break;
             case Waiting:
                 // Wake the waiting coroutine:
-                if (auto sus = _suspension) {
-                    _suspension = nullptr;
-                    sus->wakeUp();
-                }
+                _suspension.wakeUp();
                 break;
             case Chained:
                 // Resolve the chained FutureState:

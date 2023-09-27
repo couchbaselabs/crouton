@@ -32,7 +32,7 @@ namespace crouton {
 
     coro_handle CoMutex::await_suspend(coro_handle h) noexcept {
         auto& sched = Scheduler::current();
-        _waiters.push_back(sched.suspend(h));
+        _waiters.emplace_back(sched.suspend(h));
         return lifecycle::suspendingTo(h, typeid(this), this, sched.next());
     }
 
@@ -40,9 +40,9 @@ namespace crouton {
         if (_waiters.empty()) {
             _locked = false;
         } else {
-            Suspension* next = _waiters.front();
+            Suspension next = std::move(_waiters.front());
             _waiters.erase(_waiters.begin());
-            next->wakeUp();
+            next.wakeUp();
         }
     }
 

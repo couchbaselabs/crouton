@@ -107,7 +107,10 @@ namespace crouton::lifecycle {
     /// Gets a coro_handle's coroInfo. Mutex must be locked.
     static coroInfo& _getInfo(coro_handle h) {
         auto i = sCoros.find(h.address());
-        assert(i != sCoros.end());
+        if (i == sCoros.end()) {
+            LCoro->critical("Unknown coroutine_handle {}", h.address());
+            abort();
+        }
         return i->second;
     }
 
@@ -153,11 +156,11 @@ namespace crouton::lifecycle {
 
     /// Logs the coroutines in the current thread's stack.
     static void logStack() {
-        if (LCoro->should_log(spdlog::level::debug)) {
+        if (LCoro->should_log(spdlog::level::trace)) {
             stringstream out;
             for (auto c = tCurrent; c; c = c->caller)
                 out << ' ' << *c;
-            LCoro->debug("CURRENT: {}", out.str());
+            LCoro->trace("CURRENT: {}", out.str());
         }
     }
 
@@ -228,10 +231,10 @@ namespace crouton::lifecycle {
         lock.unlock();
         if (ready) {
             i->second.setState(coroState::active);
-            LCoro->trace("{} created and starting", verbose{i->second});
+            LCoro->debug("{} created and starting", verbose{i->second});
             pushCurrent(i->second);
         } else {
-            LCoro->trace("{} created", verbose{i->second});
+            LCoro->debug("{} created", verbose{i->second});
         }
     }
 
@@ -373,11 +376,10 @@ namespace crouton::lifecycle {
         for (auto &other : sCoros)
             assert(other.second.caller != &info);
 
-        if (info.state < coroState::ending) {
+        if (info.state < coroState::ending)
             LCoro->warn("{} destructed before returning or throwing", info);
-//            if (LCoro->should_log(spdlog::level::trace))
-//                LCoro->trace("{} destructed. ({} left)", info, _count() - 1);
-        }
+        LCoro->debug("{} destructed. ({} left)", info, _count() - 1);
+        
         sCoros.erase(i);
     }
 

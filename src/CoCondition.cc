@@ -22,43 +22,31 @@
 namespace crouton {
 
     void CoCondition::notifyOne() {
-        if (!_awaiters.empty()) {
-            awaiter& a = _awaiters.pop_front();
-            LSched->debug("CoCondition {}: waking suspension={}", (void*)this, (void*)a._suspension);
-            a.wakeUp();
-        }
+        if (!_awaiters.empty())
+            _awaiters.pop_front().wakeUp();
     }
 
 
     void CoCondition::notifyAll() {
         auto awaiters = std::move(_awaiters);
-        for (auto &a : awaiters) {
-            LSched->debug("CoCondition {}: waking suspension={}",
-                          (void*)this, (void*)a._suspension);
+        for (auto &a : awaiters)
             a.wakeUp();
-        }
     }
 
 
     coro_handle CoCondition::awaiter::await_suspend(coro_handle h) noexcept {
         _suspension = Scheduler::current().suspend(h);
-        LSched->debug("CoCondition {}: adding awaiter with h={}, suspension={}",
-                      (void*)this, logCoro{h}, (void*)_suspension);
+        LSched->debug("CoCondition {}: suspending {}",
+                      (void*)this, logCoro{h});
         _cond->_awaiters.push_back(*this);
         return lifecycle::suspendingTo(h, typeid(*_cond), _cond);
     }
 
 
     void CoCondition::awaiter::wakeUp() {
-        auto sus = _suspension;
-        _suspension = nullptr;
-        LSched->debug("CoCondition {}: waking suspension={}",
-                      (void*)this, (void*)sus);
-        sus->wakeUp();
+        LSched->debug("CoCondition {}: waking {}",
+                      (void*)_cond, logCoro{_suspension.handle()});
+        _suspension.wakeUp();
     }
 
-
-    CoCondition::awaiter::~awaiter() {
-        assert(!_suspension);
-    }
 }

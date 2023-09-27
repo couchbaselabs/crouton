@@ -42,7 +42,6 @@ namespace crouton {
 
         struct awaiter : public CORO_NS::suspend_always, private Link {
             awaiter(CoCondition* cond) :_cond(cond) { }
-            ~awaiter();
 
             coro_handle await_suspend(coro_handle h) noexcept;
 
@@ -52,7 +51,7 @@ namespace crouton {
             void wakeUp();
 
             CoCondition* _cond;
-            Suspension*  _suspension = nullptr;
+            Suspension   _suspension;
         };
 
     private:
@@ -93,15 +92,12 @@ namespace crouton {
         void notify(U&& val) {
             assert(!_value);
             _value.emplace(std::forward<U>(val));
-            if (auto s = _suspension) {
-                _suspension = nullptr;
-                s->wakeUp();
-            }
+            _suspension.wakeUp();
         }
 
     private:
         std::optional<T> _value;
-        Suspension* _suspension = nullptr;
+        Suspension _suspension;
     };
 
 
@@ -120,14 +116,11 @@ namespace crouton {
 
         void notify() {
             _hasValue = true;
-            if (auto s = _suspension) {
-                _suspension = nullptr;
-                s->wakeUp();
-            }
+            _suspension.wakeUp();
         }
 
     private:
-        Suspension* _suspension = nullptr;
+        Suspension  _suspension;
         bool        _hasValue = false;
     };
 

@@ -17,11 +17,10 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "Scheduler.hh"
 #include <bitset>
 
 namespace crouton {
-    class Suspension;
 
     /** Pure-virtual interface for awaitable objects that can notify via a callback
         when they're ready, i.e. when `co_await` will not block.
@@ -73,7 +72,7 @@ namespace crouton {
 
         std::array<ISelectable*,kMaxSources>    _sources;
         std::bitset<kMaxSources>                _enabled, _ready;
-        Suspension*                             _suspension = nullptr;
+        Suspension                              _suspension;
     };
 
 

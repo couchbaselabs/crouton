@@ -180,12 +180,12 @@ namespace crouton {
         void _chain(std::shared_ptr<FutureStateBase>, ChainCallback);
         void resolveChain();
 
-        Suspension*                      _suspension = nullptr;  // coro that's awaiting result
-        std::shared_ptr<FutureStateBase> _chainedFuture;         // Future of a 'then' callback
-        ChainCallback                    _chainedCallback;       // 'then' callback
-        ISelectable::OnReadyFn           _onReady;               // `onReady` callback
+        Suspension                       _suspension;           // coro that's awaiting result
+        std::shared_ptr<FutureStateBase> _chainedFuture;        // Future of a 'then' callback
+        ChainCallback                    _chainedCallback;      // 'then' callback
+        ISelectable::OnReadyFn           _onReady;              // `onReady` callback
         std::atomic<bool>                _hasOnReady = false;
-        std::atomic<State>               _state = Empty;         // Current state, for thread-safety
+        std::atomic<State>               _state = Empty;        // Current state, for thread-safety
     };
 
 

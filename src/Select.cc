@@ -62,10 +62,7 @@ namespace crouton {
     void Select::notify(unsigned index) {
         _ready[index] = true;
         _enabled[index] = false;
-        if (auto s = _suspension) {
-            _suspension = nullptr;
-            s->wakeUp();
-        }
+        _suspension.wakeUp();
     }
 
 }

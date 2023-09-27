@@ -26,6 +26,76 @@
 namespace crouton {
     using namespace std;
 
+
+#pragma mark - SUSPENSION:
+
+
+    struct Scheduler::SuspensionImpl {
+    public:
+        SuspensionImpl(coro_handle h, Scheduler *s) 
+        :_handle(h), _scheduler(s) { }
+
+
+        /// Makes the associated suspended coroutine runnable again;
+        /// at some point its Scheduler will return it from next().
+        /// @note This may be called from any thread, but _only once_.
+        /// @warning  The Suspension pointer becomes invalid as soon as this is called.
+        void wakeUp() {
+            assert(_visible);
+            if (_wakeMe.test_and_set() == false) {
+                _visible = false;
+                LSched->trace("{} unblocked", logCoro{_handle});
+                auto sched = _scheduler;
+                assert(sched);
+                _scheduler = nullptr;
+                sched->wakeUp();
+            }
+        }
+
+        /// Removes the associated coroutine from the suspended set.
+        /// You must call this if the coroutine is destroyed while a Suspension exists.
+        void cancel() {
+            LSched->trace("{} Suspension canceled -- forgetting it", logCoro{_handle});
+            assert(_visible);
+            _handle = nullptr;
+            if (_wakeMe.test_and_set() == false) {
+                _visible = false;
+                auto sched = _scheduler;
+                assert(sched);
+                _scheduler = nullptr;
+                sched->wakeUp();
+            }
+        }
+
+        coro_handle         _handle;                    // The coroutine (not really needed)
+        Scheduler*          _scheduler;                 // Scheduler that owns coroutine
+        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine wants to wake up
+        bool                _visible = false;           // Is this Suspension externally visible?
+    };
+
+
+    coro_handle Suspension::handle() const {
+        return _impl ? _impl->_handle : coro_handle{};
+    }
+
+    void Suspension::wakeUp() {
+        if (auto impl = _impl) {
+            _impl = nullptr;
+            impl->wakeUp();
+        }
+    }
+    
+    void Suspension::cancel() {
+        if (auto impl = _impl) {
+            _impl = nullptr;
+            impl->cancel();
+        }
+    }
+
+
+#pragma mark - SCHEDULER:
+    
+
     Scheduler& Scheduler::_create() {
         InitLogging();
         assert(!sCurSched);
@@ -86,31 +156,6 @@ namespace crouton {
         return false;
     }
 
-
-    void Suspension::wakeUp() {
-        assert(_visible);
-        if (_wakeMe.test_and_set() == false) {
-            _visible = false;
-            LCoro->trace("{} unblocked", logCoro{_handle});
-            auto sched = _scheduler;
-            assert(sched);
-            _scheduler = nullptr;
-            sched->wakeUp();
-        }
-    }
-
-    void Suspension::cancel() {
-        LCoro->trace("{} suspension canceled", logCoro{_handle});
-        assert(_visible);
-        _handle = nullptr;
-        if (_wakeMe.test_and_set() == false) {
-            _visible = false;
-            auto sched = _scheduler;
-            assert(sched);
-            _scheduler = nullptr;
-            sched->wakeUp();
-        }
-    }
 
     EventLoop& Scheduler::eventLoop() {
         assert(isCurrent());
@@ -236,20 +281,20 @@ namespace crouton {
     /// Adds a coroutine handle to the suspension set.
     /// To make it runnable again, call the returned Suspension's `wakeUp` method
     /// from any thread.
-    Suspension* Scheduler::suspend(coro_handle h) {
+    Suspension Scheduler::suspend(coro_handle h) {
         LSched->debug("suspend {}", logCoro{h});
         assert(isCurrent());
         assert(!isReady(h));
         auto [i, added] = _suspended.try_emplace(h.address(), h, this);
         i->second._visible = true;
-        return &i->second;
+        return Suspension(&i->second);
     }
 
     void Scheduler::destroying(coro_handle h) {
         LSched->debug("destroying {}", logCoro{h});
         assert(isCurrent());
         if (auto i = _suspended.find(h.address()); i != _suspended.end()) {
-            Suspension& sus = i->second;
+            SuspensionImpl& sus = i->second;
             if (sus._wakeMe.test_and_set()) {
                 // The holder of the Suspension already tried to wake it, so it's OK to delete it:
                 _suspended.erase(i);

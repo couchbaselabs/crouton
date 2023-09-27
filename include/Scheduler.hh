@@ -84,7 +84,7 @@ namespace crouton {
         }
 
         //---- Awaitable: `co_await`ing a Scheduler moves the current coroutine to its thread.
-
+#if 0   //TODO: This doesn't work yet
         class SchedAwaiter  {
         public:
             SchedAwaiter(Scheduler* sched)  :_sched(sched) { }
@@ -103,8 +103,8 @@ namespace crouton {
         private:
             Scheduler* _sched;
         };
-
         SchedAwaiter operator co_await() {return SchedAwaiter(this);}
+#endif
 
         /// Called from "normal" code.
         /// Resumes the next ready coroutine and returns true.
@@ -138,13 +138,14 @@ namespace crouton {
         /// Adds a coroutine handle to the suspension set.
         /// To make it runnable again, call the returned Suspension's `wakeUp` method
         /// from any thread.
-        Suspension* suspend(coro_handle h);
+        Suspension suspend(coro_handle h);
 
         /// Tells the Scheduler a coroutine is about to be destroyed, so it can manage it
         /// correctly if it's in the suspended set.
         void destroying(coro_handle h);
 
     private:
+        struct SuspensionImpl;
         friend class Suspension;
         
         Scheduler() = default;
@@ -159,7 +160,7 @@ namespace crouton {
         bool hasWakers() const;
         void scheduleWakers();
 
-        using SuspensionMap = std::unordered_map<const void*,Suspension>;
+        using SuspensionMap = std::unordered_map<const void*,SuspensionImpl>;
 
         static inline thread_local Scheduler* sCurSched;    // Current thread's instance
 
@@ -178,28 +179,35 @@ namespace crouton {
         It will resume after `wakeUp` is called. */
     class Suspension {
     public:
-        coro_handle handle() const                      {return _handle;}
-        
+        /// Default constructor creates an empty/null Suspension.
+        Suspension()                    :_impl(nullptr) { }
+
+        Suspension(Suspension&& s)      :_impl(s._impl) {s._impl = nullptr;}
+        Suspension& operator=(Suspension&& s) {std::swap(_impl, s._impl); return *this;}
+        ~Suspension()                   {if (_impl) cancel();}
+
+        explicit operator bool() const  {return _impl != nullptr;}
+
+        coro_handle handle() const;
+
         /// Makes the associated suspended coroutine runnable again;
         /// at some point its Scheduler will return it from next().
-        /// @note This may be called from any thread, but _only once_.
-        /// @warning  The Suspension pointer becomes invalid as soon as this is called.
+        /// @note Calling this resets the Suspension to empty.
+        /// @note Calling on an empty Suspension is a no-op.
+        /// @note This may be called from any thread.
         void wakeUp();
 
         /// Removes the associated coroutine from the suspended set.
-        /// You must call this if the coroutine is destroyed while a Suspension exists.
+        /// @note Calling this resets the Suspension to empty.
+        /// @note Calling on an empty Suspension is a no-op.
         void cancel();
-
-        // internal only, do not call
-        Suspension(coro_handle h, Scheduler *s) :_handle(h), _scheduler(s) { }
 
     private:
         friend class Scheduler;
+        explicit Suspension(Scheduler::SuspensionImpl* impl) :_impl(impl) { };
+        Suspension(Suspension const&) = delete;
 
-        coro_handle         _handle;                    // The coroutine (not really needed)
-        Scheduler*          _scheduler;                 // Scheduler that owns coroutine
-        std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine wants to wake up
-        bool                _visible = false;           // Is this Suspension externally visible?
+        Scheduler::SuspensionImpl* _impl;
     };
 
 
