@@ -31,9 +31,9 @@
 /// Macro for declaring a function that returns a Future, e.g. `ASYNC<void> close();`
 /// It's surprisingly easy to forget to await the Future, especially `Future<void>`,
 /// hence the `[[nodiscard]]` annotation.
-#define        ASYNC [[nodiscard]] Future
-#define  staticASYNC [[nodiscard]] static Future
-#define virtualASYNC [[nodiscard]] virtual Future
+#define        ASYNC [[nodiscard]]         crouton::Future
+#define  staticASYNC [[nodiscard]] static  crouton::Future
+#define virtualASYNC [[nodiscard]] virtual crouton::Future
 
 
 namespace crouton {

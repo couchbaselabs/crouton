@@ -29,6 +29,7 @@
 
 using namespace std;
 using namespace crouton;
+using namespace crouton::io;
 
 
 TEST_CASE("URLs", "[uv]") {

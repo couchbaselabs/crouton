@@ -96,8 +96,8 @@ namespace crouton {
         }
 
     private:
-        std::optional<T> _value;
         Suspension _suspension;
+        std::optional<T> _value;
     };
 
 

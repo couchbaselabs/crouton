@@ -23,6 +23,7 @@
 
 using namespace std;
 using namespace crouton;
+using namespace crouton::io;
 
 
 staticASYNC<int> run() {

@@ -21,7 +21,7 @@
 
 using namespace std;
 using namespace crouton;
-using namespace crouton::http;
+using namespace crouton::io;
 
 
 staticASYNC<int> run() {
@@ -48,12 +48,12 @@ staticASYNC<int> run() {
     }
 
     // Send HTTP request:
-    Connection client{string(url.value())};
-    Request req;
-    Response resp = AWAIT client.send(req);
+    http::Connection client{string(url.value())};
+    http::Request req;
+    http::Response resp = AWAIT client.send(req);
 
     // Display result:
-    bool ok = (resp.status() == Status::OK);
+    bool ok = (resp.status() == http::Status::OK);
     if (!ok) {
         cout << "*** " << int(resp.status()) << " " << resp.statusMessage() << " ***" << endl;
     }

@@ -21,7 +21,7 @@
 #include "StringUtils.hh"
 
 using namespace std;
-using namespace crouton::blip;
+using namespace crouton::io::blip;
 
 TEST_CASE("BLIP MessageBuilder", "[blip]") {
     MessageBuilder msg{ {"Shoe-Size", "8.5"}, {"Hair", "yes"} };

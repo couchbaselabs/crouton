@@ -20,7 +20,7 @@
 #include "HTTPParser.hh"
 
 using namespace std;
-using namespace crouton::http;
+using namespace crouton::io::http;
 
 
 TEST_CASE("HTTP Request Parser", "[http]") {

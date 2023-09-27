@@ -26,7 +26,7 @@ TEST_CASE("Randomize") {
     uint8_t buf[10];
     ::memset(buf, 0, sizeof(buf));
     for (int pass = 0; pass < 5; ++pass) {
-        Randomize(buf, sizeof(buf));
+        io::Randomize(buf, sizeof(buf));
         for (int i = 0; i < 10; ++i)
             printf("%02x ", buf[i]);
         printf("\n");
@@ -53,11 +53,11 @@ TEST_CASE("Error", "[error]") {
     CHECK(err.brief() == "Crouton error 3");
     CHECK(err.description() == "internal error (logic error)");
     CHECK(err.is<CroutonError>());
-    CHECK(!err.is<http::Status>());
+    CHECK(!err.is<io::http::Status>());
     CHECK(err == CroutonError::LogicError);
     CHECK(err.as<CroutonError>() == CroutonError::LogicError);
-    CHECK(err.as<http::Status>() == http::Status{0});
-    CHECK(err != http::Status::OK);
+    CHECK(err.as<io::http::Status>() == io::http::Status{0});
+    CHECK(err != io::http::Status::OK);
 
     Exception x(err);
     CHECK(x.error() == err);
@@ -68,8 +68,8 @@ TEST_CASE("Error", "[error]") {
 TEST_CASE("Error Types", "[error]") {
     // Make sure multiple error domains can be registered and aren't confused with each other.
     Error croutonErr(CroutonError::LogicError);
-    Error httpError(http::Status::NotFound);
-    Error wsError(ws::CloseCode::ProtocolError);
+    Error httpError(io::http::Status::NotFound);
+    Error wsError(io::ws::CloseCode::ProtocolError);
     CHECK(croutonErr == croutonErr);
     CHECK(httpError != croutonErr);
     CHECK(wsError != httpError);

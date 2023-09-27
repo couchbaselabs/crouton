@@ -26,20 +26,20 @@
 
 using namespace std;
 using namespace crouton;
-using namespace crouton::http;
+using namespace crouton::io;
 
 
 static constexpr uint16_t kPort = 34567;
 
 
-staticASYNC<void> serveRoot(Handler::Request const& req, Handler::Response& res) {
+staticASYNC<void> serveRoot(http::Handler::Request const& req, http::Handler::Response& res) {
     res.writeHeader("Content-Type", "text/plain");
     AWAIT res.writeToBody("Hi!\r\n");
     RETURN noerror;
 }
 
 
-staticASYNC<void> serveWebSocket(Handler::Request const& req, Handler::Response& res) {
+staticASYNC<void> serveWebSocket(http::Handler::Request const& req, http::Handler::Response& res) {
     ws::ServerWebSocket socket;
     if (! AWAIT socket.connect(req, res))
         RETURN noerror;
@@ -67,15 +67,15 @@ staticASYNC<void> serveWebSocket(Handler::Request const& req, Handler::Response&
 }
 
 
-static vector<Handler::Route> sRoutes = {
-    {Method::GET, regex("/"),     serveRoot},
-    {Method::GET, regex("/ws/?"), serveWebSocket},
+static vector<http::Handler::Route> sRoutes = {
+    {http::Method::GET, regex("/"),     serveRoot},
+    {http::Method::GET, regex("/ws/?"), serveWebSocket},
 };
 
 
 static Task connectionTask(std::shared_ptr<TCPSocket> client) {
     spdlog::info("-- Accepted connection");
-    Handler handler(client, sRoutes);
+    http::Handler handler(client, sRoutes);
     AWAIT handler.run();
     spdlog::info("-- Done!\n");
 }

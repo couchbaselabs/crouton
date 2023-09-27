@@ -94,36 +94,38 @@ include_directories( SYSTEM
 
 include_directories(
     include/
-    include/apple/
-    include/mbedtls/
+    include/io/
+    include/io/apple/
+    include/io/mbedtls/
     src/
+    src/io/
     src/support/
 )
 
 add_library( LibCrouton STATIC
-    src/AddrInfo.cc
+    src/io/AddrInfo.cc
     src/Coroutine.cc
     src/CoroLifecycle.cc
     src/Error.cc
-    src/FileStream.cc
-    src/Filesystem.cc
+    src/io/FileStream.cc
+    src/io/Filesystem.cc
     src/Future.cc
-    src/HTTPConnection.cc
-    src/HTTPHandler.cc
-    src/HTTPParser.cc
-    src/ISocket.cc
-    src/IStream.cc
+    src/io/HTTPConnection.cc
+    src/io/HTTPHandler.cc
+    src/io/HTTPParser.cc
+    src/io/ISocket.cc
+    src/io/IStream.cc
     src/Logging.cc
-    src/Pipe.cc
-    src/Process.cc
+    src/io/Pipe.cc
+    src/io/Process.cc
     src/Scheduler.cc
-    src/Stream.cc
-    src/TCPServer.cc
-    src/TCPSocket.cc
-    src/URL.cc
-    src/UVBase.cc
-    src/WebSocket.cc
-    src/mbedtls/TLSSocket.cc
+    src/io/Stream.cc
+    src/io/TCPServer.cc
+    src/io/TCPSocket.cc
+    src/io/URL.cc
+    src/io/UVBase.cc
+    src/io/WebSocket.cc
+    src/io/mbedtls/TLSSocket.cc
     src/support/Backtrace.cc
     src/support/Memoized.cc
     src/support/StringUtils.cc
@@ -140,7 +142,7 @@ target_link_libraries( LibCrouton INTERFACE
 
 if(APPLE)
     target_sources( LibCrouton PRIVATE
-        src/apple/NWConnection.cc
+        src/io/apple/NWConnection.cc
     )
     target_link_libraries( LibCrouton INTERFACE
         "-framework CoreFoundation"

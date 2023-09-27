@@ -21,7 +21,6 @@
 #include "Internal.hh"
 #include "Logging.hh"
 #include "Task.hh"
-#include <spdlog/spdlog.h>
 
 namespace crouton {
     using namespace std;
