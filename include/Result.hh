@@ -31,14 +31,13 @@ namespace crouton {
     class Result {
     public:
         Result()                        :_value(noerror) { }
-        
-        template <typename U> requires std::constructible_from<T, U>
-        Result(U&& val)                 :_value(std::forward<U>(val)) { }
-
         Result(Error err)               :_value(err) { }
 
         template <typename U> requires std::constructible_from<T, U>
-        Result& operator=(U&& val)      {_value = std::forward<U>(val); return *this;}
+        Result(U&& val)                 :_value(std::forward<U>(val)) { }
+
+        template <typename U> requires std::constructible_from<T, U>
+        Result& operator=(U&& val)      {set(std::forward<U>(val)); return *this;}
         Result& operator=(Error err)    {_value = err; return *this;}
 
         Result(Result&& r) noexcept = default;
@@ -46,8 +45,11 @@ namespace crouton {
         Result& operator=(Result const& r) = default;
         Result& operator=(Result&& r) noexcept = default;
 
+        template <typename U> requires std::constructible_from<T, U>
+        void set(U&& val)               {_value = std::forward<U>(val);}
+
         /// True if there is a T value.
-        bool ok() const                             {return _value.index() == 0;}
+        bool ok() const                 {return _value.index() == 0;}
 
         /// True if there is neither a value nor an error.
         bool empty() const {
@@ -128,8 +130,18 @@ namespace crouton {
     class Result<void> {
     public:
         /// A default `Result<void>` has a (void) value and no error.
-        Result() = default;
+        Result()                                    :_value(noerror) { }
         Result(Error err)                           :_value(err) { }
+
+        Result& operator=(Error err)    {_value = err; return *this;}
+
+        Result(Result&& r) noexcept = default;
+        Result(Result const& r) = default;
+        Result& operator=(Result const& r) = default;
+        Result& operator=(Result&& r) noexcept = default;
+
+        void set()                                  {_value = std::monostate();}
+
         bool ok() const                             {return _value.index() == 0;}
         bool isError() const                        {return _value.index() != 0;}
 

@@ -43,6 +43,7 @@ namespace crouton {
 
     template <typename T> using FutureProvider = std::shared_ptr<FutureState<T>>;
 
+
     /** Represents a value of type `T` that may not be available yet.
 
         This is a typical type for a coroutine to return. The coroutine function can just
@@ -59,37 +60,36 @@ namespace crouton {
         value immediately, it can just return a Future constructed with its value (or exception.)
 
         A regular function that gets a Future can call `then()` to register a callback. */
-    template <typename T = void>
+    template <typename T>
     class Future : public Coroutine<FutureImpl<T>>, public ISelectable {
     public:
-        /// Creates a Future from a FutureProvider.
-        explicit Future(FutureProvider<T> state)   :_state(std::move(state)) {assert(_state);}
+        using nonvoidT = std::conditional<std::is_void_v<T>, std::byte, T>::type;
 
-        /// Creates an already-ready Future.
+        /// Creates a Future from a FutureProvider.
+        explicit Future(FutureProvider<T> state)        :_state(std::move(state)) {assert(_state);}
+
+        /// Creates an already-ready `Future`.
         /// @note In `Future<void>`, this constructor takes no parameters.
-        Future(T&& value)
-        :_state(std::make_shared<FutureState<T>>()) {
-            _state->setResult(std::move(value));
-        }
+        Future(nonvoidT&& value)  requires (!std::is_void_v<T>)
+        :_state(std::make_shared<FutureState<T>>())     {_state->setResult(std::move(value));}
+
+        /// Creates an already-ready `Future<void>`.
+        Future()  requires (std::is_void_v<T>)
+        :_state(std::make_shared<FutureState<T>>())     {_state->setResult();}
 
         /// Creates an already-failed future :(
         Future(Error err)
-        :_state(std::make_shared<FutureState<T>>()) {
-            _state->setResult(err);
-        }
+        :_state(std::make_shared<FutureState<T>>())     {_state->setResult(err);}
 
         Future(Future&&) = default;
 
-        ~Future() {
-            if (_state)
-                _state->noFuture();
-        }
+        ~Future()                                       {if (_state) _state->noFuture();}
 
         /// True if a value or error has been set by the provider.
-        bool hasResult() const           {return _state->hasResult();}
+        bool hasResult() const                          {return _state->hasResult();}
 
         /// Returns the result, or throws the exception. Don't call this if hasResult is false.
-        T&& result() const               {return _state->resultValue();}
+        std::add_rvalue_reference_t<T> result() const   {return _state->resultValue();}
 
         /// Registers a callback that will be called when the result is available, and which can
         /// return a new value (or void) which becomes the result of the returned Future.
@@ -100,8 +100,11 @@ namespace crouton {
         ///        before `then` returns, and thus the returned Future will also have a result.
         /// @note  If this Future fails with an exception, the callback will not be called.
         ///        Instead the returned Future's result will be the same exception.
-        template <typename FN, typename U = std::invoke_result_t<FN,T>>
+        template <typename FN, typename U = std::invoke_result_t<FN,T>> requires(!std::is_void_v<T>)
         [[nodiscard]] Future<U> then(FN fn);
+
+        template <typename FN, typename U = std::invoke_result_t<FN>> requires(std::is_void_v<T>)
+        [[nodiscard]] Future<U> then(FN);
 
         /// From ISelectable interface.
         virtual void onReady(OnReadyFn fn)  {_state->onReady(std::move(fn));}
@@ -116,8 +119,12 @@ namespace crouton {
             else
                 return lifecycle::suspendingTo(coro, typeid(this), this, _state->suspend(coro));
         }
-        [[nodiscard]] T&& await_resume(){
+        [[nodiscard]] std::add_rvalue_reference_t<T> await_resume() requires (!std::is_void_v<T>) {
             return std::move(_state->resultValue());
+        }
+
+        void await_resume() requires (std::is_void_v<T>) {
+            _state->resultValue();
         }
 
     private:
@@ -189,40 +196,31 @@ namespace crouton {
         Result<T> && result() &&                        {return std::move(_result);}
         Result<T> & result() &                          {return _result;}
 
-        T&& resultValue() {
+        std::add_rvalue_reference_t<T> resultValue()  requires (!std::is_void_v<T>) {
             assert(hasResult());
             return std::move(_result).value();
         }
 
+        void resultValue()  requires (std::is_void_v<T>) {
+            assert(hasResult());
+            _result.value();
+        }
+
         template <typename U>
-        void setResult(U&& value) {
+        void setResult(U&& value)  requires (!std::is_void_v<T>) {
             _result = std::forward<U>(value);
             _notify();
         }
 
-        void setError(Error x) override                 {setResult(x);}
-        Error getError() override                       {return _result.error();}
-
-    private:
-        Result<T> _result{Error{}};
-    };
-
-
-    template <>
-    class FutureState<void> : public FutureStateBase {
-    public:
-        Result<void> && result() &&                     {return std::move(_result);}
-        Result<void> & result() &                       {return _result;}
-
-        void resultValue() {
-            assert(hasResult());
-            return _result.value();
-        }
-        void setResult() {
+        void setResult()  requires (std::is_void_v<T>) {
+            _result.set();
             _notify();
         }
-        void setResult(Error err) {
-            if (err) _result = err;
+        void setResult(Error err)  requires (std::is_void_v<T>) {
+            if (err)
+                _result = err;
+            else
+                _result.set(); // set success
             _notify();
         }
 
@@ -230,43 +228,9 @@ namespace crouton {
         Error getError() override                       {return _result.error();}
 
     private:
-        Result<void> _result;
+        Result<T> _result;
     };
 
-
-    template <>
-    class Future<void> : public Coroutine<FutureImpl<void>>, public ISelectable {
-    public:
-        Future()                :_state(std::make_shared<FutureState<void>>()) {_state->setResult();}
-        explicit Future(FutureProvider<void> p) :_state(std::move(p)) {assert(_state);}
-        Future(Error err) :_state(std::make_shared<FutureState<void>>()) {_state->setResult(err);}
-        Future(Future&&) = default;
-        ~Future() {
-            if (_state)
-                _state->noFuture();
-        }
-        bool hasResult() const           {return _state->hasResult();}
-        void result() const              {_state->resultValue();}
-        virtual void onReady(OnReadyFn fn)  {_state->onReady(std::move(fn));}
-        template <typename FN, typename U = std::invoke_result_t<FN>>
-        Future<U> then(FN);
-        bool await_ready()              {return _state->hasResult();}
-        auto await_suspend(coro_handle coro) noexcept {
-            return lifecycle::suspendingTo(coro, this->handle(), _state->suspend(coro));
-        }
-        void await_resume()             {_state->resultValue();} // just check for an exception
-    protected:
-        using super = Coroutine<FutureImpl<void>>;
-        friend class FutureImpl<void>;
-        friend class NoThrow<void>;
-
-        Future(typename super::handle_type h, FutureProvider<void> state)
-        :super(h)
-        ,_state(std::move(state))
-        {assert(_state);}
-
-        FutureProvider<void>  _state;
-    };
 
 
     /** Wrap this around a Future before co_await'ing it, to get the value as a Result.
@@ -292,35 +256,6 @@ namespace crouton {
     };
 
 
-    template <typename T>
-    template <typename FN, typename U>
-    Future<U> Future<T>::then(FN fn) {
-        return _state->template chain<U>([fn](FutureStateBase& baseState, FutureStateBase& myBaseState) {
-            auto& state = dynamic_cast<FutureState<U>&>(baseState);
-            T&& result = dynamic_cast<FutureState<T>&>(myBaseState).resultValue();
-            if constexpr (std::is_void_v<U>) {
-                fn(std::move(result));
-                state.setResult();
-            } else {
-                state.setResult(fn(std::move(result)));
-            }
-        });
-    }
-
-    template <typename FN, typename U>
-    Future<U> Future<void>::then(FN fn) {
-        return _state->template chain<U>([fn](FutureStateBase& baseState, FutureStateBase&) {
-            auto& state = dynamic_cast<FutureState<U>&>(baseState);
-            if constexpr (std::is_void_v<U>) {
-                fn();
-                state.setResult();
-            } else {
-                state.setResult(fn());
-            }
-        });
-    }
-
-
 #pragma mark - FUTURE IMPL:
 
 
@@ -330,6 +265,7 @@ namespace crouton {
     public:
         using super = CoroutineImpl<FutureImpl<T>, true>;
         using handle_type = typename super::handle_type;
+        using nonvoidT = std::conditional<std::is_void_v<T>, std::byte, T>::type;
 
         FutureImpl() = default;
 
@@ -351,11 +287,12 @@ namespace crouton {
         void return_value(ErrorDomain auto errVal) {
             return_value(Error(errVal));
         }
-        void return_value(T&& value) {
+
+        void return_value(nonvoidT&& value)  requires (!std::is_void_v<T>) {
             lifecycle::returning(this->handle());
             _provider->setResult(std::move(value));
         }
-        void return_value(T const& value) {
+        void return_value(nonvoidT const& value)  requires (!std::is_void_v<T>) {
             lifecycle::returning(this->handle());
             _provider->setResult(value);
         }
@@ -365,31 +302,36 @@ namespace crouton {
     };
 
 
-    template <>
-    class FutureImpl<void> : public CoroutineImpl<FutureImpl<void>, true> {
-    public:
-        using super = CoroutineImpl<FutureImpl<void>, true>;
-        using handle_type = super::handle_type;
-        FutureImpl() = default;
-        Future<void> get_return_object() {return Future<void>(typedHandle(), _provider);}
-        void unhandled_exception() {
-            this->super::unhandled_exception();
-            _provider->setResult(Error(std::current_exception()));
-        }
 
-        // Why `return_value` instead of `return_void`? Because it's the only way for a
-        // Future coroutine function to return an error without throwing an exception.
-        // Unfortunately C++20 doesn't let a coroutine implement both.
-        void return_value(Error err) {
-            lifecycle::returning(this->handle());
-            _provider->setResult(err);
-        }
-        void return_value(ErrorDomain auto errVal) {
-            return_value(Error(errVal));
-        }
+    // Future<T>::then, for T != void
+    template <typename T>
+    template <typename FN, typename U>  requires(!std::is_void_v<T>)
+    Future<U> Future<T>::then(FN fn) {
+        return _state->template chain<U>([fn](FutureStateBase& baseState, FutureStateBase& myBaseState) {
+            auto& state = dynamic_cast<FutureState<U>&>(baseState);
+            T&& result = dynamic_cast<FutureState<T>&>(myBaseState).resultValue();
+            if constexpr (std::is_void_v<U>) {
+                fn(std::move(result));
+                state.setResult();
+            } else {
+                state.setResult(fn(std::move(result)));
+            }
+        });
+    }
 
-    private:
-        FutureProvider<void> _provider = std::make_shared<FutureState<void>>();
-    };
+    // Future<T>::then, for T == void
+    template <typename T>
+    template <typename FN, typename U>  requires(std::is_void_v<T>)
+    Future<U> Future<T>::then(FN fn) {
+        return _state->template chain<U>([fn](FutureStateBase& baseState, FutureStateBase&) {
+            auto& state = dynamic_cast<FutureState<U>&>(baseState);
+            if constexpr (std::is_void_v<U>) {
+                fn();
+                state.setResult();
+            } else {
+                state.setResult(fn());
+            }
+        });
+    }
 
 }
