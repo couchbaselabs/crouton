@@ -66,6 +66,20 @@ namespace crouton {
     }
 
 
+    void FutureStateBase::noFuture() {
+        //TODO: Make this fully thread-safe
+        if (_suspension) {
+            LCoro->info("Future dealloced with _suspension {} of {}",
+                        (void*)_suspension, logCoro{_suspension->handle()});
+            State state = Waiting;
+            _state.compare_exchange_strong(state, Empty);
+            _suspension->cancel();
+            _suspension = nullptr;
+        }
+    }
+
+
+
     // Chains another FutureState to this one through a `then` callback.
     void FutureStateBase::_chain(std::shared_ptr<FutureStateBase> future, ChainCallback fn) {
         bool ready = !checkEmpty();
@@ -98,9 +112,9 @@ namespace crouton {
                 break;
             case Waiting:
                 // Wake the waiting coroutine:
-                if (_suspension) {
-                    _suspension->wakeUp();
+                if (auto sus = _suspension) {
                     _suspension = nullptr;
+                    sus->wakeUp();
                 }
                 break;
             case Chained:

@@ -37,22 +37,35 @@ namespace crouton {
     
     /// True if there are no tasks waiting to run.
     bool Scheduler::isIdle() const {
-        return _ready.empty() && !_woke;
+        if (hasWakers())
+            return false;
+        else if (_ready.empty())
+            return true;
+        else if (_ready.size() == 1 && _ready[0] == _eventLoopTask)
+            return true;
+        return false;
+    }
+
+    bool Scheduler::isEmpty() const {
+        return isIdle() && _suspended.empty();
     }
 
     /// Returns true if there are no coroutines ready or suspended, except possibly for the one
     /// belonging to the EventLoop. Checked at the end of unit tests.
-    bool Scheduler::assertEmpty() const {
+    bool Scheduler::assertEmpty() {
         if (auto depth = lifecycle::stackDepth(); depth > 0) {
             LSched->error("** Coroutine stack is non-empty ({})", depth);
         }
-        if (lifecycle::count() == 0)
+
+        scheduleWakers();
+        if (isEmpty() && lifecycle::count() == 0)
             return true;
 
-        LSched->info("Scheduler::assertEmpty: Running event loop until coroutines finish...");
+        LSched->info("Scheduler::assertEmpty: Running event loop until {} ready and {} suspended coroutines finish...",
+                     _ready.size(), _suspended.size());
         int attempt = 0;
         const_cast<Scheduler*>(this)->runUntil([&] {
-            return lifecycle::count() == 0 || ++attempt >= 10;
+            return (isEmpty() && lifecycle::count() == 0) || ++attempt >= 10;
         });
         if (attempt < 10) {
             LSched->info("...OK, all coroutines finished now.");
@@ -75,8 +88,23 @@ namespace crouton {
 
 
     void Suspension::wakeUp() {
+        assert(_visible);
         if (_wakeMe.test_and_set() == false) {
+            _visible = false;
             LCoro->trace("{} unblocked", logCoro{_handle});
+            auto sched = _scheduler;
+            assert(sched);
+            _scheduler = nullptr;
+            sched->wakeUp();
+        }
+    }
+
+    void Suspension::cancel() {
+        LCoro->trace("{} suspension canceled", logCoro{_handle});
+        assert(_visible);
+        _handle = nullptr;
+        if (_wakeMe.test_and_set() == false) {
+            _visible = false;
             auto sched = _scheduler;
             assert(sched);
             _scheduler = nullptr;
@@ -213,6 +241,7 @@ namespace crouton {
         assert(isCurrent());
         assert(!isReady(h));
         auto [i, added] = _suspended.try_emplace(h.address(), h, this);
+        i->second._visible = true;
         return &i->second;
     }
 
@@ -225,6 +254,7 @@ namespace crouton {
                 // The holder of the Suspension already tried to wake it, so it's OK to delete it:
                 _suspended.erase(i);
             } else {
+                assert(!sus._visible);
                 sus._handle = nullptr;
             }
         }
@@ -266,6 +296,16 @@ namespace crouton {
             _wakeUp();
     }
 
+    bool Scheduler::hasWakers() const {
+        if (_woke) {
+            for (auto &[h, sus] : _suspended) {
+                if (sus._wakeMe.test() && sus._handle)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     // Finds any waiting coroutines that want to wake up, removes them from `_suspended`
     // and adds them to `_ready`.
     void Scheduler::scheduleWakers() {
@@ -273,8 +313,12 @@ namespace crouton {
             // Some waiting coroutine is now ready:
             for (auto i = _suspended.begin(); i != _suspended.end();) {
                 if (i->second._wakeMe.test()) {
-                    LSched->debug("scheduleWaker({})", logCoro{i->second._handle});
-                    _ready.push_back(i->second._handle);
+                    if (i->second._handle) {
+                        LSched->debug("scheduleWaker({})", logCoro{i->second._handle});
+                        _ready.push_back(i->second._handle);
+                    } else {
+                        LSched->debug("cleaned up canceled Suspension {}", (void*)&i->second);
+                    }
                     i = _suspended.erase(i);
                 } else {
                     ++i;

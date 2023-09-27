@@ -31,7 +31,6 @@ namespace crouton {
     public:
         // movable, but not copyable.
         Coroutine(Coroutine&& c)                    :_handle(c._handle) {c._handle = {};}
-        ~Coroutine()                                {if (_handle) _handle.destroy();}
 
         using promise_type = IMPL;                  // The name `promise_type` is magic here
 
@@ -64,18 +63,28 @@ namespace crouton {
         coro_handle _handle;
     };
 
+    /** To be returned from a CoroutineImpl's `final_suspend` method.
+        Destroys the `coro_handle` after the suspension. */
+    template <bool Destroy = true>
     struct SuspendFinal : public CORO_NS::suspend_always {
     public:
         void await_suspend(coro_handle cur) const noexcept {
             lifecycle::finalSuspend(cur, nullptr);
+            if constexpr (Destroy)
+                cur.destroy();
         }
     };
 
+    /** Same as SuspendFinal except you choose a coroutine to transfer to. */
+    template <bool Destroy = true>
     struct SuspendFinalTo : public CORO_NS::suspend_always {
     public:
         explicit SuspendFinalTo(coro_handle t) :_target(t) { };
         coro_handle await_suspend(coro_handle cur) const noexcept {
-            return lifecycle::finalSuspend(cur, _target);
+            auto target = lifecycle::finalSuspend(cur, _target);
+            if constexpr (Destroy)
+                cur.destroy();
+            return target;
         }
         coro_handle _target;
     };
@@ -92,13 +101,13 @@ namespace crouton {
         //---- C++ coroutine internal API:
 
         // Called if an exception is thrown from the coroutine function.
-        void unhandled_exception()                      {lifecycle::threw(_handle);}
+        void unhandled_exception()                  {lifecycle::threw(_handle);}
 
         // Invoked after the coroutine terminates for any reason.
         // "You must not return a value that causes the terminated coroutine to try to continue
         // running! The only useful thing you might do in this method other than returning straight
         // to the  caller is to transfer control to a different suspended coroutine."
-        SuspendFinal final_suspend() noexcept { return {}; }
+        SuspendFinal<true> final_suspend() noexcept { return {}; }
 
         /* Other important methods for subclasses:
             INSTANCE get_return_object() {return INSTANCE(handle());}

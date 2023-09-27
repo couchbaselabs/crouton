@@ -47,9 +47,11 @@ namespace crouton {
         /// True if there are no tasks waiting to run.
         bool isIdle() const;
 
+        bool isEmpty() const;
+
         /// Returns true if there are no coroutines ready or suspended, except possibly for the one
         /// belonging to the EventLoop. Checked at the end of unit tests.
-        bool assertEmpty() const;
+        bool assertEmpty();
 
         //---- Event loop:
 
@@ -154,6 +156,7 @@ namespace crouton {
         bool isWaiting(coro_handle h) const;
         void _wakeUp();
         void wakeUp();
+        bool hasWakers() const;
         void scheduleWakers();
 
         using SuspensionMap = std::unordered_map<const void*,Suspension>;
@@ -175,11 +178,17 @@ namespace crouton {
         It will resume after `wakeUp` is called. */
     class Suspension {
     public:
+        coro_handle handle() const                      {return _handle;}
+        
         /// Makes the associated suspended coroutine runnable again;
         /// at some point its Scheduler will return it from next().
         /// @note This may be called from any thread, but _only once_.
         /// @warning  The Suspension pointer becomes invalid as soon as this is called.
         void wakeUp();
+
+        /// Removes the associated coroutine from the suspended set.
+        /// You must call this if the coroutine is destroyed while a Suspension exists.
+        void cancel();
 
         // internal only, do not call
         Suspension(coro_handle h, Scheduler *s) :_handle(h), _scheduler(s) { }
@@ -190,6 +199,7 @@ namespace crouton {
         coro_handle         _handle;                    // The coroutine (not really needed)
         Scheduler*          _scheduler;                 // Scheduler that owns coroutine
         std::atomic_flag    _wakeMe = ATOMIC_FLAG_INIT; // Indicates coroutine wants to wake up
+        bool                _visible = false;           // Is this Suspension externally visible?
     };
 
 

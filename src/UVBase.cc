@@ -187,7 +187,7 @@ namespace crouton {
     /*static*/ void Timer::after(double delaySecs, std::function<void()> fn) {
         auto t = new Timer(std::move(fn));
         t->_deleteMe = true;
-        t->start(delaySecs);
+        t->once(delaySecs);
     }
 
 

@@ -29,7 +29,6 @@ namespace crouton {
         destructor. */
     class Task : public Coroutine<TaskImpl> {
     public:
-        ~Task()     {setHandle(nullptr);}   // don't let parent destructor destroy the coroutine
         Task(Task&&) = default;
 
         /// Returns true as long as the task coroutine is still running.
@@ -95,14 +94,7 @@ namespace crouton {
             lifecycle::returning(handle());
         }
 
-        struct finalizer : public CORO_NS::suspend_always {
-            void await_suspend(coro_handle cur) noexcept {
-                lifecycle::finalSuspend(cur, nullptr);
-                cur.destroy();
-            }
-        };
-
-        finalizer final_suspend() noexcept {
+        SuspendFinal<true> final_suspend() noexcept {
             _shared->alive = false;
             return {};
         }

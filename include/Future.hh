@@ -79,7 +79,11 @@ namespace crouton {
         }
 
         Future(Future&&) = default;
-        ~Future()                       {this->setHandle(nullptr);} // don't destroy handle
+
+        ~Future() {
+            if (_state)
+                _state->noFuture();
+        }
 
         /// True if a value or error has been set by the provider.
         bool hasResult() const           {return _state->hasResult();}
@@ -138,7 +142,9 @@ namespace crouton {
     public:
         bool hasResult() const                       {return _state.load() == Ready;}
 
-        coro_handle suspend(coro_handle coro);
+        void onReady(ISelectable::OnReadyFn);   // Called by Future::onReady
+        void noFuture();                        // Called by Future::~Future
+        coro_handle suspend(coro_handle coro);  // Called by Future::await_suspend
 
         virtual void setError(Error) = 0;
         virtual Error getError() = 0;
@@ -151,8 +157,6 @@ namespace crouton {
             _chain(provider, fn);
             return Future<U>(std::move(provider));
         }
-
-        void onReady(ISelectable::OnReadyFn);
 
     protected:
         enum State : uint8_t {
@@ -237,7 +241,10 @@ namespace crouton {
         explicit Future(FutureProvider<void> p) :_state(std::move(p)) {assert(_state);}
         Future(Error err) :_state(std::make_shared<FutureState<void>>()) {_state->setResult(err);}
         Future(Future&&) = default;
-        ~Future()                        {this->setHandle(nullptr);} // don't destroy handle
+        ~Future() {
+            if (_state)
+                _state->noFuture();
+        }
         bool hasResult() const           {return _state->hasResult();}
         void result() const              {_state->resultValue();}
         virtual void onReady(OnReadyFn fn)  {_state->onReady(std::move(fn));}
@@ -353,16 +360,6 @@ namespace crouton {
             _provider->setResult(value);
         }
 
-        auto final_suspend() noexcept {
-            struct finalizer : public CORO_NS::suspend_always {
-                void await_suspend(coro_handle cur) noexcept {
-                    lifecycle::finalSuspend(cur, nullptr);
-                    cur.destroy();
-                }
-            };
-            return finalizer{};
-        }
-
     protected:
         FutureProvider<T> _provider = std::make_shared<FutureState<T>>();
     };
@@ -379,28 +376,16 @@ namespace crouton {
             this->super::unhandled_exception();
             _provider->setResult(Error(std::current_exception()));
         }
-#if 1
+
+        // Why `return_value` instead of `return_void`? Because it's the only way for a
+        // Future coroutine function to return an error without throwing an exception.
+        // Unfortunately C++20 doesn't let a coroutine implement both.
         void return_value(Error err) {
             lifecycle::returning(this->handle());
             _provider->setResult(err);
         }
         void return_value(ErrorDomain auto errVal) {
             return_value(Error(errVal));
-        }
-#else
-        void return_void() {
-            lifecycle::returning(handle());
-            _provider->setResult();
-        }
-#endif
-        auto final_suspend() noexcept {
-            struct finalizer : public CORO_NS::suspend_always {
-                void await_suspend(coro_handle cur) noexcept {
-                    lifecycle::finalSuspend(cur, nullptr);
-                    cur.destroy();
-                }
-            };
-            return finalizer{};
         }
 
     private:

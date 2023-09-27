@@ -42,6 +42,16 @@ namespace crouton {
     template <typename T>
     class Generator : public Coroutine<GeneratorImpl<T>>, public ISelectable {
     public:
+        Generator(Generator&&) = default;
+
+        ~Generator() {
+            if (auto h = this->handle()) {
+                if (!h.done())
+                    this->impl().stop();
+                h.destroy();
+            }
+        }
+
         /// Blocks until the Generator next yields a value, then returns it.
         /// Returns `nullopt` when the Generator is complete (its coroutine has exited.)
         /// \warning Do not call this from a coroutine! Instead, `co_await` the Generator.
@@ -120,7 +130,6 @@ namespace crouton {
             return yieldedValue();
         }
 
-
         // Returns the value yielded by the coroutine function after it's run.
         Result<T> yieldedValue() {
             assert(_ready);
@@ -128,6 +137,11 @@ namespace crouton {
             return std::move(_yielded_value);
         }
 
+        // Called when the public Generator<T> is destructed.
+        void stop() {
+            LCoro->info("Generator {} told to stop", logCoro{this->handle()});
+            // TODO: Communicate this to the function somehow...
+        }
 
         //---- C++ coroutine internal API:
 
@@ -139,6 +153,7 @@ namespace crouton {
         template <std::convertible_to<T> From>
         YielderTo yield_value(From&& value) {
             _yielded_value = std::forward<From>(value);
+            assert(!_yielded_value.empty());
             ready();
             auto resumer = _consumer;
             if (resumer)
@@ -165,14 +180,14 @@ namespace crouton {
         }
 
         // Invoked when the coroutine is done.
-        SuspendFinalTo final_suspend() noexcept {
+        SuspendFinalTo<false> final_suspend() noexcept {
             assert(_ready);
             auto resumer = _consumer;
             if (resumer)
                 _consumer = nullptr;
             else
                 resumer = CORO_NS::noop_coroutine();
-            return SuspendFinalTo{resumer};
+            return SuspendFinalTo<false>{resumer};
         }
 
     private:

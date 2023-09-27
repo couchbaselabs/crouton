@@ -94,7 +94,9 @@ namespace crouton::lifecycle {
         coroInfo& info;
         friend ostream& operator<< (ostream& out, verbose const& v) {
             return out << "¢" << v.info.sequence
-                       << " [" << v.info.typeName << ' ' << v.info.name << "()]";
+                       << " [" << v.info.typeName << ' ' << v.info.name << "()]"
+                       << " " << (void*)v.info.handle.address()
+            ;
         }
     };
 
@@ -372,8 +374,9 @@ namespace crouton::lifecycle {
             assert(other.second.caller != &info);
 
         if (info.state < coroState::ending) {
-            if (LCoro->should_log(spdlog::level::trace))
-                LCoro->trace("{} destructed. ({} left)", info, _count() - 1);
+            LCoro->warn("{} destructed before returning or throwing", info);
+//            if (LCoro->should_log(spdlog::level::trace))
+//                LCoro->trace("{} destructed. ({} left)", info, _count() - 1);
         }
         sCoros.erase(i);
     }

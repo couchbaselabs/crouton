@@ -62,7 +62,7 @@ static Generator<string> toString(Generator <int64_t> source) {
 }
 
 
-TEST_CASE("Generator") {
+TEST_CASE("Generator", "[generator]") {
     RunCoroutine([]() -> Future<void> {
         Generator<int64_t> fib = fibonacci(100);
         vector<int64_t> results;
@@ -79,7 +79,7 @@ TEST_CASE("Generator") {
 }
 
 
-TEST_CASE("Generator without coroutine") {
+TEST_CASE("Generator without coroutine", "[generator]") {
     {
         Generator<int64_t> fib = fibonacci(100);
         vector<int64_t> results;
@@ -94,7 +94,7 @@ TEST_CASE("Generator without coroutine") {
 }
 
 
-TEST_CASE("Generators", "[coroutines]") {
+TEST_CASE("Generators", "[generator]") {
     {
         cerr << "Creating Generator...\n";
         Generator fib = toString( onlyEven( fibonacci(100000) ) );
@@ -120,7 +120,7 @@ TEST_CASE("Generators", "[coroutines]") {
 
 
 
-TEST_CASE("Select Generators") {
+TEST_CASE("Select Generators", "[generator]") {
     RunCoroutine([]() -> Future<void> {
         Generator count = counter(-100, -80, true);
         Generator fib = fibonacci(100, true);
@@ -172,7 +172,7 @@ TEST_CASE("Select Generators") {
 }
 
 
-TEST_CASE("Select Future and Generator") {
+TEST_CASE("Select Future and Generator", "[generator]") {
     RunCoroutine([]() -> Future<void> {
         Generator count = counter(1, 1000, true);
         Future<void> timeout = Timer::sleep(1.0);
@@ -205,7 +205,7 @@ TEST_CASE("Select Future and Generator") {
 }
 
 
-TEST_CASE("Generators in parallel queue") {
+TEST_CASE("Generators in parallel queue", "[generator]") {
     RunCoroutine([]() -> Future<void> {
         BoundedAsyncQueue<int64_t> q(1);
         Task t1 = q.pushGenerator(counter(-100, -90, true));
