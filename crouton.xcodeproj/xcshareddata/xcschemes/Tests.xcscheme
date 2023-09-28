@@ -64,7 +64,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "[generator]"
+            argument = "&quot;[pubsub]&quot;"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>

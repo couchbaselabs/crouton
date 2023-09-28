@@ -33,14 +33,13 @@ namespace crouton {
         Task(Task&&) = default;
 
         /// Returns true as long as the task coroutine is still running.
-        bool alive()                        {return _shared->alive;}
+        bool alive() const                  {return _shared && _shared->alive;}
 
         /// Lets the task coroutine know it should stop. Its next `co_yield` will return false.
         void interrupt()                    {_shared->interrupt = true;}
 
-    protected:
-        friend class Scheduler;
     private:
+        friend class Scheduler;
         friend class TaskImpl;
 
         struct shared {

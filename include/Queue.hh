@@ -18,7 +18,9 @@
 
 #pragma once
 #include "CoCondition.hh"
+#include "Error.hh"
 #include "Generator.hh"
+#include "Result.hh"
 #include "Task.hh"
 
 #include <deque>
@@ -42,28 +44,37 @@ namespace crouton {
 
         /// Closes the push/input end of the queue. The State changes to Closing.
         /// No more items can be pushed (the methods return false), but items can be popped.
-        /// The Generator will keep returning items until the queue empties, then return null
-        /// and set the state to Closed.
-        virtual void closePush() {
+        /// The Generator will keep returning items until the queue empties, then set the state to
+        /// Closed and signal EOF by returning `noerror` (or the optional Error parameter.)
+        virtual void closePush(Error err = noerror) {
             if (_state == Open) {
                 _state = Closing;
+                _closeWhenEmpty = true;
+                if (!_closeError)
+                    _closeError = err;
             }
         }
 
         /// After this is called, when the queue becomes empty it will close.
-        void closeWhenEmpty() {
+        /// @note  The difference between this and `closePush` is that items may still be pushed.
+        void closeWhenEmpty(Error err = noerror) {
             if (_queue.empty())
-                close();
-            else
+                close(err);
+            else {
                 _closeWhenEmpty = true;
+                if (!_closeError)
+                    _closeError = err;
+            }
         }
 
         /// Closes the queue immediately: removes all its items and sets its state to Closed.
-        /// Nothing can be pushed or popped. The Generator will immediately return null.
-        /// No more items can be pushed (the methods return false.)
-        virtual void close() {
+        /// Nothing can be pushed or popped. The Generator will immediately signal EOF by returning
+        /// `noerror` (or the optional Error parameter.)
+        virtual void close(Error err = noerror) {
             if (_state != Closed) {
                 _state = Closed;
+                if (!_closeError)
+                    _closeError = err;
                 _queue.clear();
                 _pullCond.notifyOne();
             }
@@ -71,6 +82,7 @@ namespace crouton {
 
         bool empty() const                          {return _queue.empty();}
         size_t size() const                         {return _queue.size();}
+        Error error() const                         {return empty() ? _closeError : noerror;}
 
         using iterator = std::deque<T>::iterator;
         using const_iterator = std::deque<T>::const_iterator;
@@ -114,6 +126,13 @@ namespace crouton {
             return true;
         }
 
+        bool push(Result<T> r) {
+            if (r.ok())
+                return push(r.value());
+            else
+                return closePush(r.error()), true;
+        }
+
         /// Returns a pointer to the front item (the one that would be popped), or null if empty.
         T const* peek() const {
             return empty() ? nullptr : &_queue.front();
@@ -149,8 +168,10 @@ namespace crouton {
         //---- Asynchronous API:
 
         /// Returns a Generator that will yield items from the queue until it closes.
-        /// (This should only be called once.)
+        /// @warning  Currently, this can only be called once.
         Generator<T> generate() {
+            assert(!_generating);
+            _generating = true;
             while (_state != Closed) {
                 if (_queue.empty()) {
                     if (_closeWhenEmpty) {
@@ -164,12 +185,16 @@ namespace crouton {
                 T item = pop();
                 YIELD std::move(item);
             }
+            if (_closeError)
+                YIELD _closeError;
         }
 
     protected:
         std::deque<T> _queue;
         CoCondition   _pullCond;
+        Error         _closeError;
         State         _state = Open;
+        bool          _generating = false;
         bool          _closeWhenEmpty = false;
     };
 
@@ -198,6 +223,13 @@ namespace crouton {
             RETURN push(std::move(t));
         }
 
+        ASYNC<bool> asyncPush(Result<T> r) {
+            if (r.ok())
+                return asyncPush(r.value());
+            else
+                return closePush(r.error()), Future<bool>(true);
+        }
+
         /// Starts a coroutine that awaits values from the Generator and pushes them to the queue.
         /// When the Generator ends, it calls `closeWhenEmpty`.
         Task pushGenerator(Generator<T> gen) {
@@ -217,13 +249,13 @@ namespace crouton {
 
         //---- Overrides:
 
-        void closePush() override {
-            super::closePush();
+        void closePush(Error err = noerror) override {
+            super::closePush(err);
             _pushCond.notifyAll();
         }
 
-        void close() override {
-            super::close();
+        void close(Error err = noerror) override {
+            super::close(err);
             _pushCond.notifyAll();
         }
 

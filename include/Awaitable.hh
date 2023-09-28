@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "Result.hh"
 
 namespace crouton {
 
@@ -33,4 +33,11 @@ namespace crouton {
         virtual T await_resume() =0;
     };
 
+
+    /** A type of Awaitable that guarantees to produce:
+        - zero or more `T`s, then
+        - either empty/`noerror` (completion) or an `Error` (failure.)
+        `Generator` is the canonical example. */
+    template <typename T>
+    class Series : public IAwaitable<Result<T>> { };
 }

@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Awaitable.hh"
 #include "Coroutine.hh"
 #include "Result.hh"
 #include "Scheduler.hh"
@@ -41,7 +42,7 @@ namespace crouton {
         A Generator can also be iterated synchronously via its begin/end methods,
         or with a `for(:)` loop.*/
     template <typename T>
-    class Generator : public Coroutine<GeneratorImpl<T>>, public ISelectable {
+    class Generator : public Coroutine<GeneratorImpl<T>>, public Series<T>, public ISelectable {
     public:
         Generator(Generator&&) = default;
 
@@ -67,14 +68,14 @@ namespace crouton {
 
         //---- Generator is awaitable:
 
-        bool await_ready()                          {return this->impl().isReady();}
+        bool await_ready() override                 {return this->impl().isReady();}
 
-        coro_handle await_suspend(coro_handle cur) {
+        coro_handle await_suspend(coro_handle cur) override {
             coro_handle next = this->impl().generateFor(cur);
             return lifecycle::suspendingTo(cur, typeid(this), this, next);
         }
 
-        Result<T> await_resume()                    {return this->impl().yieldedValue();}
+        Result<T> await_resume() override                   {return this->impl().yieldedValue();}
 
     private:
         friend class GeneratorImpl<T>;
@@ -151,8 +152,9 @@ namespace crouton {
         }
 
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
-        template <std::convertible_to<T> From>
+        template <std::convertible_to<Result<T>> From>
         YielderTo yield_value(From&& value) {
+            assert(!_eof);
             _yielded_value = std::forward<From>(value);
             assert(!_yielded_value.empty());
             ready();
@@ -167,13 +169,15 @@ namespace crouton {
         // Invoked if the coroutine throws an exception.
         void unhandled_exception() {
             this->super::unhandled_exception();
-            _yielded_value = Error(std::current_exception());
-            ready();
+            if (!_eof) {
+                _yielded_value = Error(std::current_exception());
+                ready();
+            }
         }
 
         // Invoked when the coroutine fn returns, implicitly or via co_return.
         void return_void() {
-            if (!_ready) {
+            if (!_ready && !_eof) {
                 _yielded_value = noerror;
                 ready();
             }
@@ -218,6 +222,7 @@ namespace crouton {
 
         void ready() {
             _ready = true;
+            _eof = !_yielded_value.ok();
             if (auto onReady = std::move(_onReady)) {
                 _onReady = nullptr;
                 onReady();
@@ -228,6 +233,7 @@ namespace crouton {
         coro_handle         _consumer;                          // Coroutine awaiting my value
         OnReadyFn           _onReady;                           // Callback when ready
         bool                _ready = false;                     // True when a value is available
+        bool                _eof = false;                       // True when final value yielded
     };
 
 }

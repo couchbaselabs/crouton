@@ -35,6 +35,7 @@
 		277E8A482ABB537D00E78CB1 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A472ABB537D00E78CB1 /* Error.cc */; };
 		277E8A4C2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A4B2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc */; };
 		2788E3542AC38B5E00254A88 /* Select.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2788E3532AC38B5E00254A88 /* Select.cc */; };
+		2788E35A2AC500B700254A88 /* test_pubsub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2788E3592AC500B700254A88 /* test_pubsub.cc */; };
 		278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278F76782A9FEF54005B12F2 /* TLSSocket.hh */; };
 		278F767B2A9FEF54005B12F2 /* TLSSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278F76792A9FEF54005B12F2 /* TLSSocket.cc */; };
 		278F7E322AA015B1005B12F2 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
@@ -325,6 +326,8 @@
 		277E8A4B2ABDF94A00E78CB1 /* ConsoleReporterPlus.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConsoleReporterPlus.cc; sourceTree = "<group>"; };
 		2788E3522AC37BD400254A88 /* Select.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Select.hh; sourceTree = "<group>"; };
 		2788E3532AC38B5E00254A88 /* Select.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Select.cc; sourceTree = "<group>"; };
+		2788E3582AC4F8BA00254A88 /* PubSub.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PubSub.hh; sourceTree = "<group>"; };
+		2788E3592AC500B700254A88 /* test_pubsub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = test_pubsub.cc; sourceTree = "<group>"; };
 		278F76782A9FEF54005B12F2 /* TLSSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSSocket.hh; sourceTree = "<group>"; };
 		278F76792A9FEF54005B12F2 /* TLSSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSSocket.cc; sourceTree = "<group>"; };
 		278F76822A9FF0C4005B12F2 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
@@ -670,6 +673,7 @@
 				272729002A8D6B43000CCA22 /* Generator.hh */,
 				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
 				278F7F222AAA98FE005B12F2 /* Logging.hh */,
+				2788E3582AC4F8BA00254A88 /* PubSub.hh */,
 				27B3306C2AB3C3B40066C8DA /* Queue.hh */,
 				27BA40742AA502DD0011BB86 /* Result.hh */,
 				272728FE2A8D6B43000CCA22 /* Scheduler.hh */,
@@ -715,6 +719,7 @@
 				27F49CD02A9D3AC600BFB24C /* tests.hh */,
 				272728C62A8D6505000CCA22 /* tests.cc */,
 				27E98EDE2AC2099E002F3D35 /* test_generator.cc */,
+				2788E3592AC500B700254A88 /* test_pubsub.cc */,
 				27F49CCE2A9D011B00BFB24C /* test_io.cc */,
 				278F7E3C2AA16D46005B12F2 /* test_http.cc */,
 				27B3306D2AB4BD0B0066C8DA /* test_blip.cc */,
@@ -1601,6 +1606,7 @@
 			files = (
 				272728C72A8D6505000CCA22 /* tests.cc in Sources */,
 				27E98EDF2AC2099E002F3D35 /* test_generator.cc in Sources */,
+				2788E35A2AC500B700254A88 /* test_pubsub.cc in Sources */,
 				27F49CCF2A9D011B00BFB24C /* test_io.cc in Sources */,
 				278F7E3D2AA16D46005B12F2 /* test_http.cc in Sources */,
 				27B3306E2AB4BD0B0066C8DA /* test_blip.cc in Sources */,

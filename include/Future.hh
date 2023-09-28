@@ -68,19 +68,16 @@ namespace crouton {
 
         /// Creates an already-ready `Future`.
         /// @note In `Future<void>`, this constructor takes no parameters.
-        Future(nonvoidT&& value)  requires (!std::is_void_v<T>)
-        :_state(std::make_shared<FutureState<T>>())     {_state->setResult(std::move(value));}
+        Future(nonvoidT&& v)  requires (!std::is_void_v<T>) {_state->setResult(std::move(v));}
 
         /// Creates an already-ready `Future<void>`.
-        Future()  requires (std::is_void_v<T>)
-        :_state(std::make_shared<FutureState<T>>())     {_state->setResult();}
+        Future()  requires (std::is_void_v<T>)          {_state->setResult();}
 
         /// Creates an already-failed future :(
-        Future(Error err)
-        :_state(std::make_shared<FutureState<T>>())     {_state->setResult(err);}
+        Future(Error err)                               {_state->setResult(err);}
+        Future(ErrorDomain auto d)                      :Future(Error(d)) { }
 
         Future(Future&&) = default;
-
         ~Future()                                       {if (_state) _state->noFuture();}
 
         /// True if a value or error has been set by the provider.
@@ -135,7 +132,7 @@ namespace crouton {
         ,_state(std::move(state))
         {assert(_state);}
 
-        FutureProvider<T>  _state;
+        FutureProvider<T> _state = std::make_shared<FutureState<T>>();
     };
 
 
