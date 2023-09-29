@@ -106,7 +106,7 @@ namespace crouton {
     template <>
     class Blocker<void> {
     public:
-        bool await_ready() noexcept {return _hasValue;}
+        bool await_ready() noexcept     {return _hasValue;}
 
         coro_handle await_suspend(coro_handle h) noexcept {
             assert(!_suspension);
@@ -114,12 +114,9 @@ namespace crouton {
             return lifecycle::suspendingTo(h, typeid(*this), this);
         }
 
-        void await_resume() noexcept { }
+        void await_resume() noexcept    {_hasValue = false;}
 
-        void notify() {
-            _hasValue = true;
-            _suspension.wakeUp();
-        }
+        void notify()                   {_hasValue = true; _suspension.wakeUp();}
 
     private:
         Suspension  _suspension;
