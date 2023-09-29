@@ -19,7 +19,7 @@ namespace crouton::ps {
     class AnySeries final : public ISeries<T> {
     public:
         /// Constructs an `AnySeries<T>` by moving a `Series<T>` rvalue.
-        template <std::derived_from<Series<T>> Impl>
+        template <std::derived_from<ISeries<T>> Impl>
         AnySeries(Impl&& impl)
         :_impl(std::make_unique<Impl>(std::forward<Impl>(impl)))
         { }
