@@ -75,3 +75,33 @@ TEST_CASE("Filter", "[pubsub]") {
     });
     REQUIRE(Scheduler::current().assertEmpty());
 }
+
+
+TEST_CASE("BaseConnector", "[pubsub]") {
+    static constexpr size_t kNSubscribers = 3;
+    RunCoroutine([]() -> Future<void> {
+        auto emit = make_shared<Emitter<int>>(initializer_list<int>{1, 2, 3, 4, 5, 6});
+        auto connect = make_shared<BaseConnector<int>>(emit);
+
+        vector<Collector<int>> colls(kNSubscribers);
+        for (auto &coll : colls) {
+            coll.subscribeTo(emit);
+            coll.start();
+        }
+
+        Scheduler::current().runUntil( [&] {
+            for (auto &coll : colls)
+                if (!coll.done())
+                    return false;
+            return true;
+        });
+
+        int i = 0;
+        for (auto &coll : colls) {
+            INFO("colls[" << i++ << "]");
+            CHECK(coll.items() == vector<int>{1, 2, 3, 4, 5, 6});
+        }
+        RETURN noerror;
+    });
+    REQUIRE(Scheduler::current().assertEmpty());
+}

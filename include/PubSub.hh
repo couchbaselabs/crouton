@@ -6,6 +6,7 @@
 
 #pragma once
 #include "Awaitable.hh"
+#include "Defer.hh"
 #include "Generator.hh"
 #include "Queue.hh"
 #include "Task.hh"
@@ -16,8 +17,9 @@ namespace crouton::ps {
     template <typename T>
     class AnySeries final : public Series<T> {
     public:
+        /// Constructs an `AnySeries<T>` by moving a `Series<T>` rvalue.
         template <std::derived_from<Series<T>> Impl>
-        explicit AnySeries(Impl&& impl)
+        AnySeries(Impl&& impl)
         :_impl(std::make_unique<Impl>(std::forward<Impl>(impl)))
         { }
 
@@ -27,25 +29,31 @@ namespace crouton::ps {
 
     private:
         std::unique_ptr<Series<T>> _impl;
+        // Note: it's not possible to implement this with std::any, bc Series is not copyable
     };
 
 
 
-    /** Abstract base class of objects that provides `Series` of `T` items to `Subscriber`s.
-        Publishers are always managed with `std::shared_ptr` because their lifespans are
-        unpredictable.*/
+    /** A `Publisher<T>` asynchronously provides `Series` of `T` items to `Subscriber`s.
+        @note  Publishers are always managed with `std::shared_ptr` because their lifespans are
+               unpredictable (each active Subscriber has a reference.) */
     template <typename T>
     class Publisher : public std::enable_shared_from_this<Publisher<T>> {
     public:
         virtual ~Publisher() = default;
 
         /// Creates a Series of items for a Subscriber to read.
+        /// @note  If this is called a second time, when the first Series has already produced
+        ///        items, the second Series may or may not include the already-produced items.
+        /// @warning  Some implementations don't support multiple subscribers. Check the docs.
         virtual AnySeries<T> generate() = 0;
     };
 
 
 
-    /** Abstract base class of objects that read a series of `T` items from a `Publisher`. */
+    /** A `Subscriber<T>` asynchronously receives a series of `T` items from a `Publisher`.
+        Many Subscriber implementations are also Publishers (see `Connector`), allowing chains
+        or pipelines to be created. */
     template <typename T>
     class Subscriber {
     public:
@@ -59,13 +67,15 @@ namespace crouton::ps {
             _publisher = std::move(pub);
         }
 
+        /// The Publisher I'm subscribed to.
+        std::shared_ptr<Publisher<T>> publisher() const  {return _publisher;}
+
         /// Starts the Subscriber: it first calls `generate` on its Publisher to get the Series,
         /// then starts an async Task to await items.
         virtual void start() {
-            if (!_series) {
+            if (!_task) {
                 assert(_publisher);
-                _series.emplace(_publisher->generate());
-                _task.emplace(run(std::move(_series).value()));
+                _task.emplace(receive(_publisher->generate()));
             }
         }
 
@@ -87,9 +97,9 @@ namespace crouton::ps {
         /// You can override this if you want more control over the lifecycle.
         /// @warning  You must override either this method or `handle(T)`.
         /// @warning  If you override, you are responsible for calling `handleEnd` when finishing.
-        virtual Task run(AnySeries<T> gen) {
+        virtual Task receive(AnySeries<T> series) {
             while (true) {
-                Result<T> result = AWAIT gen;
+                Result<T> result = AWAIT series;
                 if (result.ok()) {
                     handle(std::move(result).value());
                 } else {
@@ -100,7 +110,7 @@ namespace crouton::ps {
         }
 
         /// Abstract method that handles an item received from the Publisher.
-        /// @warning  You must override either this method or `run`.
+        /// @warning  You must override either this method or `receive`.
         virtual Future<void> handle(T)          {return CroutonError::LogicError;}
 
         /// Handles the final Error/noerror item from the publisher.
@@ -111,19 +121,21 @@ namespace crouton::ps {
         Subscriber(Subscriber const&) = delete;
         Subscriber& operator=(Subscriber const&) = delete;
 
-        std::shared_ptr<Publisher<T>> _publisher;
-        std::optional<AnySeries<T>> _series;
-        std::optional<Task> _task;
-        Error               _error;
+        std::shared_ptr<Publisher<T>>   _publisher; // My Publisher
+        std::optional<Task>             _task;      // The `receive` coroutine that reads _series
+        Error                           _error;     // Error received from _series
     };
 
 
 
-    /** Abstract base class implementing both Publisher and Subscriber.
-        These are used as intermediate links in data-flow chains. */
+    /** Simple base class implementing both Publisher and Subscriber.
+        These are used as intermediate links in data-flow chains.
+
+        @note  Subclasses' `generate()` implementations should call `this->start()`. */
     template <typename In, typename Out = In>
     class Connector : public Subscriber<In>, public Publisher<Out> {
     public:
+        using Subscriber<In>::Subscriber;
     };
 
 
@@ -139,17 +151,20 @@ namespace crouton::ps {
         template <typename T> T test_shared_pub_type(const std::shared_ptr<Publisher<T>>*);
         template <typename> void test_shared_pub_type(const void*);
     }
-    /// If `P` is a Publisher, `pub_type<P>` is its item type.
+    /// Template utility: If `P` is a Publisher, `pub_type<P>` is its item type.
     /// In other words, if P is a subclass of `Publisher<T>`, `pub_type<P>` evaluates to `T`.
     template <typename P> using pub_type = decltype(detail::test_pub_type((const P*)nullptr));
-    /// If `P` is a Subscriber, `sub_type<P>` is its item type.
+    /// Template utility: If `P` is a Subscriber, `sub_type<P>` is its item type.
     template <typename S> using sub_type = decltype(detail::test_sub_type((const S*)nullptr));
 
 
     /// `|` can be used to chain together Publishers and Subscribers.
-    /// The left side must be a Publisher type or a `shared_ptr` to one.
+    /// The left side must be a Publisher type [see note] or a `shared_ptr` to one.
     /// The right side must be a Subscriber type, or a `shared_ptr` to one.
     /// The Subscriber will be subscribed to the Publisher, and returned.
+    ///
+    /// @note If the Publisher is not already a `shared_ptr` it will be moved into one,
+    ///       since Publishers are always shared.
     ///
     /// Examples:
     /// ```
@@ -164,7 +179,6 @@ namespace crouton::ps {
         return sub;
     }
 
-
     template <typename P, typename S, typename PP = std::remove_reference_t<P>, typename SS = std::remove_reference_t<S>>  requires(std::is_same_v<pub_type<PP>,sub_type<SS>>)
     S operator| (std::shared_ptr<P> pub, S&& sub) {
         sub.subscribeTo(std::move(pub));
@@ -178,7 +192,26 @@ namespace crouton::ps {
     }
 
 
-#pragma mark - UTILITY IMPLEMENTATIONS
+#pragma mark - UTILITY SUBSCRIBERS
+
+
+    /** Subscriber that stores items into a vector. */
+    template <typename T>
+    class Collector : public Subscriber<T> {
+    public:
+        using Subscriber<T>::Subscriber;
+        std::vector<T> const& items()                       {return _items;}
+    protected:
+        Future<void> handle(T result) override {
+            _items.emplace_back(std::move(result));
+            return Future<void>{};
+        }
+    private:
+        std::vector<T> _items;
+    };
+
+
+#pragma mark - UTILITY PUBLISHERS
 
 
     /** Publisher that publishes a canned list of items and optionally an error.
@@ -192,7 +225,7 @@ namespace crouton::ps {
         /// Sets an error to return at the end.
         void endWithError(Error err)                        {_error = err;}
 
-        AnySeries<T> generate() override                    {return AnySeries<T>(_generate());}
+        AnySeries<T> generate() override                    {return _generate();}
 
     private:
        Generator<T> _generate() {
@@ -207,25 +240,9 @@ namespace crouton::ps {
 
 
 
-    /** Subscriber that stores items into a vector. */
-    template <typename T>
-    class Collector : public Subscriber<T> {
-    public:
-        using Subscriber<T>::Subscriber;
-        std::vector<T> const& items()                      {return _items;}
-    protected:
-        Future<void> handle(T result) override {
-            _items.emplace_back(std::move(result));
-            return Future<void>{};
-        }
-    private:
-        std::vector<T> _items;
-    };
-
-
-
-    /** A trivial subclass of AsyncQueue that implements Publisher.
-        Call `push` to enqueue items which will then be delivered to the Subscriber.
+    /** A trivial subclass of AsyncQueue that implements Publisher;
+        useful for creating a Publisher from a non-PubSub source of events.
+        Call `push` to enqueue items which will then be delivered to Subscribers.
         @warning  This currently only supports a single Subscriber. */
     template <typename T>
     class QueuePublisher : public Publisher<T>, public AsyncQueue<T> {
@@ -233,7 +250,7 @@ namespace crouton::ps {
         using super = AsyncQueue<T>;
         using super::AsyncQueue;
 
-        AnySeries<T> generate() override    {return AnySeries<T>(super::generate());}
+        AnySeries<T> generate() override                    {return super::generate();}
     };
 
 
@@ -247,32 +264,93 @@ namespace crouton::ps {
         using super = BoundedAsyncQueue<T>;
         using super::BoundedAsyncQueue;
 
-        AnySeries<T> generate() override    {return AnySeries<T>(super::generate());}
+        AnySeries<T> generate() override                    {return super::generate();}
     };
 
 
 
-    /** A pub-sub connector that can buffer a fixed number of items. */
+#pragma mark - UTILITY CONNECTORS
+
+
+    /** Minimal concrete implementation of Connector, that simply propagates items.
+        Supports multiple subscribers. */
+    template <typename T>
+    class BaseConnector : public Connector<T> {
+    public:
+        using Connector<T>::Connector;
+
+        AnySeries<T> generate() override {
+            this->start();
+            if (_subscriberCount == 0)
+                _readyForItem.notify();
+            ++_subscriberCount;
+            return _generate();
+        }
+
+    protected:
+        Task receive(AnySeries<T> series) override {
+            do {
+                // Await next item from upstream Publisher:
+                Result<T> nextItem = AWAIT series;
+
+                // Wait until downstream Subscribers have finished with the current `_item`:
+                AWAIT _readyForItem;
+
+                // Update `_item` and `_eof`
+                _eof = !nextItem.ok();
+                _item = std::move(nextItem);
+
+                // Wake up subscribers (`_generate`):
+                assert(_usingItemCount == 0);
+                _usingItemCount = _subscriberCount;
+                _itemAvailable.notifyAll();
+            } while (!_eof);
+        }
+
+        Generator<T> _generate() {
+            DEFER {--_subscriberCount;};
+            do {
+                while (_usingItemCount == 0) {
+                    AWAIT _itemAvailable;
+                }
+                if (!_item.empty())
+                    YIELD _item;
+                assert(_usingItemCount > 0);
+                if (--_usingItemCount == 0)
+                    _readyForItem.notify();
+            } while (!_eof);
+        }
+
+    private:
+        Result<T>     _item;                // Item produced by `receive` & consumed by `generate`
+        CoCondition   _itemAvailable;       // Notifies generators there's a new item to send
+        Blocker<void> _readyForItem;        // Notifies `receive` it can update `_item`
+        int           _subscriberCount = 0; // Number of subscribers (_generate coroutines)
+        int           _usingItemCount = 0;  // Number of subscribers still sending `_item`
+        bool          _eof = false;         // True once an EOF item is received
+    };
+
+
+
+    /** A Connector that can buffer a fixed number of items in an internal queue.
+        @warning  This currently only supports a single Subscriber. */
     template <typename T>
     class Buffer : public Connector<T> {
     public:
         explicit Buffer(size_t queueSize)   :_queue(queueSize) { }
 
-        AnySeries<T> generate() override    {
-            this->start();
-            return AnySeries<T>(_queue.generate());
-        }
+        AnySeries<T> generate() override    {this->start(); return _queue.generate();}
 
     protected:
-        // (predicate is exposed by subclass Filter)
+        // (exposed by subclass Filter)
         using Predicate = std::function<bool(T const&)>;
         Buffer(size_t queueSize, Predicate p)   :_queue(queueSize), _predicate(std::move(p)) { }
 
     private:
-        Task run(AnySeries<T> gen) override {
+        Task receive(AnySeries<T> series) override {
             bool eof, closed = false;
             do {
-                Result<T> item = AWAIT gen;
+                Result<T> item = AWAIT series;
                 eof = !item.ok();
                 if (eof)
                     this->handleEnd(item.error());
@@ -288,7 +366,8 @@ namespace crouton::ps {
 
 
 
-    /** A pub-sub connector that passes on only the items that satisfy a predicate function. */
+    /** A Connector that passes on only the items that satisfy a predicate function.
+        @warning  This currently only supports a single Subscriber. */
     template <typename T>
     class Filter : public Buffer<T> {
     public:
@@ -297,8 +376,10 @@ namespace crouton::ps {
 
 
 
-    /** A pub-sub connector that reads items, transforms them through a caller-defined function,
-        and re-publishes them. */
+    /** A Connector that reads items, transforms them through a function, and re-publishes them.
+        @note  The function may end the series early by returning an Error or `noerror`.
+               But it may not extend the series by returning a T when it gets an EOF.
+        @warning  This currently only supports a single Subscriber. */
     template <typename In, typename Out>
     class Transformer : public Connector<In,Out> {
     public:
@@ -311,14 +392,14 @@ namespace crouton::ps {
 
         AnySeries<Out> generate() override {
             this->start();
-            return AnySeries<Out>(_queue.generate());
+            return _queue.generate();
         }
 
     protected:
-        Task run(AnySeries<In> gen) override {
+        Task receive(AnySeries<In> series) override {
             bool eof, closed;
             do {
-                Result<In> item = AWAIT gen;
+                Result<In> item = AWAIT series;
                 bool inEof = !item.ok();
                 Result<Out> out = _xform(std::move(item));
                 eof = !out.ok();
@@ -333,6 +414,15 @@ namespace crouton::ps {
     private:
         BoundedAsyncQueue<Out> _queue;
         XformFn _xform;
+    };
+
+
+    template <typename T>
+    class Timeout : public Connector<T> {
+    public:
+        explicit Timeout(double secs)   :_timeout(secs) { }
+    private:
+        double _timeout;
     };
 
 }
