@@ -213,12 +213,21 @@ namespace crouton {
     /** General purpose Awaitable to return from `yield_value`.
         It does nothing, just allows the Scheduler to schedule another runnable task if any. */
     struct Yielder : public CORO_NS::suspend_always {
-        explicit Yielder(coro_handle myHandle) :_handle(myHandle) { }
         coro_handle await_suspend(coro_handle h) noexcept {
+            _handle = h;
             return lifecycle::yieldingTo(h, Scheduler::current().yield(h));
         }
-        void await_resume() const noexcept {
+
+        void await_resume() noexcept {
             Scheduler::current().resumed(_handle);
+            _handle = nullptr;
+        }
+
+        ~Yielder() {
+            if (_handle) {
+                // If await_resume hasn't been called yet, then the coro is being destroyed.
+                Scheduler::current().destroying(_handle);
+            }
         }
     private:
         coro_handle _handle;

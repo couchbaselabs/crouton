@@ -78,15 +78,14 @@ namespace crouton {
         // `co_yield` returns a bool: true to keep running, false if Task has been interrupted.
         auto yield_value(bool) {
             struct yielder : public Yielder {
-                explicit yielder(coro_handle myHandle, std::shared_ptr<shared> shared)
-                :Yielder(myHandle), _shared(std::move(shared)) { }
-                [[nodiscard]] bool await_resume() const noexcept {
+                explicit yielder(std::shared_ptr<shared> shared) :_shared(std::move(shared)) { }
+                [[nodiscard]] bool await_resume() noexcept {
                     Yielder::await_resume();
                     return !_shared->interrupt;
                 }
                 std::shared_ptr<shared> _shared;
             };
-            return yielder(handle(), _shared);
+            return yielder(_shared);
         }
 
         void return_void() {
