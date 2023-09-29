@@ -19,6 +19,8 @@
 #pragma once
 #include "Result.hh"
 
+#include <functional>
+
 namespace crouton {
 
     /** Pure-virtual interface declaring the coroutine methods needed to support `co_await`

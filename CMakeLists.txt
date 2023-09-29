@@ -16,6 +16,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD            11)
 set(CMAKE_C_STANDARD_REQUIRED   ON)
 
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
 
@@ -49,11 +52,12 @@ if (MSVC)
     # MSVC:
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00 -DNOMINMAX)
     add_compile_options(
-        /W4         # I think this means 'turn on lots of warnings'
-        /wd4068     # ignore unknown pragma
-        /wd4100     # ignore unused fn parameters
-        /wd4244     # ignore implicit sign conversion
-        /wd4267     # ignore implicit integer truncation
+        "/wd4068;/wd4100;/wd4244;/wd4267"
+       # /W4         # I think this means 'turn on lots of warnings'
+       # /wd4068     # ignore unknown pragma
+       # /wd4100     # ignore unused fn parameters
+       # /wd4244     # ignore implicit sign conversion
+       # /wd4267     # ignore implicit integer truncation
     )
 else()
     # Clang & GCC:
@@ -76,7 +80,8 @@ else()
         add_compile_options(
             -Wno-gnu-zero-variadic-macro-arguments
             -Wno-gnu-conditional-omitted-operand    # Allow `x ?: y`
-            -Wno-gnu-statement-expression-from-macro-expansion  # Allow `({...})`
+            -Wno-gnu-statement-expression           # Allow `({...})`
+            -Wno-gnu-statement-expression-from-macro-expansion
         )
     endif()
 endif()

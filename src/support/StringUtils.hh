@@ -18,6 +18,8 @@
 
 #pragma once
 #include "Base.hh"
+
+#include <cstring>
 #include <cassert>
 
 namespace crouton {

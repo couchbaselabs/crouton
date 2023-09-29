@@ -111,6 +111,8 @@ namespace crouton::util {
     protected:
         Link* _begin()                  {return _head._next;}
         Link* _end()                    {return &_head;}
+        Link const* _begin() const      {return _head._next;}
+        Link const* _end() const        {return &_head;}
 
         template <class LINK>
         static LINK& downcast(Link& link)   {return static_cast<LINK&>(link);}

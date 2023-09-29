@@ -61,7 +61,7 @@ namespace crouton {
     template <typename T>
     class Future : public Coroutine<FutureImpl<T>>, public ISelectable {
     public:
-        using nonvoidT = std::conditional<std::is_void_v<T>, std::byte, T>::type;
+        using nonvoidT = typename std::conditional<std::is_void_v<T>, std::byte, T>::type;
 
         /// Creates a Future from a FutureProvider.
         explicit Future(FutureProvider<T> state)        :_state(std::move(state)) {assert(_state);}
@@ -260,7 +260,7 @@ namespace crouton {
     public:
         using super = CoroutineImpl<FutureImpl<T>, true>;
         using handle_type = typename super::handle_type;
-        using nonvoidT = std::conditional<std::is_void_v<T>, std::byte, T>::type;
+        using nonvoidT = typename std::conditional<std::is_void_v<T>, std::byte, T>::type;
 
         FutureImpl() = default;
 

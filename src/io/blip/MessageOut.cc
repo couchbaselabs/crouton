@@ -99,7 +99,7 @@ namespace crouton::io::blip {
         // Note: The MessageIn's flags will be updated when the 1st frame of the response arrives;
         // the type might become kErrorType, and kUrgent or kCompressed might be set.
         return new MessageIn(_connection,
-                             (FrameFlags)kResponseType,
+                             FrameFlags(kResponseType),
                              _number,
                              _uncompressedBytesSent,
                              std::move(_onResponse));

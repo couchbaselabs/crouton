@@ -133,6 +133,7 @@ namespace crouton {
 
 
 
+#if 0
     /// Syntactic sugar to handle a `Result<T>`, similar to Swift's `try`.
     /// - If R has a value, evaluates to its value.
     /// - If R has an error, `co_return`s the error from the current coroutine.
@@ -148,4 +149,5 @@ namespace crouton {
     /// - If the future returns a value, evaluates to that value.
     /// - If the future returns an error, `co_return`s the error.
     #define TRY_AWAIT(F)    UNWRAP(AWAIT NoThrow(F))
+#endif
 }

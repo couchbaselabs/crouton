@@ -87,8 +87,8 @@ namespace crouton {
         size_t size() const                         {return _queue.size();}
         Error error() const                         {return empty() ? _closeError : noerror;}
 
-        using iterator = std::deque<T>::iterator;
-        using const_iterator = std::deque<T>::const_iterator;
+        using iterator = typename std::deque<T>::iterator;
+        using const_iterator = typename std::deque<T>::const_iterator;
 
         iterator begin()                            {return _queue.begin();}
         iterator end()                              {return _queue.end();}
@@ -120,7 +120,7 @@ namespace crouton {
         }
 
         /// Adds an item at the position of the iterator, i.e. before whatever's at the iterator.
-        virtual bool pushBefore(std::deque<T>::iterator i, T item) {
+        virtual bool pushBefore(typename std::deque<T>::iterator i, T item) {
             if (_state != Open)
                 return false;
             _queue.emplace(i, std::move(item));
@@ -245,7 +245,7 @@ namespace crouton {
                     this->closeWhenEmpty();
                     break;
                 }
-                if (!(YIELD 0))
+                if (bool ok = YIELD 0; !ok)
                     break;
             }
         }
@@ -266,7 +266,7 @@ namespace crouton {
             return !full() && super::push(std::move(t));
         }
 
-        [[nodiscard]] bool pushBefore(std::deque<T>::iterator i, T item) override {
+        [[nodiscard]] bool pushBefore(typename std::deque<T>::iterator i, T item) override {
             return !full() && super::pushBefore(i, std::move(item));
         }
 

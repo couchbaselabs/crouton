@@ -23,6 +23,10 @@
 #include "Message.hh"
 #include "Task.hh"
 
+#include <functional>
+#include <optional>
+#include <unordered_map>  
+
 namespace crouton::io::blip {
     class MessageBuilder;
 

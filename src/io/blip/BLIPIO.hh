@@ -19,7 +19,9 @@
 #include "Message.hh"
 #include "MessageOut.hh"
 #include "Queue.hh"
+
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 namespace crouton::io::blip {

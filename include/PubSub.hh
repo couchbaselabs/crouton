@@ -12,6 +12,10 @@
 #include "Select.hh"
 #include "Task.hh"
 
+#include <functional>
+#include <optional>
+#include <vector>
+
 namespace crouton::ps {
 
     /** Type-erasing wrapper around any Series implementation. */

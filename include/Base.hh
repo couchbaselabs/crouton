@@ -42,6 +42,23 @@
 #endif
 
 
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
+#if __has_attribute(__unused__)
+#define __unused    __attribute__((__unused__))
+#else
+#define __unused
+#endif
+
+#if __has_attribute(__pure__)
+#define pure        __attribute__((__pure__))
+#else
+#define pure
+#endif
+
+
 // Synonyms for coroutine primitives. Optional, but they're more visible in the code.
 #define AWAIT  co_await
 #define YIELD  co_yield

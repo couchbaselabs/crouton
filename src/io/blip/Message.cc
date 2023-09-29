@@ -214,11 +214,11 @@ namespace crouton::io::blip {
         _unackedBytes += frameSize;
         if (_unackedBytes >= kIncomingAckThreshold) {
             // Send an ACK after enough data has been received of this message:
-            MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
+            auto msgType = FrameFlags(isResponse() ? kAckResponseType : kAckRequestType);
             char buf[10];
             string payload(buf, putUVarint(_rawBytesReceived, buf));
             _connection->send(make_shared<MessageOut>(_connection,
-                                                      (FrameFlags)(msgType|kUrgent|kNoReply),
+                                                      FrameFlags(msgType|kUrgent|kNoReply),
                                                       payload, _number));
             _unackedBytes = 0;
         }

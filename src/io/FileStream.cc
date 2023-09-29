@@ -108,9 +108,10 @@ namespace crouton::io {
             _readBuf = make_unique<Buffer>();
         assert(_readBuf->empty());
         MutableBytes buf(_readBuf->data, Buffer::kCapacity);
-        size_t n = TRY_AWAIT(_preadv(&buf, 1, -1));
-
-        _readBuf->size = uint32_t(n);
+        Result<size_t> n = AWAIT _preadv(&buf, 1, -1);
+        if (auto err = n.error())
+            RETURN err;
+        _readBuf->size = uint32_t(n.value());
         _readBuf->used = 0;
         RETURN _readBuf->bytes();
     }

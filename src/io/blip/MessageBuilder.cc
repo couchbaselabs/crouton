@@ -57,7 +57,7 @@ namespace crouton::io::blip {
 
 
     FrameFlags MessageBuilder::flags() const {
-        int flags = type & kTypeMask;
+        int flags = FrameFlags(type) & kTypeMask;
         if (urgent) flags |= kUrgent;
         if (compressed) flags |= kCompressed;
         if (noreply) flags |= kNoReply;

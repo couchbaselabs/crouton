@@ -182,7 +182,7 @@ TEST_CASE("Select Future and Generator", "[generator]") {
         int64_t expectedCount = 1;
         bool done = false;
         while (!done) {
-            switch (int which = AWAIT select) {
+            switch (AWAIT select) {
                 case 0: {
                     Result<int64_t> r = AWAIT count;
                     cerr << r << ", ";

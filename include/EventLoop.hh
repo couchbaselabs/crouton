@@ -20,6 +20,7 @@
 #include "Future.hh"
 
 #include <functional>
+#include <optional>
 
 struct uv_timer_s;
 
