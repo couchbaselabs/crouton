@@ -34,10 +34,24 @@ namespace crouton {
     };
 
 
-    /** A type of Awaitable that guarantees to produce:
+
+    /** Pure-virtual interface for awaitable objects that can notify via a callback
+        when they're ready, i.e. when `co_await` will not block.
+        Generator and Future implement this. */
+    class ISelectable {
+    public:
+        using OnReadyFn = std::function<void()>;
+
+        virtual ~ISelectable() = default;
+        virtual void onReady(OnReadyFn fn) =0;
+    };
+
+
+
+    /** A type of Awaitable (plus ISelectable) that guarantees to produce:
         - zero or more `T`s, then
         - either empty/`noerror` (completion) or an `Error` (failure.)
         `Generator` is the canonical example. */
     template <typename T>
-    class Series : public IAwaitable<Result<T>> { };
+    class ISeries : public IAwaitable<Result<T>>, public ISelectable { };
 }

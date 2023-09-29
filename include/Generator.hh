@@ -42,7 +42,7 @@ namespace crouton {
         A Generator can also be iterated synchronously via its begin/end methods,
         or with a `for(:)` loop.*/
     template <typename T>
-    class Generator : public Coroutine<GeneratorImpl<T>>, public Series<T>, public ISelectable {
+    class Generator : public Coroutine<GeneratorImpl<T>>, public ISeries<T> {
     public:
         Generator(Generator&&) = default;
 

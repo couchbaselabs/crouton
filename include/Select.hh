@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Awaitable.hh"
 #include "Scheduler.hh"
 
 #include <array>
@@ -25,19 +26,6 @@
 #include <initializer_list>
 
 namespace crouton {
-
-    /** Pure-virtual interface for awaitable objects that can notify via a callback
-        when they're ready, i.e. when `co_await` will not block.
-        Generator and Future implement this. */
-    class ISelectable {
-    public:
-        using OnReadyFn = std::function<void()>;
-
-        virtual ~ISelectable() = default;
-        virtual void onReady(OnReadyFn fn) =0;
-    };
-
-
 
     /** Enables `co_await`ing multiple (up to 8) ISelectable values in parallel.
         After enabling the desired objects, `co_await` on the Select will return the index of the

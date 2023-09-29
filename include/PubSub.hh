@@ -9,13 +9,14 @@
 #include "Defer.hh"
 #include "Generator.hh"
 #include "Queue.hh"
+#include "Select.hh"
 #include "Task.hh"
 
 namespace crouton::ps {
 
     /** Type-erasing wrapper around any Series implementation. */
     template <typename T>
-    class AnySeries final : public Series<T> {
+    class AnySeries final : public ISeries<T> {
     public:
         /// Constructs an `AnySeries<T>` by moving a `Series<T>` rvalue.
         template <std::derived_from<Series<T>> Impl>
@@ -26,9 +27,10 @@ namespace crouton::ps {
         bool await_ready() override                         {return _impl->await_ready();}
         coro_handle await_suspend(coro_handle cur) override {return _impl->await_suspend(cur);}
         Result<T> await_resume() override                   {return _impl->await_resume();}
+        void onReady(OnReadyFn fn) override                 {return _impl->onReady(std::move(fn));}
 
     private:
-        std::unique_ptr<Series<T>> _impl;
+        std::unique_ptr<ISeries<T>> _impl;
         // Note: it's not possible to implement this with std::any, bc Series is not copyable
     };
 
