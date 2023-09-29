@@ -31,16 +31,14 @@ namespace crouton {
         @warning  Not thread-safe, despite the name! */
     class CoCondition {
     public:
-        struct awaiter;
-
-        awaiter operator co_await() {return awaiter(this);}
+        CoCondition() = default;
+        CoCondition(CoCondition&&) = default;
+        CoCondition& operator=(CoCondition&&) = default;
+        ~CoCondition() {assert(_awaiters.empty());}
 
         void notifyOne();
 
         void notifyAll();
-
-        ~CoCondition() {assert(_awaiters.empty());}
-
 
         struct awaiter : public CORO_NS::suspend_always, private util::Link {
             awaiter(CoCondition* cond) :_cond(cond) { }
@@ -55,6 +53,8 @@ namespace crouton {
             CoCondition* _cond;
             Suspension   _suspension;
         };
+
+        awaiter operator co_await() {return awaiter(this);}
 
     private:
         void remove(awaiter* a);

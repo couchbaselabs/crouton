@@ -123,42 +123,58 @@ namespace crouton::ps {
         These are used as intermediate links in data-flow chains. */
     template <typename In, typename Out = In>
     class Connector : public Subscriber<In>, public Publisher<Out> {
+    public:
     };
 
 
-    
+#pragma mark - CHAINING
+
+
     namespace detail {
         template <typename T> T test_pub_type(const Publisher<T>*);
         template <typename> void test_pub_type(const void*);
         template <typename T> T test_sub_type(const Subscriber<T>*);
         template <typename> void test_sub_type(const void*);
+
+        template <typename T> T test_shared_pub_type(const std::shared_ptr<Publisher<T>>*);
+        template <typename> void test_shared_pub_type(const void*);
     }
-    /// If T is a subclass of `Publisher<P>`, `pub_type<T>` evaluates to P.
-    template <typename T> using pub_type = decltype(detail::test_pub_type((const T*)nullptr));
-    /// If T is a subclass of `Subscriber<P>`, `sub_type<T>` evaluates to P.
-    template <typename T> using sub_type = decltype(detail::test_sub_type((const T*)nullptr));
+    /// If `P` is a Publisher, `pub_type<P>` is its item type.
+    /// In other words, if P is a subclass of `Publisher<T>`, `pub_type<P>` evaluates to `T`.
+    template <typename P> using pub_type = decltype(detail::test_pub_type((const P*)nullptr));
+    /// If `P` is a Subscriber, `sub_type<P>` is its item type.
+    template <typename S> using sub_type = decltype(detail::test_sub_type((const S*)nullptr));
 
 
     /// `|` can be used to chain together Publishers and Subscribers.
-    /// The left side must be a `shared_ptr` of a Publisher type.
-    /// The right side can be a `shared_ptr` of a Subscriber, or directly a Subscriber.
+    /// The left side must be a Publisher type or a `shared_ptr` to one.
+    /// The right side must be a Subscriber type, or a `shared_ptr` to one.
     /// The Subscriber will be subscribed to the Publisher, and returned.
-    template <typename P, typename S>  requires(std::is_same_v<pub_type<P>,sub_type<S>>)
-    auto operator| (shared_ptr<P> pub, shared_ptr<S> sub) {
+    ///
+    /// Examples:
+    /// ```
+    /// auto collector = Emitter<int>(...) | Filter<int>(...) | Collector<int>{};
+    /// auto stream = make_shared<AStream>(...);
+    /// auto collector = stream | Filter<string>(...) | Collector<string>{};
+    /// ```
+    template <typename P, typename S, typename PP = std::remove_reference_t<P>, typename SS = std::remove_reference_t<S>>  requires(std::is_same_v<pub_type<PP>,sub_type<SS>>)
+    [[nodiscard]] S operator| (P&& pub, S&& sub) {
+        auto sharedP = std::make_shared<PP>(std::move(pub));
+        sub.subscribeTo(std::move(sharedP));
+        return sub;
+    }
+
+
+    template <typename P, typename S, typename PP = std::remove_reference_t<P>, typename SS = std::remove_reference_t<S>>  requires(std::is_same_v<pub_type<PP>,sub_type<SS>>)
+    S operator| (std::shared_ptr<P> pub, S&& sub) {
+        sub.subscribeTo(std::move(pub));
+        return sub;
+    }
+
+    template <typename P, typename S, typename PP = std::remove_reference_t<P>, typename SS = std::remove_reference_t<S>>  requires(std::is_same_v<pub_type<PP>,sub_type<SS>>)
+    auto operator| (std::shared_ptr<P> pub, std::shared_ptr<S> sub) {
         sub->subscribeTo(std::move(pub));
         return sub;
-    }
-
-    template <typename P, typename S>  requires(std::is_same_v<pub_type<P>,sub_type<S>>)
-    S& operator| (shared_ptr<P> pub, S &sub) {
-        sub.subscribeTo(std::move(pub));
-        return sub;
-    }
-
-    template <typename P, typename S>  requires(std::is_same_v<pub_type<P>,sub_type<S>>)
-    S&& operator| (shared_ptr<P> pub, S &&sub) {
-        sub.subscribeTo(std::move(pub));
-        return std::forward<S>(sub);
     }
 
 

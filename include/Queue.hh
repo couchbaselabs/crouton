@@ -34,6 +34,9 @@ namespace crouton {
     class AsyncQueue {
     public:
         AsyncQueue() = default;
+        AsyncQueue(AsyncQueue&&) = default;
+        AsyncQueue& operator=(AsyncQueue&&) = default;
+
         virtual ~AsyncQueue() {close();}
 
         enum State : uint8_t {Open, Closing, Closed};

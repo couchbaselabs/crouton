@@ -49,8 +49,8 @@ TEST_CASE("Transformer", "[pubsub]") {
                 return in.error();
         });
 
-        xform->subscribeTo(emit);
-        Collector<string> collect(xform);
+        Collector<string> collect;
+        emit | xform | collect;
         collect.start();
 
         Scheduler::current().runUntil( [&] {return collect.done(); });
@@ -63,8 +63,8 @@ TEST_CASE("Transformer", "[pubsub]") {
 
 TEST_CASE("Filter", "[pubsub]") {
     RunCoroutine([]() -> Future<void> {
-        auto collect = make_shared<Emitter<int>>(initializer_list<int>{1, 2, 3, 4, 5, 6})
-                     | make_shared<Filter<int>>([](int i) {return i % 2 == 0;})
+        auto collect = Emitter<int>(initializer_list<int>{1, 2, 3, 4, 5, 6})
+                     | Filter<int>([](int i) {return i % 2 == 0;})
                      | Collector<int>{};
         collect.start();
 
