@@ -189,7 +189,7 @@ namespace crouton::io::apple {
                                         bool is_complete,
                                         nw_error_t error) {
                     if (is_complete) {
-                        spdlog::debug("NWConnection read EOF");
+                        LNet->debug("NWConnection read EOF");
                         _eof = true;
                     }
                     if (content) {
@@ -198,7 +198,7 @@ namespace crouton::io::apple {
                         _content = dispatch_data_create_map(content, &data, &size);
                         _contentBuf = ConstBytes(data, size);
                         _contentUsed = peek ? 0 : size;
-                        spdlog::debug("NWConnection read {} bytes", size);
+                        LNet->debug("NWConnection read {} bytes", size);
                         onRead->setResult(_contentBuf);
                     } else if (error) {
                         onRead->setResult(toError(error));

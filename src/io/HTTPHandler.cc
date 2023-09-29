@@ -38,7 +38,7 @@ namespace crouton::io::http {
 
         auto uri = _parser.requestURI.value();
         string path(uri.path);
-        spdlog::info("HTTPHandler: Request is {} {}", _parser.requestMethod, string(uri));
+        LNet->info("HTTPHandler: Request is {} {}", _parser.requestMethod, string(uri));
 
         Headers responseHeaders;
         responseHeaders.set("User-Agent", "Crouton");
@@ -129,7 +129,7 @@ namespace crouton::io::http {
 
     Future<void> Handler::Response::finishHeaders() {
         if (!_sentHeaders) {
-            spdlog::info("HTTPHandler: Sending {} response", status);
+            LNet->info("HTTPHandler: Sending {} response", status);
             AWAIT _handler->writeHeaders(status, statusMessage, _headers);
         }
         _sentHeaders = true;
