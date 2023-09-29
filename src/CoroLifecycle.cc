@@ -256,7 +256,7 @@ namespace crouton::lifecycle {
         pushCurrent(curInfo);
     }
 
-    static void switchingTo(coro_handle next) {
+    static coro_handle switching(coroInfo& curInfo, coro_handle next) {
         if (next && !isNoop(next)) {
             auto& nextInfo = getInfo(next);
             LCoro->trace("{} resuming", nextInfo);
@@ -264,6 +264,8 @@ namespace crouton::lifecycle {
             nextInfo.setState(coroState::active);
             nextInfo.awaiting = nullptr;
         }
+        switchCurrent(curInfo, next);
+        return next ? next : CORO_NS::noop_coroutine();
     }
 
     coro_handle suspendingTo(coro_handle cur,
@@ -283,10 +285,7 @@ namespace crouton::lifecycle {
         curInfo.awaiting = to;
         curInfo.awaitingType = &toType;
 
-        switchingTo(next);
-
-        switchCurrent(curInfo, next);
-        return next ? next : CORO_NS::noop_coroutine();
+        return switching(curInfo, next);
     }
 
     coro_handle suspendingTo(coro_handle cur,
@@ -303,9 +302,7 @@ namespace crouton::lifecycle {
         curInfo.setState(coroState::awaiting);
         curInfo.awaitingCoro = awaitingCoro;
 
-        switchingTo(next);
-        switchCurrent(curInfo, next);
-        return next ? next : CORO_NS::noop_coroutine();
+        return switching(curInfo, next);
     }
 
     coro_handle yieldingTo(coro_handle cur, coro_handle next) {
@@ -318,9 +315,7 @@ namespace crouton::lifecycle {
         assert(curInfo.state == coroState::active);
         curInfo.setState(coroState::yielding);
 
-        switchingTo(next);
-        switchCurrent(curInfo, next);
-        return next ? next : CORO_NS::noop_coroutine();
+        return switching(curInfo, next);
     }
 
     coro_handle finalSuspend(coro_handle cur, coro_handle next) {
@@ -332,8 +327,7 @@ namespace crouton::lifecycle {
             curInfo.setState(coroState::ending);
         }
 
-        switchCurrent(curInfo, next);
-        return next ? next : CORO_NS::noop_coroutine();
+        return switching(curInfo, next);
     }
 
     void resume(coro_handle h) {
