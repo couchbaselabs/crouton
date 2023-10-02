@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include <typeinfo>
 
 // Enable lifecycle tracking in debug builds, by default. Override by defining CROUTON_LIFECYCLES=0
 #if !defined(CROUTON_LIFECYCLES) && !defined(NDEBUG)
