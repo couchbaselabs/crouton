@@ -40,7 +40,11 @@
     #include <unwind.h>     // _Unwind_Backtrace(), etc.
 #endif
 
-#if defined(_LIBCPP_VERSION) || defined(__ANDROID__)
+#ifndef __has_include
+#   define __has_include() 0
+#endif
+
+#if __has_include(<cxxabi.h>) || defined(__ANDROID__)
     #include <cxxabi.h>     // abi::__cxa_demangle()
     #define HAVE_UNMANGLE
 #endif

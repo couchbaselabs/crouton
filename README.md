@@ -97,7 +97,8 @@ cout << endl;
 ### Prerequisites:
 
 - CMake
-- GCC, Clang or Xcode
+- Clang 15, Xcode 15, or GCC 12
+- zlib (aka libz)
 
 #### on macOS:
 
@@ -106,7 +107,7 @@ cout << endl;
 
 #### on Linux
 
-    sudo apt-get install g++ cmake cmake-data`
+    sudo apt-get install g++ cmake cmake-data zlib1g-dev
 
 ### Building With CMake
 

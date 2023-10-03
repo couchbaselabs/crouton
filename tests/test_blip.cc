@@ -119,9 +119,9 @@ staticASYNC<void> testSendReceive(initializer_list<MessageBuilder::property> pro
     REQUIRE(rcvd);
     CHECK(rcvd->number() == MessageNo{1});
     if (compressed)
-        CHECK(int(rcvd->flags()) == (kRequestType | kNoReply | kCompressed));
+        CHECK(int(rcvd->flags()) == (FrameFlags(kRequestType) | kNoReply | kCompressed));
     else
-        CHECK(int(rcvd->flags()) == (kRequestType | kNoReply));
+        CHECK(int(rcvd->flags()) == (FrameFlags(kRequestType) | kNoReply));
     for (auto kv : properties)
         CHECK(rcvd->property(kv.first) == kv.second);
     CHECK(rcvd->body() == body);
