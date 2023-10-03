@@ -52,6 +52,9 @@ namespace crouton {
         /// @note  If no sources are enabled, `co_await` will immediately return -1.
         void enable(unsigned index);
 
+        /// Begins watching each source.
+        void enable();
+
         //---- Awaitable methods. `co_await` returns the index of a ready source.
         bool await_ready() noexcept     {return _ready.any() || _enabled.none();}
         coro_handle await_suspend(coro_handle h);

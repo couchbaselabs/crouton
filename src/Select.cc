@@ -37,6 +37,11 @@ namespace crouton {
         _sources[index]->onReady([this,index]{this->notify(index);});
     }
 
+    void Select::enable() {
+        for (unsigned i = 0; i < _sources.size(); ++i)
+            enable(i);
+    }
+
 
     coro_handle Select::await_suspend(coro_handle h) {
         _suspension = Scheduler::current().suspend(h);
