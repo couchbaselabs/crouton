@@ -22,6 +22,9 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
 
+option(CROUTON_BUILD_BLIP "Build BLIP library" OFF)
+
+
 #### CMAKE SUBPROJECTS
 
 
@@ -172,30 +175,31 @@ endif()
 
 #### BLIP
 
+if (CROUTON_BUILD_BLIP)
+    add_library( BLIP STATIC
+        src/io/blip/BLIPConnection.cc
+        src/io/blip/BLIPIO.cc
+        src/io/blip/Message.cc
+        src/io/blip/MessageBuilder.cc
+        src/io/blip/MessageOut.cc
+        src/io/blip/Codec.cc
+    )
 
-add_library( BLIP STATIC
-    src/io/blip/BLIPConnection.cc
-    src/io/blip/BLIPIO.cc
-    src/io/blip/Message.cc
-    src/io/blip/MessageBuilder.cc
-    src/io/blip/MessageOut.cc
-    src/io/blip/Codec.cc
-)
+    target_include_directories( LibCrouton PUBLIC
+        src/io/blip/
+    )
 
-target_include_directories( LibCrouton PUBLIC
-    src/io/blip/
-)
+    target_include_directories( BLIP PRIVATE
+        src/
+        src/io/
+        src/support/
+    )
 
-target_include_directories( BLIP PRIVATE
-    src/
-    src/io/
-    src/support/
-)
-
-target_link_libraries( BLIP
-    LibCrouton
-    z
-)
+    target_link_libraries( BLIP
+        LibCrouton
+        z
+    )
+endif()
 
 
 #### DEMO TOOLS
@@ -205,7 +209,6 @@ if (NOT CROUTON_IOS)
     add_executable( demo_client
         tests/demo_client.cc
     )
-
     target_link_libraries( demo_client
         LibCrouton
     )
@@ -213,10 +216,20 @@ if (NOT CROUTON_IOS)
     add_executable( demo_server
         tests/demo_server.cc
     )
-
     target_link_libraries( demo_server
         LibCrouton
     )
+
+    if (CROUTON_BUILD_BLIP)
+        add_executable( demo_blipclient
+            tests/demo_blipclient.cc
+        )
+        target_link_libraries( demo_blipclient
+            LibCrouton
+            BLIP
+        )
+    endif()
+
 endif()
 
 
@@ -229,7 +242,6 @@ if (NOT CROUTON_IOS)
         tests/test_generator.cc
         tests/test_io.cc
         tests/test_http.cc
-        tests/test_blip.cc
         vendor/catch2/catch_amalgamated.cpp
         vendor/catch2/ConsoleReporterPlus.cc
     )
@@ -241,7 +253,15 @@ if (NOT CROUTON_IOS)
 
     target_link_libraries( CroutonTests
         LibCrouton
-        BLIP
     )
+
+    if (CROUTON_BUILD_BLIP)
+        target_sources( CroutonTests PRIVATE
+            tests/test_blip.cc
+        )
+        target_link_libraries( CroutonTests
+            BLIP
+        )
+    endif()
 endif()
 
