@@ -69,6 +69,8 @@ namespace crouton {
         template <ErrorDomain D>
         Error(D d)                          :Error(errorcode_t(d), domainID<D>()) { }
 
+        /// Constructs an Error from an enum value and a human-readable message.
+        /// @note  The message is currently ignored, but may be preserved in the future.
         template <ErrorDomain D>
         Error(D d, string_view msg)         :Error(errorcode_t(d), domainID<D>()) { }
 

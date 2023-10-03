@@ -85,6 +85,7 @@ namespace crouton {
     }
 
 
+    /** True if `h` is null or `noop_coroutine`. */
     bool isNoop(coro_handle h);
 
 
@@ -95,7 +96,7 @@ namespace crouton {
     std::ostream& operator<< (std::ostream& out, coro_handle h);
 
     /** spdlog won't use `operator<<` to format types in the `std` namespace, and that includes
-        std::coroutine_handle<>. Work around this by wrapping it in a trivial custom struct. */
+        `std::coroutine_handle<>`. Work around this by wrapping it in a trivial custom struct. */
     struct logCoro {
         coro_handle h;
         bool verbose = false;

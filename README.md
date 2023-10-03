@@ -8,13 +8,19 @@ Async/await gives you concurrency without the pitfalls of multithreading. You ca
 
 How is that better than threads? It's safer and easier to reason about. The only places where concurrency happens are well-marked by the `co_await` and `co_yield` keywords. You don't need mutexes or atomic variables, and there are far fewer opportunities for race conditions or deadlocks. (There are performance benefits too: no expensive context switches, less stack usage.)
 
+[Detailed documentation](docs/README.md) is being written.
+
 ## Features
 
-* General purpose utilities:
-    * Useful coroutine base classes
-    * `Generator`, an iterator implementation based on `co_yield`-ing values
+* Coroutine library:
+    * Useful base classes for implementing new coroutine types
     * `Future`, an asynchronous promise type
-    * `CoMutex`, a utility that allows only one coroutine to enter at a time
+    * `Generator`, an iterator implementation based on `co_yield`-ing values
+    * `CoMutex`, `CoCondition`, `Blocker`: cooperative equivalents of common sync primitives
+    * `AsyncQueue`, a producer/consumer queue
+    * `Select`, a way to await multiple things in parallel
+    * Optional coroutine lifecycle tracking, with debugging utilities to dump all existing
+      coroutines and their "call stacks".
 
 * Event loops:
     * `Scheduler`, which manages multiple active coroutines on a thread
@@ -24,7 +30,11 @@ How is that better than threads? It's safer and easier to reason about. The only
         * Scheduling a function to run on a background thread-pool
     * `Task`, an independently-running coroutine that can `co_yield` to give time to others
     * `Timer`, repeating or one-shot
-    * `Actor`, a class whose coroutine methods are queued, never running concurrently
+
+* Reactive publish/subscribe framework
+    * Enables building complex networked data flows out of modular components
+    * Intrinsically supports backpressure to manage flow control on sockets
+    * Loosely inspired by Apple's Combine framework
     
 * Asynchronous I/O classes:
     * DNS lookup
@@ -39,20 +49,24 @@ How is that better than threads? It's safer and easier to reason about. The only
     * HTTP server (_very_ basic so far)
     * WebSocket client and server
     
+* Core classes & APIs:
+    * General-purpose `Error` and `Result<T>` types
+    * Logging, a thin wrapper around spdlog
+
 * Cross-Platform:
     * macOS (builds and passes tests)
       * iOS? ("It's still Darwin…")
     * Linux (builds; not yet tested)
       * Android? ("It's still Linux…")
-    * Windows ("it oughta work…" but not yet built or tested)
+    * Windows (sometimes builds; not yet tested)
     
 ## Status: ☠️EXPERIMENTAL☠️
 
-This is very new code! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
+This is very new code, under heavy development! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
 
 The tests have only been run on macOS yet. Test coverage is very limited.
 
-APIs are still in flux.
+APIs are still in flux. Things get refactored a lot.
 
 ## Example
 

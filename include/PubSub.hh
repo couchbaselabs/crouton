@@ -63,21 +63,24 @@ namespace crouton::ps {
     template <typename T>
     class Subscriber {
     public:
+        /// Constructs an unconnected Subscriber; you must call `subscribeTo` afterwards.
         Subscriber() = default;
+
+        /// Constructs a Subscriber connected to a Publisher.
         explicit Subscriber(std::shared_ptr<Publisher<T>> pub)  {subscribeTo(pub);}
 
-        /// Connects the subscriber to a Series created by the Publisher.
-        /// @warning  Must be called exactly once.
+        /// Connects the subscriber to a Publisher.
         virtual void subscribeTo(std::shared_ptr<Publisher<T>> pub) {
             assert(!_publisher);
             _publisher = std::move(pub);
         }
 
-        /// The Publisher I'm subscribed to.
-        std::shared_ptr<Publisher<T>> publisher() const  {return _publisher;}
+        /// The Publisher it's subscribed to.
+        std::shared_ptr<Publisher<T>> publisher() const         {return _publisher;}
 
         /// Starts the Subscriber: it first calls `generate` on its Publisher to get the Series,
         /// then starts an async Task to await items.
+        /// @note  You only have to call this on the last Subscriber in a series.
         virtual void start() {
             if (!_task) {
                 assert(_publisher);
@@ -99,7 +102,8 @@ namespace crouton::ps {
     protected:
         /// Coroutine method that's the lifecycle of the Subscriber.
         /// It awaits items from the Generator and passes them to the `handle` method,
-        /// until it receives the final empty or error item.
+        /// until it receives the final empty or error item, then passes that to `handleEnd`.
+        /// 
         /// You can override this if you want more control over the lifecycle.
         /// @warning  You must override either this method or `handle(T)`.
         /// @warning  If you override, you are responsible for calling `handleEnd` when finishing.
@@ -128,8 +132,8 @@ namespace crouton::ps {
         Subscriber& operator=(Subscriber const&) = delete;
 
         std::shared_ptr<Publisher<T>>   _publisher; // My Publisher
-        std::optional<Task>             _task;      // The `receive` coroutine that reads _series
-        Error                           _error;     // Error received from _series
+        std::optional<Task>             _task;      // The `receive` coroutine that reads series
+        Error                           _error;     // Error received from the publisher
     };
 
 

@@ -25,9 +25,7 @@ namespace crouton {
     class TaskImpl;
 
 
-    /** Return type for a coroutine that doesn't return a value, just runs indefinitely.
-        Unlike the base class CoroutineHandle, it does not destroy the coroutine handle in its
-        destructor. */
+    /** Return type for a coroutine that doesn't return a value, just runs indefinitely. */
     class Task : public Coroutine<TaskImpl> {
     public:
         Task(Task&&) = default;

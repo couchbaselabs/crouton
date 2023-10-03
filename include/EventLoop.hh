@@ -28,12 +28,11 @@ namespace crouton {
     template <typename T> class Future;
 
 
-    /** Abstract event loop class, used by Scheduler.
-        The concrete implementation is UVEventLoop. */
+    /** Abstract event loop class, owned by a Scheduler.
+        Like a Scheduler, an EventLoop is associated with a single thread.
+        Concrete implementations of EventLoop use it to check for, and wait for, I/O. */
     class EventLoop {
     public:
-        EventLoop() = default;
-
         /// Runs the event loop until there's nothing to wait on, or until `stop` is called.
         virtual void run() =0;
 
@@ -43,7 +42,7 @@ namespace crouton {
         virtual bool runOnce(bool waitForIO =true) =0;
 
         /// True if the event loop is currently in `run` or `runOnce`.
-        virtual bool isRunning() const {return _running;}
+        virtual bool isRunning() const                      {return _running;}
 
         /// Stops the event loop, causing `run` to return ASAP. No-op if not running.
         /// @note  This method is thread-safe if the `threadSafe` parameter is true.
@@ -63,6 +62,7 @@ namespace crouton {
     /** A repeating or one-shot timer. */
     class Timer {
     public:
+        /// Creates a Timer that will call the given function when it fires.
         Timer(std::function<void()> fn);
         ~Timer();
 
@@ -78,10 +78,10 @@ namespace crouton {
         /// Stops any future calls. The timer's destruction also stops calls.
         void stop();
 
-        /// Static method, that calls the given function after the given delay.
+        /// Static method that calls the given function after the given delay.
         static void after(double delaySecs, std::function<void()> fn);
 
-        /// Returns a Future that completes after the given delay.
+        /// Static method that returns a Future that completes after the given delay.
         staticASYNC<void> sleep(double delaySecs);
 
     private:
@@ -93,11 +93,11 @@ namespace crouton {
     };
 
 
-    /// Calls the given function on a background thread managed by libuv.
+    /// Calls the given function on an anonymous background thread.
     ASYNC<void> OnBackgroundThread(std::function<void()> fn);
 
 
-    /// Calls the given function on a background thread from a pool,
+    /// Calls the given function on an anonymous background thread,
     /// returning its value (or exception) asynchronously.
     template <typename T>
     ASYNC<T> OnBackgroundThread(std::function<T()> fn) {

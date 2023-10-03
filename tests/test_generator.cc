@@ -83,9 +83,9 @@ TEST_CASE("Generator without coroutine", "[generator]") {
     {
         Generator<int64_t> fib = fibonacci(100);
         vector<int64_t> results;
-        for (Result<int64_t> n : fib) {
+        for (int64_t n : fib) {
             cerr << n << ' ';
-            results.push_back(n.value());
+            results.push_back(n);
         }
         cerr << endl;
         CHECK(results == vector<int64_t>{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 });

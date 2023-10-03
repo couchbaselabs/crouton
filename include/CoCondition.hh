@@ -73,6 +73,8 @@ namespace crouton {
 
         The value you pass to `notify` will be returned from the `co_await`.
 
+        @note  Blocker is thread-safe. `notify()` can safely be called from a different thread.
+
         Blocker supports only one waiting coroutine. If you need more, use a CoCondition. */
     template <typename T>
     class Blocker {

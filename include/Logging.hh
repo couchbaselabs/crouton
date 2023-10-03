@@ -37,7 +37,7 @@ namespace crouton {
      */
 
 
-    /// Initializes logging, sets log levels and creates well-known loggers.
+    /// Initializes spdlog logging, sets log levels and creates well-known loggers.
     /// Called automatically by `MakeLogger` and `AddSink`.
     /// Calling this multiple times has no effect.
     void InitLogging();
@@ -46,7 +46,7 @@ namespace crouton {
     /// Well-known loggers:
     extern std::shared_ptr<spdlog::logger>
         LCoro,  // Coroutine lifecycle
-        LSched, // Scheduler logs
+        LSched, // Scheduler
         LLoop,  // Event-loop
         LNet;   // Network I/O
 
