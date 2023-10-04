@@ -22,6 +22,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # For JetBrains IDE
 
 
+# Option to build the BLIP source files as a separate library.
+# Disabled by default because that code is not Apache-licensed; see src/io/BLIP/README.md.
 option(CROUTON_BUILD_BLIP "Build BLIP library" OFF)
 
 

@@ -35,6 +35,7 @@ How is that better than threads? It's safer and easier to reason about. The only
     * Enables building complex networked data flows out of modular components
     * Intrinsically supports backpressure to manage flow control on sockets
     * Loosely inspired by Apple's Combine framework
+    * Double-plus experimental ⚗️
     
 * Asynchronous I/O classes:
     * DNS lookup
@@ -48,25 +49,19 @@ How is that better than threads? It's safer and easier to reason about. The only
     * HTTP client
     * HTTP server (_very_ basic so far)
     * WebSocket client and server
+    * BLIP RPC protocol (optional; under [separate license][BLIP].)
     
 * Core classes & APIs:
     * General-purpose `Error` and `Result<T>` types
-    * Logging, a thin wrapper around spdlog
+    * Logging, a thin wrapper around [spdlog][SPDLOG]
 
 * Cross-Platform:
     * macOS (builds and passes tests)
       * iOS? ("It's still Darwin…")
-    * Linux (builds; not yet tested)
+    * Linux (builds and passes test)
       * Android? ("It's still Linux…")
-    * Windows (sometimes builds; not yet tested)
-    
-## Status: ☠️EXPERIMENTAL☠️
-
-This is very new code, under heavy development! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
-
-The tests have only been run on macOS yet. Test coverage is very limited.
-
-APIs are still in flux. Things get refactored a lot.
+    * Windows (sometimes builds; not yet tested; help wanted!)
+    * Would very much like to support some embedded platforms like ESP32 (help wanted!)
 
 ## Example
 
@@ -89,6 +84,14 @@ do {
 cout << endl;
 ```
 
+## Status: ☠️EXPERIMENTAL☠️
+
+This is new code, under heavy development! So far, it builds with Clang (Xcode 15) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
+
+The tests have been run on macOS and Ubuntu. Test coverage is very limited.
+
+APIs are still in flux. Things get refactored a lot.
+
 ## Building It
 
 > **Important:** Make sure you checked out the submodules! 
@@ -102,19 +105,19 @@ cout << endl;
 
 #### on macOS:
 
-- Install Xcode 14 or later, or at least the command-line tools.
+- Install Xcode 15 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
-#### on Linux
+#### on Ubuntu Linux
 
     sudo apt-get install g++ cmake cmake-data zlib1g-dev
 
 ### Building With CMake
 
-    make all
+    make
     make test
 
-The library is `libCrouton`, in the `build_cmake/debug/` or `build_cmake/release/` directory.
+The library is `libCrouton`, in either the `build_cmake/debug/` or `build_cmake/release/` directory.
 
 ### Building With Xcode
 
@@ -122,7 +125,7 @@ The library is `libCrouton`, in the `build_cmake/debug/` or `build_cmake/release
 
     make xcode_deps
 
-You only need to do this on initial setup, and after those submodules are updated.
+You only need to do this on initial setup, or after those submodules are updated.
 
 Then:
 - open crouton.xcodeproj
@@ -130,13 +133,27 @@ Then:
 - To locate the binaries, choose Product > Show Build Folder In Finder
 
 
+## License(s)
+
+* Crouton itself is licensed under the [Apache 2](./LICENSE) license.
+  * The files in the subdirectory `src/io/blip`, however, are under the [Business Software License][BSL] since they are adapted from existing BSL-licensed code. **These source files are optional** and are by default not compiled into the Crouton library. See their [README][BLIP] for details and the full license.
+  * The source file `src/io/URL.cc` contains some code adapted from tlsuv, which is Apache 2 licensed.
+* Of the third party code in `vendor/`:
+  * Catch2 is licensed under the Boost Software License (but is only linked into the tests)
+  * libuv is licensed under the MIT license.
+  * llhttp is licensed under the MIT license.
+  * mbedtls is licensed under the Apache 2 license.
+  * spdlog is licensed under the MIT license.
+
 ## Credits
 
 - Crouton code by Jens Alfke ([@snej][SNEJ])
-- Initial inspiration, coroutine knowledge, starting code: [Simon Tatham's brilliant tutorial][TUTORIAL].
-- Event loops, I/O, networking: [libuv][LIBUV] (MIT license)
-- TLS engine: [mbedTLS][MBEDTLS] (Apache license)
-- HTTP parser: [llhttp][LLHTTP] (MIT license)
+- Initial inspiration, coroutine knowledge, starting code: [Simon Tatham's brilliant tutorial][TUTORIAL]. [Lewis Baker's blog posts][BAKER] have also been helpful.
+- Event loops, I/O, networking: [libuv][LIBUV]
+- TLS engine: [mbedTLS][MBEDTLS]
+- HTTP parser: [llhttp][LLHTTP]
+- Logging: [spdlog][SPDLOG]
+- Unit tests: [Catch2][CATCH2]
 - Extra inspiration and URL parser: [tlsuv][TLSUV]
 
 [SNEJ]: https://github.com/snej
@@ -145,3 +162,8 @@ Then:
 [TLSUV]: https://openziti.io/tlsuv/
 [LLHTTP]: https://github.com/nodejs/llhttp
 [MBEDTLS]: https://github.com/Mbed-TLS/mbedtls
+[SPDLOG]: https://github.com/gabime/spdlog
+[CATCH2]: https://github.com/catchorg/Catch2
+[BAKER]: https://lewissbaker.github.io/2022/08/27/understanding-the-compiler-transform
+[BSL]: src/io/blip/licences/BSL.txt
+[BLIP]: src/io/blip/README.md

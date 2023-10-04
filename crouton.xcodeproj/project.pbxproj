@@ -28,6 +28,21 @@
 		275A5F162AAFB3B1009791E8 /* Memoized.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A5F142AAFB3B1009791E8 /* Memoized.cc */; };
 		275A5F172AB105EE009791E8 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
 		275A5F182AB105F4009791E8 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E332AA015C0005B12F2 /* Security.framework */; };
+		275EB3F22ACDCC5D0022ED53 /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330612AB373430066C8DA /* MessageOut.hh */; settings = {ATTRIBUTES = (Private, ); }; };
+		275EB3F32ACDCC5D0022ED53 /* Message.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3304D2AB2763B0066C8DA /* Message.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		275EB3F42ACDCC5D0022ED53 /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3305B2AB36F1D0066C8DA /* MessageBuilder.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		275EB3FE2ACDCC5D0022ED53 /* BLIPConnection.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330712AB8FF790066C8DA /* BLIPConnection.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		275EB4012ACDCC5D0022ED53 /* BLIPIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3304E2AB2763B0066C8DA /* BLIPIO.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		275EB4022ACDCC5D0022ED53 /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330662AB384880066C8DA /* Codec.hh */; settings = {ATTRIBUTES = (Private, ); }; };
+		275EB40C2ACDCC5D0022ED53 /* BLIPProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330512AB2763B0066C8DA /* BLIPProtocol.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		275EB4152ACDCC5D0022ED53 /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B3305A2AB36F1D0066C8DA /* MessageBuilder.cc */; };
+		275EB41B2ACDCC5D0022ED53 /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330622AB373430066C8DA /* MessageOut.cc */; };
+		275EB4262ACDCC5D0022ED53 /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B3304F2AB2763B0066C8DA /* Message.cc */; };
+		275EB4302ACDCC5D0022ED53 /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330652AB384870066C8DA /* Codec.cc */; };
+		275EB4322ACDCC5D0022ED53 /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330722AB8FF790066C8DA /* BLIPConnection.cc */; };
+		275EB4372ACDCC5D0022ED53 /* BLIPIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330502AB2763B0066C8DA /* BLIPIO.cc */; };
+		275EB4402ACDCD660022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
+		275EB4412ACDCD760022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
 		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
 		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
@@ -80,20 +95,14 @@
 		279D5D662A952DD1005C3066 /* Pipe.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D5D642A952DD1005C3066 /* Pipe.cc */; };
 		27B330522AB2763B0066C8DA /* Message.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3304D2AB2763B0066C8DA /* Message.hh */; };
 		27B330532AB2763B0066C8DA /* BLIPIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3304E2AB2763B0066C8DA /* BLIPIO.hh */; };
-		27B330542AB2763B0066C8DA /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B3304F2AB2763B0066C8DA /* Message.cc */; };
-		27B330552AB2763B0066C8DA /* BLIPIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330502AB2763B0066C8DA /* BLIPIO.cc */; };
 		27B330562AB2763B0066C8DA /* BLIPProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330512AB2763B0066C8DA /* BLIPProtocol.hh */; };
 		27B330582AB278870066C8DA /* StringUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330572AB278870066C8DA /* StringUtils.cc */; };
-		27B3305C2AB36F1D0066C8DA /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B3305A2AB36F1D0066C8DA /* MessageBuilder.cc */; };
 		27B3305D2AB36F1D0066C8DA /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B3305B2AB36F1D0066C8DA /* MessageBuilder.hh */; };
 		27B330632AB373430066C8DA /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330612AB373430066C8DA /* MessageOut.hh */; };
-		27B330642AB373430066C8DA /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330622AB373430066C8DA /* MessageOut.cc */; };
-		27B330672AB384880066C8DA /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330652AB384870066C8DA /* Codec.cc */; };
 		27B330682AB384880066C8DA /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330662AB384880066C8DA /* Codec.hh */; };
 		27B3306E2AB4BD0B0066C8DA /* test_blip.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B3306D2AB4BD0B0066C8DA /* test_blip.cc */; };
 		27B330702AB4BE590066C8DA /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B3306F2AB4BE590066C8DA /* libz.tbd */; };
 		27B330732AB8FF790066C8DA /* BLIPConnection.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B330712AB8FF790066C8DA /* BLIPConnection.hh */; };
-		27B330742AB8FF790066C8DA /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330722AB8FF790066C8DA /* BLIPConnection.cc */; };
 		27B330792AB911250066C8DA /* libcrouton.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 272728DB2A8D6604000CCA22 /* libcrouton.a */; };
 		27B3307A2AB911250066C8DA /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F7E312AA015B0005B12F2 /* CoreFoundation.framework */; };
 		27B3307B2AB911250066C8DA /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27F6030B2A9FBA5E006FA1D0 /* Network.framework */; };
@@ -318,6 +327,8 @@
 		275A5F132AAFB3B1009791E8 /* Memoized.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Memoized.hh; sourceTree = "<group>"; };
 		275A5F142AAFB3B1009791E8 /* Memoized.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Memoized.cc; sourceTree = "<group>"; };
 		275EB3E92ACC7AC10022ED53 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
+		275EB3EA2ACDC7450022ED53 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		275EB43F2ACDCC5D0022ED53 /* libBLIP.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBLIP.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
 		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
@@ -609,6 +620,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				272728E72A8D6619000CCA22 /* libcrouton.a in Frameworks */,
+				275EB4412ACDCD760022ED53 /* libBLIP.a in Frameworks */,
 				27B330702AB4BE590066C8DA /* libz.tbd in Frameworks */,
 				278F7E322AA015B1005B12F2 /* CoreFoundation.framework in Frameworks */,
 				27F6030D2A9FBA73006FA1D0 /* Network.framework in Frameworks */,
@@ -621,6 +633,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				278F7E432AA26876005B12F2 /* libllhttp.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		275EB4392ACDCC5D0022ED53 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -647,6 +666,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27B330792AB911250066C8DA /* libcrouton.a in Frameworks */,
+				275EB4402ACDCD660022ED53 /* libBLIP.a in Frameworks */,
 				27B330852AB914D40066C8DA /* libz.tbd in Frameworks */,
 				27B3307A2AB911250066C8DA /* CoreFoundation.framework in Frameworks */,
 				27B3307B2AB911250066C8DA /* Network.framework in Frameworks */,
@@ -711,6 +731,7 @@
 				279D5E302A954627005C3066 /* libllhttp.a */,
 				2711C18A2A99656E00361566 /* demo_client */,
 				27B330812AB911250066C8DA /* demo_blipclient */,
+				275EB43F2ACDCC5D0022ED53 /* libBLIP.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1376,6 +1397,7 @@
 		27B3304C2AB2763B0066C8DA /* blip */ = {
 			isa = PBXGroup;
 			children = (
+				275EB3EA2ACDC7450022ED53 /* README.md */,
 				27B330512AB2763B0066C8DA /* BLIPProtocol.hh */,
 				27B330842AB912D30066C8DA /* BLIP.hh */,
 				27B330712AB8FF790066C8DA /* BLIPConnection.hh */,
@@ -1432,6 +1454,20 @@
 				27F603042A9EB826006FA1D0 /* IStream.hh in Headers */,
 				27B330562AB2763B0066C8DA /* BLIPProtocol.hh in Headers */,
 				278F767A2A9FEF54005B12F2 /* TLSSocket.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		275EB3EE2ACDCC5D0022ED53 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				275EB3FE2ACDCC5D0022ED53 /* BLIPConnection.hh in Headers */,
+				275EB4012ACDCC5D0022ED53 /* BLIPIO.hh in Headers */,
+				275EB40C2ACDCC5D0022ED53 /* BLIPProtocol.hh in Headers */,
+				275EB3F32ACDCC5D0022ED53 /* Message.hh in Headers */,
+				275EB3F42ACDCC5D0022ED53 /* MessageBuilder.hh in Headers */,
+				275EB4022ACDCC5D0022ED53 /* Codec.hh in Headers */,
+				275EB3F22ACDCC5D0022ED53 /* MessageOut.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1495,6 +1531,23 @@
 			name = crouton;
 			productName = coro;
 			productReference = 272728DB2A8D6604000CCA22 /* libcrouton.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		275EB3ED2ACDCC5D0022ED53 /* BLIP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 275EB43C2ACDCC5D0022ED53 /* Build configuration list for PBXNativeTarget "BLIP" */;
+			buildPhases = (
+				275EB3EE2ACDCC5D0022ED53 /* Headers */,
+				275EB40E2ACDCC5D0022ED53 /* Sources */,
+				275EB4392ACDCC5D0022ED53 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BLIP;
+			productName = coro;
+			productReference = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		279D5D4C2A9031EF005C3066 /* demo_server */ = {
@@ -1585,6 +1638,7 @@
 			projectRoot = "";
 			targets = (
 				272728DA2A8D6604000CCA22 /* crouton */,
+				275EB3ED2ACDCC5D0022ED53 /* BLIP */,
 				279D5E2F2A954627005C3066 /* llhttp */,
 				272728C22A8D6505000CCA22 /* Tests */,
 				279D5D4C2A9031EF005C3066 /* demo_server */,
@@ -1650,13 +1704,11 @@
 				278F767B2A9FEF54005B12F2 /* TLSSocket.cc in Sources */,
 				278F7E572AA7EDBF005B12F2 /* ISocket.cc in Sources */,
 				2788E3542AC38B5E00254A88 /* Select.cc in Sources */,
-				27B3305C2AB36F1D0066C8DA /* MessageBuilder.cc in Sources */,
 				278F7F202AAA9212005B12F2 /* bundled_fmtlib_format.cpp in Sources */,
 				278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */,
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				27F603092A9FA366006FA1D0 /* NWConnection.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
-				27B330642AB373430066C8DA /* MessageOut.cc in Sources */,
 				272730532A8EC61D000CCA22 /* FileStream.cc in Sources */,
 				272A852B2A97B2090083D947 /* HTTPConnection.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,
@@ -1667,7 +1719,6 @@
 				279D5D432A8FE08D005C3066 /* AddrInfo.cc in Sources */,
 				277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */,
 				27B330582AB278870066C8DA /* StringUtils.cc in Sources */,
-				27B330542AB2763B0066C8DA /* Message.cc in Sources */,
 				272730552A8ED3D1000CCA22 /* Future.cc in Sources */,
 				272A85312A982DE50083D947 /* WebSocket.cc in Sources */,
 				278F7F272AAB8E5F005B12F2 /* Coroutine.cc in Sources */,
@@ -1677,15 +1728,25 @@
 				27F603052A9EB826006FA1D0 /* IStream.cc in Sources */,
 				278F7F1E2AAA9212005B12F2 /* stdout_sinks.cpp in Sources */,
 				275A5F162AAFB3B1009791E8 /* Memoized.cc in Sources */,
-				27B330672AB384880066C8DA /* Codec.cc in Sources */,
 				278F7E542AA7D1BC005B12F2 /* Process.cc in Sources */,
-				27B330742AB8FF790066C8DA /* BLIPConnection.cc in Sources */,
 				278F7F212AAA9212005B12F2 /* spdlog.cpp in Sources */,
 				279D5D622A952986005C3066 /* Stream.cc in Sources */,
 				278F7F1D2AAA9212005B12F2 /* color_sinks.cpp in Sources */,
 				278F7F252AAA98FE005B12F2 /* Logging.cc in Sources */,
-				27B330552AB2763B0066C8DA /* BLIPIO.cc in Sources */,
 				279D5D662A952DD1005C3066 /* Pipe.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		275EB40E2ACDCC5D0022ED53 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				275EB4322ACDCC5D0022ED53 /* BLIPConnection.cc in Sources */,
+				275EB4372ACDCC5D0022ED53 /* BLIPIO.cc in Sources */,
+				275EB4302ACDCC5D0022ED53 /* Codec.cc in Sources */,
+				275EB4262ACDCC5D0022ED53 /* Message.cc in Sources */,
+				275EB4152ACDCC5D0022ED53 /* MessageBuilder.cc in Sources */,
+				275EB41B2ACDCC5D0022ED53 /* MessageOut.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1774,6 +1835,22 @@
 			};
 			name = Release;
 		};
+		275EB43D2ACDCC5D0022ED53 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272728ED2A8D66EA000CCA22 /* StaticLib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		275EB43E2ACDCC5D0022ED53 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272728ED2A8D66EA000CCA22 /* StaticLib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		279D5D522A9031EF005C3066 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2711C18E2A996EC700361566 /* Executable.xcconfig */;
@@ -1853,6 +1930,15 @@
 			buildConfigurations = (
 				272728E42A8D6604000CCA22 /* Debug */,
 				272728E52A8D6604000CCA22 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		275EB43C2ACDCC5D0022ED53 /* Build configuration list for PBXNativeTarget "BLIP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				275EB43D2ACDCC5D0022ED53 /* Debug */,
+				275EB43E2ACDCC5D0022ED53 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
