@@ -86,9 +86,11 @@ cout << endl;
 
 ## Status: ☠️EXPERIMENTAL☠️
 
+[![Build](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml/badge.svg)](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml)
+
 This is new code, under heavy development! So far, it builds with Clang (Xcode 15) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
 
-The tests have been run on macOS and Ubuntu. Test coverage is very limited.
+The tests run regularly on macOS, and occasionally on Ubuntu (though not in CI.) Test coverage is very limited.
 
 APIs are still in flux. Things get refactored a lot.
 
