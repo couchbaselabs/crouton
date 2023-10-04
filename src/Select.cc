@@ -33,8 +33,10 @@ namespace crouton {
     ///        before it can be selected again.
     /// @note  If no sources are enabled, `co_await` will immediately return -1.
     void Select::enable(unsigned index) {
-        _enabled.set(index, true);
-        _sources[index]->onReady([this,index]{this->notify(index);});
+        if (!_enabled[index]) {
+            _enabled.set(index, true);
+            _sources[index]->onReady([this,index]{this->notify(index);});
+        }
     }
 
     void Select::enable() {

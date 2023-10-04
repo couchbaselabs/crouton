@@ -180,6 +180,7 @@ namespace crouton {
         LogicError,
         EmptyResult,
         Cancelled,
+        Timeout,
         InvalidURL,
         HTTPParseError,
     };

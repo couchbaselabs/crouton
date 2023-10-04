@@ -34,6 +34,10 @@ namespace crouton::ps {
         void onReady(OnReadyFn fn) override                 {return _impl->onReady(std::move(fn));}
 
     private:
+        template <class U> friend class Subscriber;
+        AnySeries() = default;
+        explicit operator bool() const                      {return _impl != nullptr;}
+
         std::unique_ptr<ISeries<T>> _impl;
         // Note: it's not possible to implement this with std::any, bc Series is not copyable
     };
@@ -67,11 +71,14 @@ namespace crouton::ps {
         Subscriber() = default;
 
         /// Constructs a Subscriber connected to a Publisher.
-        explicit Subscriber(std::shared_ptr<Publisher<T>> pub)  {subscribeTo(pub);}
+        explicit Subscriber(std::shared_ptr<Publisher<T>> pub)  {subscribeTo(std::move(pub));}
+
+        explicit Subscriber(AnySeries<T> series)                {_series = std::move(series);}
 
         /// Connects the subscriber to a Publisher.
         virtual void subscribeTo(std::shared_ptr<Publisher<T>> pub) {
             assert(!_publisher);
+            assert(!_series);
             _publisher = std::move(pub);
         }
 
@@ -83,8 +90,12 @@ namespace crouton::ps {
         /// @note  You only have to call this on the last Subscriber in a series.
         virtual void start() {
             if (!_task) {
-                assert(_publisher);
-                _task.emplace(receive(_publisher->generate()));
+                AnySeries<T> series = std::move(_series);
+                if (!series) {
+                    assert(_publisher);
+                    series = _publisher->generate();
+                }
+                _task.emplace(run(std::move(series)));
             }
         }
 
@@ -107,11 +118,11 @@ namespace crouton::ps {
         /// You can override this if you want more control over the lifecycle.
         /// @warning  You must override either this method or `handle(T)`.
         /// @warning  If you override, you are responsible for calling `handleEnd` when finishing.
-        virtual Task receive(AnySeries<T> series) {
+        virtual Task run(AnySeries<T> series) {
             while (true) {
                 Result<T> result = AWAIT series;
                 if (result.ok()) {
-                    handle(std::move(result).value());
+                    AWAIT handle(std::move(result).value());
                 } else {
                     handleEnd(result.error());
                     break;
@@ -121,7 +132,7 @@ namespace crouton::ps {
 
         /// Abstract method that handles an item received from the Publisher.
         /// @warning  You must override either this method or `receive`.
-        virtual Future<void> handle(T)          {return CroutonError::LogicError;}
+        virtualASYNC<void> handle(T)            {return CroutonError::LogicError;}
 
         /// Handles the final Error/noerror item from the publisher.
         /// Default implementation sets the `error` property; make sure to call through.
@@ -131,7 +142,8 @@ namespace crouton::ps {
         Subscriber(Subscriber const&) = delete;
         Subscriber& operator=(Subscriber const&) = delete;
 
-        std::shared_ptr<Publisher<T>>   _publisher; // My Publisher
+        std::shared_ptr<Publisher<T>>   _publisher; // My Publisher, if given
+        AnySeries<T>                    _series;    // My Series, if given
         std::optional<Task>             _task;      // The `receive` coroutine that reads series
         Error                           _error;     // Error received from the publisher
     };
@@ -298,23 +310,27 @@ namespace crouton::ps {
         }
 
     protected:
-        Task receive(AnySeries<T> series) override {
+        Task run(AnySeries<T> series) override {
             do {
-                // Await next item from upstream Publisher:
                 Result<T> nextItem = AWAIT series;
-
-                // Wait until downstream Subscribers have finished with the current `_item`:
-                AWAIT _readyForItem;
-
-                // Update `_item` and `_eof`
-                _eof = !nextItem.ok();
-                _item = std::move(nextItem);
-
-                // Wake up subscribers (`_generate`):
-                assert(_usingItemCount == 0);
-                _usingItemCount = _subscriberCount;
-                _itemAvailable.notifyAll();
+                AWAIT produce(std::move(nextItem));
             } while (!_eof);
+        }
+
+        /// Sends the item to subscribers.
+        virtualASYNC<void> produce(Result<T> nextItem) {
+            // Wait until downstream Subscribers have finished with the current `_item`:
+            AWAIT _readyForItem;
+
+            // Update `_item` and `_eof`
+            _eof = !nextItem.ok();
+            _item = std::move(nextItem);
+
+            // Wake up subscribers (`_generate`):
+            assert(_usingItemCount == 0);
+            _usingItemCount = _subscriberCount;
+            _itemAvailable.notifyAll();
+            RETURN noerror;
         }
 
         Generator<T> _generate() {
@@ -357,7 +373,7 @@ namespace crouton::ps {
         Buffer(size_t queueSize, Predicate p)   :_queue(queueSize), _predicate(std::move(p)) { }
 
     private:
-        Task receive(AnySeries<T> series) override {
+        Task run(AnySeries<T> series) override {
             bool eof, closed = false;
             do {
                 Result<T> item = AWAIT series;
@@ -406,7 +422,7 @@ namespace crouton::ps {
         }
 
     protected:
-        Task receive(AnySeries<In> series) override {
+        Task run(AnySeries<In> series) override {
             bool eof, closed;
             do {
                 Result<In> item = AWAIT series;
@@ -427,10 +443,27 @@ namespace crouton::ps {
     };
 
 
+    /** A Connector that produces an error if its upstream Publisher doesn't produce its first
+        item within a given time. */
     template <typename T>
-    class Timeout : public Connector<T> {
+    class Timeout : public BaseConnector<T> {
     public:
         explicit Timeout(double secs)   :_timeout(secs) { }
+    protected:
+        Task run(AnySeries<T> series) override {
+            {
+                // Wait for a first item, or the timeout:
+                Future<void> timeout = Timer::sleep(_timeout);
+                Select select {&timeout, &series};
+                select.enable();
+                if ((AWAIT select) == 0) {
+                    this->produce(CroutonError::Timeout);
+                    RETURN;
+                }
+            }
+            BaseConnector<T>::run(std::move(series));
+            RETURN;
+        }
     private:
         double _timeout;
     };

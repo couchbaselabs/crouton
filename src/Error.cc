@@ -123,6 +123,7 @@ namespace crouton {
             {errorcode_t(LogicError), "internal error (logic error)"},
             {errorcode_t(EmptyResult), "internal error (accessed empty Result)"},
             {errorcode_t(Cancelled), "operation was cancelled"},
+            {errorcode_t(Timeout), "operation timed out"},
             {errorcode_t(InvalidURL), "invalid URL"},
             {errorcode_t(HTTPParseError), "invalid HTTP request/response"},
         };
