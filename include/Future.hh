@@ -248,7 +248,7 @@ namespace crouton {
         Result<T> result() &&           {return std::move(_state)->result();}
 
         bool await_ready() noexcept     {return _state->hasResult();}
-        auto await_suspend(coro_handle coro) noexcept {
+        coro_handle await_suspend(coro_handle coro) noexcept {
             return lifecycle::suspendingTo(coro, _handle, _state->suspend(coro));
         }
         [[nodiscard]] Result<T> await_resume() noexcept {
@@ -273,7 +273,7 @@ namespace crouton {
         bool await_ready() noexcept override {
             return !this->_state || NoThrow<T>::await_ready();
         }
-        auto await_suspend(coro_handle coro) noexcept override {
+        coro_handle await_suspend(coro_handle coro) noexcept override {
             return NoThrow<T>::await_suspend();
         }
         [[nodiscard]] Result<T> await_resume() noexcept override {
