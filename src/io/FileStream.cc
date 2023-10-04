@@ -59,7 +59,7 @@ namespace crouton::io {
 
     private:
         const char* _what;                  // must point to a string constant (never freed)
-        FutureProvider<size_t> _futureP = make_shared<FutureState<size_t>>();
+        FutureProvider<size_t> _futureP = Future<size_t>::provider();
     };
 
 

@@ -96,8 +96,8 @@ namespace crouton::io::apple {
         _queue = dispatch_queue_create("NWConnection", DISPATCH_QUEUE_SERIAL);
         nw_connection_set_queue(_conn, _queue);
 
-        FutureProvider<void> onOpen = std::make_shared<FutureState<void>>();
-        _onClose = std::make_shared<FutureState<void>>();
+        FutureProvider<void> onOpen = Future<void>::provider();
+        _onClose = Future<void>::provider();
         nw_connection_set_state_changed_handler(_conn, ^(nw_connection_state_t state,
                                                          nw_error_t error) {
             switch (state) {
@@ -119,7 +119,7 @@ namespace crouton::io::apple {
             }
         });
         nw_connection_start(_conn);
-        return Future<void>(onOpen);
+        return Future(onOpen);
     }
 
 
@@ -131,7 +131,7 @@ namespace crouton::io::apple {
             }
         } else if (!_onClose->hasResult())
             _onClose->setResult();
-        return Future<void>(_onClose);
+        return Future(_onClose);
     }
 
 
@@ -180,7 +180,7 @@ namespace crouton::io::apple {
             
         } else {
             // Read from the stream:
-            auto onRead = std::make_shared<FutureState<ConstBytes>>();
+            auto onRead = Future<ConstBytes>::provider();
             dispatch_sync(_queue, ^{
                 clearReadBuf();
                 nw_connection_receive(_conn, 1, uint32_t(min(maxLen, size_t(UINT32_MAX))),
@@ -207,14 +207,14 @@ namespace crouton::io::apple {
                     }
                 });
             });
-            return Future<ConstBytes>(onRead);
+            return Future(onRead);
         }
     }
 
 
     Future<void> NWConnection::_writeOrShutdown(ConstBytes src, bool shutdown) {
         clearReadBuf();
-        auto onWrite = make_shared<FutureState<void>>();
+        auto onWrite = Future<void>::provider();
         dispatch_sync(_queue, ^{
             __block __unused bool released = false;
             dispatch_data_t content = dispatch_data_create(src.data(), src.size(), _queue,
@@ -229,7 +229,7 @@ namespace crouton::io::apple {
             });
             dispatch_release(content);
         });
-        return Future<void>(onWrite);
+        return Future(onWrite);
     }
 
 }

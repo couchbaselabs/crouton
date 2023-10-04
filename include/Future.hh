@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Awaitable.hh"
 #include "Coroutine.hh"
 #include "Result.hh"
 #include "Scheduler.hh"
@@ -62,6 +63,9 @@ namespace crouton {
     class Future : public Coroutine<FutureImpl<T>>, public ISelectable {
     public:
         using nonvoidT = typename std::conditional<std::is_void_v<T>, std::byte, T>::type;
+
+        /// Creates a FutureProvider, with which you can create a Future and later set its value.
+        static FutureProvider<T> provider()             {return std::make_shared<FutureState<T>>();}
 
         /// Creates a Future from a FutureProvider.
         explicit Future(FutureProvider<T> state)        :_state(std::move(state)) {assert(_state);}
@@ -184,23 +188,11 @@ namespace crouton {
     };
 
 
-    /** The actual state of a Future. It's used to set the result/error. */
+    /** The actual state of a Future, also known as its provider.
+        It's used to set the result/error. */
     template <typename T>
     class FutureState : public FutureStateBase {
     public:
-        Result<T> && result() &&                        {return std::move(_result);}
-        Result<T> & result() &                          {return _result;}
-
-        std::add_rvalue_reference_t<T> resultValue()  requires (!std::is_void_v<T>) {
-            assert(hasResult());
-            return std::move(_result).value();
-        }
-
-        void resultValue()  requires (std::is_void_v<T>) {
-            assert(hasResult());
-            _result.value();
-        }
-
         template <typename U>
         void setResult(U&& value)  requires (!std::is_void_v<T>) {
             _result = std::forward<U>(value);
@@ -223,6 +215,22 @@ namespace crouton {
         Error getError() override                       {return _result.error();}
 
     private:
+        friend class Future<T>;
+        friend class NoThrow<T>;
+
+        Result<T> && result() &&                        {return std::move(_result);}
+        Result<T> & result() &                          {return _result;}
+
+        std::add_rvalue_reference_t<T> resultValue()  requires (!std::is_void_v<T>) {
+            assert(hasResult());
+            return std::move(_result).value();
+        }
+
+        void resultValue()  requires (std::is_void_v<T>) {
+            assert(hasResult());
+            _result.value();
+        }
+
         Result<T> _result;
     };
 
@@ -243,11 +251,43 @@ namespace crouton {
         auto await_suspend(coro_handle coro) noexcept {
             return lifecycle::suspendingTo(coro, _handle, _state->suspend(coro));
         }
-        [[nodiscard]] Result<T> await_resume() noexcept {return std::move(_state)->result();}
+        [[nodiscard]] Result<T> await_resume() noexcept {
+            Result<T> result = std::move(_state)->result();
+            _state = nullptr;
+            return result;
+        }
 
-    private:
+    protected:
         coro_handle        _handle;
         FutureProvider<T>  _state;
+    };
+
+
+    /** Wrap this around a Future to turn it into a Series, so you can connect a Subscriber.
+        The Series will, of course, only return at most a single value before EOF. */
+    template <typename T>
+    class FutureSeries : public NoThrow<T>, public ISeries<T> {
+    public:
+        using NoThrow<T>::NoThrow;
+
+        bool await_ready() noexcept override {
+            return !this->_state || NoThrow<T>::await_ready();
+        }
+        auto await_suspend(coro_handle coro) noexcept override {
+            return NoThrow<T>::await_suspend();
+        }
+        [[nodiscard]] Result<T> await_resume() noexcept override {
+            if (this->_state)
+                return NoThrow<T>::await_resume();
+            else
+                return Result<T>{};
+        }
+        virtual void onReady(ISelectable::OnReadyFn fn) override {
+            if (this->_state)
+                this->_state->onReady(std::move(fn));
+            else
+                fn();
+        }
     };
 
 
@@ -293,7 +333,7 @@ namespace crouton {
         }
 
     protected:
-        FutureProvider<T> _provider = std::make_shared<FutureState<T>>();
+        FutureProvider<T> _provider = Future<T>::provider();
     };
 
 

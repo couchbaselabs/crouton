@@ -108,8 +108,8 @@ namespace crouton::io::blip {
 
     ASYNC<MessageInRef> MessageOut::onResponse() {
         assert(!_onResponse);
-        _onResponse = std::make_shared<FutureState<MessageInRef>>();
-        return Future<MessageInRef>(_onResponse);
+        _onResponse = Future<MessageInRef>::provider();
+        return Future(_onResponse);
     }
 
 

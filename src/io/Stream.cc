@@ -137,7 +137,7 @@ namespace crouton::io {
         } else {
             // Start an async read:
             read_start();
-            _readFuture = make_shared<FutureState<BufferRef>>();
+            _readFuture = Future<BufferRef>::provider();
             return Future(_readFuture);
         }
     }
