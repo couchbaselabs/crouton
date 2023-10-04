@@ -84,6 +84,8 @@ do {
 cout << endl;
 ```
 
+See also [demo_server.cc][tests/demo_server.cc], a simple HTTP and WebSocket server.
+
 ## Status: ☠️EXPERIMENTAL☠️
 
 [![Build](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml/badge.svg)](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml)
