@@ -1522,7 +1522,7 @@
 				272728D72A8D6604000CCA22 /* Headers */,
 				272728D82A8D6604000CCA22 /* Sources */,
 				272728D92A8D6604000CCA22 /* Frameworks */,
-				275EB3E82ACA08C30022ED53 /* ShellScript */,
+				275EB3E82ACA08C30022ED53 /* Look for missing #includes */,
 			);
 			buildRules = (
 			);
@@ -1649,7 +1649,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		275EB3E82ACA08C30022ED53 /* ShellScript */ = {
+		275EB3E82ACA08C30022ED53 /* Look for missing #includes */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -1659,13 +1659,14 @@
 			);
 			inputPaths = (
 			);
+			name = "Look for missing #includes";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/Users/snej/bin/missing_includes.rb -w --base include/Base.hh include src\n";
+			shellScript = "if which missing_includes.rb >/dev/null\nthen\n  cd \"$SRCROOT\"\n  missing_includes.rb -w --base include/Base.hh include src\nelse\n  echo \"Script missing_includes.rb not found.\"\n  echo \"You can get it from https://gist.github.com/snej/2672fe996d39752e23c471f6ed789958\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
