@@ -50,7 +50,7 @@ TEST_CASE("Error", "[error]") {
     CHECK(err);
     CHECK(err.code() == errorcode_t(CroutonError::LogicError));
     CHECK(err.domain() == "Crouton");
-    CHECK(err.brief() == "Crouton error 3");
+    CHECK(err.brief() == "Crouton error 6");
     CHECK(err.description() == "internal error (logic error)");
     CHECK(err.is<CroutonError>());
     CHECK(!err.is<io::http::Status>());

@@ -154,7 +154,7 @@ namespace crouton::io::http {
                 assert((byte*)end >= data.data() && (byte*)end <= data.data() + data.size());
                 _body = string(end, (char*)data.data() + data.size() - end);
             } else {
-                Error::raise(CroutonError::HTTPParseError, llhttp_get_error_reason(_parser.get()));
+                Error::raise(CroutonError::ParseError, llhttp_get_error_reason(_parser.get()));
             }
         }
 

@@ -118,14 +118,15 @@ namespace crouton {
     string ErrorDomainInfo<CroutonError>::description(errorcode_t code) {
         using enum CroutonError;
         static constexpr NameEntry names[] = {
+            {errorcode_t(Cancelled), "operation was cancelled"},
+            {errorcode_t(EmptyResult), "internal error (accessed empty Result)"},
             {errorcode_t(InvalidArgument), "internal error (invalid argument)"},
             {errorcode_t(InvalidState), "internal error (invalid state)"},
-            {errorcode_t(LogicError), "internal error (logic error)"},
-            {errorcode_t(EmptyResult), "internal error (accessed empty Result)"},
-            {errorcode_t(Cancelled), "operation was cancelled"},
-            {errorcode_t(Timeout), "operation timed out"},
             {errorcode_t(InvalidURL), "invalid URL"},
-            {errorcode_t(HTTPParseError), "invalid HTTP request/response"},
+            {errorcode_t(LogicError), "internal error (logic error)"},
+            {errorcode_t(ParseError), "unreadable data"},
+            {errorcode_t(Timeout), "operation timed out"},
+            {errorcode_t(Unimplemented), "unimplemented operation"},
         };
         return NameEntry::lookup(code, names);
     }

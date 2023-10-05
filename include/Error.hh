@@ -175,14 +175,16 @@ namespace crouton {
 
     /// Crouton error codes.
     enum class CroutonError : errorcode_t {
-        InvalidArgument = 1,
-        InvalidState,
-        LogicError,
-        EmptyResult,
-        Cancelled,
-        Timeout,
-        InvalidURL,
-        HTTPParseError,
+        none = 0,
+        Cancelled,                  // Operation was explicitly cancelled
+        EmptyResult,                // Tried to get the value of an empty Result
+        InvalidArgument,            // Caller passed an invalid argument value
+        InvalidState,               // Callee is in an invalid state to perform this operation
+        InvalidURL,                 // A URL is syntactically invalid
+        LogicError,                 // Something impossible happened due to a bug
+        ParseError,                 // Syntax error parsing something, like an HTTP stream.
+        Timeout,                    // Operation failed because it took too long
+        Unimplemented,              // Unimplemented functionality or abstract-by-convention method
     };
 
     template <> struct ErrorDomainInfo<CroutonError> {
