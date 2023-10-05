@@ -107,6 +107,18 @@ namespace crouton::io {
     }
 
 
+    Generator<string> IStream::generate() {
+        if (!isOpen())
+            AWAIT open();
+        while (true) {
+            ConstBytes bytes = AWAIT readNoCopy();
+            if (bytes.size() == 0)
+                break;
+            YIELD string(string_view(bytes));
+        }
+    }
+
+
     Future<void> IStream::write(string str) {
         // Use co_await to ensure `str` stays in scope until the write completes.
         AWAIT write(ConstBytes(str));

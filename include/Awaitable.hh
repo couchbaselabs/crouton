@@ -53,7 +53,8 @@ namespace crouton {
     /** A type of Awaitable (plus ISelectable) that guarantees to produce:
         - zero or more `T`s, then
         - either empty/`noerror` (completion) or an `Error` (failure.)
-        `Generator` is the canonical example. */
+        `Generator` is the canonical example. 
+        `Future` doesn't implement this, but the wrapper class `FutureSeries` does. */
     template <typename T>
     class ISeries : public IAwaitable<Result<T>>, public ISelectable { };
 }

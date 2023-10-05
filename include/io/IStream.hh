@@ -19,12 +19,13 @@
 #pragma once
 #include "Bytes.hh"
 #include "Future.hh"
+#include "Generator.hh"
 
 #include <initializer_list>
 
 namespace crouton::io {
 
-    /** Abstract interface of an asynchronous bidirectional stream.
+    /** Abstract base class of an asynchronous bidirectional stream.
         It has concrete read/write methods, which are merely conveniences that call the
         abstract ones.
         @warning Re-entrant reads or writes are not allowed: no read call may be issued until the
@@ -81,6 +82,12 @@ namespace crouton::io {
 
         /// Reads until EOF.
         ASYNC<string> readAll() {return readString(SIZE_MAX);}
+
+        /// Returns a `Generator` that produces chunks of data read from the stream.
+        /// This is a wrapper around `readNoCopy()` that makes `IStream` satisfy the concept
+        /// `GeneratorFactory`, which in turn allows it to be used as a Publisher.
+        /// @note  The stream is opened first, if necessary.
+        virtual Generator<string> generate();
 
         //---- Writing:
 

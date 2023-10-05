@@ -18,6 +18,8 @@
 
 #include "tests.hh"
 #include "PubSub.hh"
+#include "StringUtils.hh"
+#include "io/FileStream.hh"
 
 using namespace std;
 using namespace crouton;
@@ -103,5 +105,61 @@ TEST_CASE("BaseConnector", "[pubsub]") {
         }
         RETURN noerror;
     });
+    REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+/// Takes strings and splits them into lines at `\n`.
+class LineSplitter : public BaseConnector<string> {
+public:
+    using super = BaseConnector<string>;
+    using super::BaseConnector;
+protected:
+    ASYNC<void> produce(Result<string> input) override {
+        if (!input.ok()) {
+            AWAIT super::produce(std::move(input));
+            RETURN noerror;
+        }
+        string_view rest(*input);
+        while (!rest.empty()) {
+            string_view line;
+            tie(line, rest) = split(rest, '\n');
+            AWAIT super::produce(string(line));
+        }
+        RETURN noerror;
+    }
+};
+
+/// A string filter that passes strings containing a given substring.
+class Contains : public Filter<string> {
+public:
+    Contains(string substring)                  :_substring(std::move(substring)) { }
+protected:
+    bool filter(string const& item) override    {return item.find(_substring) != string::npos;}
+private:
+    string _substring;
+};
+
+
+TEST_CASE("Stream Publisher", "[pubsub][io]") {
+    // Let's read a text file and collect the lines containing the word "Crouton":
+    auto test = []() -> Future<void> {
+        auto collect = AnyPublisher<string,io::FileStream>("README.md")
+                     | LineSplitter{}
+                     | Contains("Crouton")
+                     | Collector<string>{};
+
+        collect.start();
+        Scheduler::current().runUntil( [&] {return collect.done(); });
+
+        vector<string> const& items = collect.items();
+        for (size_t i = 0; i < items.size(); ++i) {
+            cout << i << ": " << items[i] << endl;
+            CHECK(items[i].find("Crouton") != string::npos);
+        }
+        CHECK(items.size() >= 7);
+        RETURN noerror;
+    };
+    waitFor(test());
     REQUIRE(Scheduler::current().assertEmpty());
 }
