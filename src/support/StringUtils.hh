@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "util/Base.hh"
 
 #include <cstring>
 #include <cassert>
@@ -86,8 +86,15 @@ namespace crouton {
     /// Case-insensitive equality comparison (ASCII only!)
     bool equalIgnoringCase(string_view a, string_view b);
 
-    /// Splits a string around the first occurrence of `c`, or else at its end.
+    /// Splits a string around the first occurrence of `c`;
+    /// if there is none, assumes it's at the end, i.e. returns `{str, ""}`.
     std::pair<string_view,string_view> split(string_view str, char c);
+
+    /// Splits a string at an index.
+    /// @param str  The string to split
+    /// @param pos  The index at which to split
+    /// @param delimSize  The length of the delimiter being split around.
+    std::pair<string_view,string_view> splitAt(string_view str, size_t pos, size_t delimSize = 0);
 
     /// Replaces all occurrences of `substring` with `replacement`, in-place.
     void replaceStringInPlace(string &str,

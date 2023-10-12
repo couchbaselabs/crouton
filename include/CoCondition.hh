@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "LinkedList.hh"
+#include "util/LinkedList.hh"
 #include "Scheduler.hh"
 
 #include <concepts>

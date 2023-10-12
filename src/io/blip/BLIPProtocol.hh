@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <cstdint>

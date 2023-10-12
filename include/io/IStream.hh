@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 #include "Future.hh"
 #include "Generator.hh"
 

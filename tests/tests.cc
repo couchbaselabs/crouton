@@ -17,7 +17,15 @@
 //
 
 #include "tests.hh"
+#include "util/Relation.hh"
 #include "io/UVBase.hh"
+
+
+void RunCoroutine(Future<void> (*test)()) {
+    Future<void> f = test();
+    Scheduler::current().runUntil([&]{return f.hasResult();});
+    f.result(); // check exception
+}
 
 
 TEST_CASE("Randomize") {
@@ -91,10 +99,99 @@ TEST_CASE("Exception To Error", "[error]") {
 }
 
 
-void RunCoroutine(Future<void> (*test)()) {
-    Future<void> f = test();
-    Scheduler::current().runUntil([&]{return f.hasResult();});
-    f.result(); // check exception
+TEST_CASE("OneToOne") {
+    struct Bar;
+    struct Foo {
+        Foo(string name) :_name(name), _bar(this) { }
+        string _name;
+        util::OneToOne<Foo,Bar> _bar;
+    };
+    struct Bar {
+        Bar(int size) :_size(size), _foo(this) { }
+        int _size;
+        util::OneToOne<Bar,Foo> _foo;
+    };
+
+    Foo foo("FOO");
+    {
+        Bar bar(1337);
+
+        CHECK(foo._bar.other() == nullptr);
+        CHECK(bar._foo.other() == nullptr);
+
+        foo._bar = &bar._foo;
+        CHECK(foo._bar.other() == &bar);
+        CHECK(bar._foo.other() == &foo);
+
+        CHECK(foo._bar->_size == 1337);
+        CHECK(bar._foo->_name == "FOO");
+
+        Bar bar2(std::move(bar));
+        CHECK(foo._bar.other() == &bar2);
+        CHECK(bar2._foo.other() == &foo);
+    }
+    CHECK(foo._bar.other() == nullptr);
+}
+
+
+TEST_CASE("ToMany") {
+    struct Member;
+    struct Band {
+        Band(string name) :_name(name), _members(this) { }
+        string _name;
+        util::ToMany<Band,Member> _members;
+    };
+    struct Member {
+        Member(string name) :_name(name), _band(this) { }
+        string _name;
+        util::ToOne<Member,Band> _band;
+    };
+
+    Band beatles("The Beatles");
+    CHECK(beatles._members.empty());
+
+    {
+        Member ringo("Ringo");
+        CHECK(ringo._band.other() == nullptr);
+
+        beatles._members.push_back(ringo._band);
+        CHECK(!beatles._members.empty());
+        CHECK(ringo._band.other() == &beatles);
+
+        Member john("John");
+        Member paul("Paul");
+        Member george("George");
+
+        beatles._members.push_back(john._band);
+        beatles._members.push_back(paul._band);
+        beatles._members.push_back(george._band);
+        CHECK(john._band.other() == &beatles);
+        CHECK(paul._band.other() == &beatles);
+        CHECK(george._band.other() == &beatles);
+
+        vector<string> names;
+        for (auto& member : beatles._members)
+            names.push_back(member._name);
+        CHECK(names == vector<string>{"Ringo", "John", "Paul", "George"});
+
+        Band wings("Wings");
+        paul._band = &wings._members;
+        CHECK(paul._band.other() == &wings);
+
+        names.clear();
+        for (auto& member : beatles._members)
+            names.push_back(member._name);
+        CHECK(names == vector<string>{"Ringo", "John", "George"});
+
+        beatles._members.erase(john._band);
+        CHECK(john._band.other() == nullptr);
+
+        names.clear();
+        for (auto& member : beatles._members)
+            names.push_back(member._name);
+        CHECK(names == vector<string>{"Ringo", "George"});
+    }
+    CHECK(beatles._members.empty());
 }
 
 

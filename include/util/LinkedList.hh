@@ -17,17 +17,27 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "util/Base.hh"
 
 namespace crouton::util {
 
     /** A link in a doubly-linked circular list.
         Generally used as a base class of the actual list item class. 
-        If it's a private base class, you'll need to declare class `LinkList` as a friend. */
+        If it's a _private_ base class, you'll need to declare class `LinkList` as a friend. */
     class Link {
     public:
         Link() = default;
-        ~Link()                  {remove();}
+        ~Link()                 {remove();}
+
+        Link(Link&& old)        {replace(std::move(old));}
+
+        Link& operator=(Link&& old) {
+            if (this != &old) {
+                remove();
+                replace(std::move(old));
+            }
+            return *this;
+        }
 
         /// True if this Link is in a list.
         bool inList() const      {return _next != nullptr;}
@@ -48,6 +58,17 @@ namespace crouton::util {
         Link(Link const&)       = default;
         void clear()            {_prev = _next = nullptr;}
         void clearHead()        {_prev = _next = this;}
+
+        void replace(Link&& old) {
+            assert(!_prev && !_next);
+            if (old._prev) {
+                _prev = old._prev;
+                _next = old._next;
+                _prev->_next = this;
+                _next->_prev = this;
+                old.clear();
+            }
+        }
 
         void insertAfter(Link* other) {
             remove();
@@ -74,9 +95,11 @@ namespace crouton::util {
         }
 
         LinkList& operator=(LinkList&& other) {
-            clear();
-            if (!other.empty())
-                mvHead(other);
+            if (&other != this) {
+                clear();
+                if (!other.empty())
+                    mvHead(other);
+            }
             return *this;
         }
 
@@ -106,6 +129,8 @@ namespace crouton::util {
             _head.clearHead();
         }
 
+        ~LinkList()                     {clear();}
+
         static Link* next(Link* link)   {return link->_next;}
 
     protected:
@@ -124,8 +149,8 @@ namespace crouton::util {
         LinkList& operator=(LinkList const&) = delete;
 
         void mvHead(LinkList& other) {
-            _head = other._head;
-            _head._next->_prev = _head._prev->_next = &_head;
+            assert(!other.empty());
+            _head = std::move(other._head);
             other._head.clearHead();
         }
 
@@ -165,6 +190,7 @@ namespace crouton::util {
         class Iterator {
         public:
             T& operator*() const        {return LinkList::downcast<LINK>(*_link);}
+            T* operator->() const       {return &LinkList::downcast<LINK>(*_link);}
             Iterator& operator++()      {_link = next(_link); return *this;}
 
             friend bool operator==(Iterator const& a, Iterator const& b) {

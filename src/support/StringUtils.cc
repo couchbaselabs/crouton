@@ -17,7 +17,7 @@
 //
 
 #include "StringUtils.hh"
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 
 namespace crouton {
 
@@ -61,6 +61,13 @@ namespace crouton {
             return {str.substr(0, p), str.substr(p + 1)};
         else
             return {str, ""};
+    }
+
+
+    std::pair<string_view,string_view>
+    splitAt(string_view str, size_t pos, size_t delimSize) {
+        assert(pos + delimSize <= str.size());
+        return {str.substr(0, pos), str.substr(pos + delimSize)};
     }
 
 

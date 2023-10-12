@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 #include "Coroutine.hh"
 #include "Generator.hh"
 #include "io/HTTPConnection.hh"

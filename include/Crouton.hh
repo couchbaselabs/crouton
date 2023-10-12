@@ -18,7 +18,7 @@
 
 #pragma once
 #include "Actor.hh"
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 #include "CoCondition.hh"
 #include "Error.hh"
 #include "EventLoop.hh"

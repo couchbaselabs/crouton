@@ -329,6 +329,8 @@
 		275EB3E92ACC7AC10022ED53 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
 		275EB3EA2ACDC7450022ED53 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		275EB43F2ACDCC5D0022ED53 /* libBLIP.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBLIP.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		277B65272AD739B1006F053D /* Producer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Producer.hh; sourceTree = "<group>"; };
+		277B65282AD766EF006F053D /* Relation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Relation.hh; sourceTree = "<group>"; };
 		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
 		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
@@ -682,8 +684,6 @@
 			children = (
 				27F49CCD2A9D007D00BFB24C /* Actor.hh */,
 				27E98EE02AC21940002F3D35 /* Awaitable.hh */,
-				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
-				27B3306A2AB391F30066C8DA /* Bytes.hh */,
 				277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */,
 				27ED1C702AABF47200ADC971 /* CoroLifecycle.hh */,
 				272728FD2A8D6B43000CCA22 /* Coroutine.hh */,
@@ -692,7 +692,7 @@
 				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
-				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
+				277B65272AD739B1006F053D /* Producer.hh */,
 				278F7F222AAA98FE005B12F2 /* Logging.hh */,
 				2788E3582AC4F8BA00254A88 /* PubSub.hh */,
 				27B3306C2AB3C3B40066C8DA /* Queue.hh */,
@@ -701,6 +701,7 @@
 				2788E3522AC37BD400254A88 /* Select.hh */,
 				279D5D542A903403005C3066 /* Task.hh */,
 				2788E3562AC4E31700254A88 /* io */,
+				277B65292AD856EA006F053D /* util */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -1016,6 +1017,17 @@
 				272A851D2A96DA630083D947 /* llhttp.c */,
 			);
 			path = src;
+			sourceTree = "<group>";
+		};
+		277B65292AD856EA006F053D /* util */ = {
+			isa = PBXGroup;
+			children = (
+				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
+				27B3306A2AB391F30066C8DA /* Bytes.hh */,
+				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
+				277B65282AD766EF006F053D /* Relation.hh */,
+			);
+			path = util;
 			sourceTree = "<group>";
 		};
 		2788E3562AC4E31700254A88 /* io */ = {

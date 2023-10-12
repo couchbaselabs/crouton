@@ -20,7 +20,7 @@
 #include "CoCondition.hh"
 #include "Coroutine.hh"
 #include "Internal.hh"
-#include "Bytes.hh"
+#include "util/Bytes.hh"
 #include "Logging.hh"
 #include "Scheduler.hh"
 #include "io/UVBase.hh"

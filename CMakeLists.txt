@@ -51,6 +51,7 @@ add_subdirectory(vendor/spdlog)
 #### CROUTON CONFIG
 
 
+# Build spdlog as compiled code, not header-only
 add_definitions(-DSPDLOG_COMPILED_LIB=1)
 
 if (MSVC)
