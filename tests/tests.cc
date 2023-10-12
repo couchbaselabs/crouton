@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "Producer.hh"
 #include "util/Relation.hh"
 #include "io/UVBase.hh"
 
@@ -192,6 +193,44 @@ TEST_CASE("ToMany") {
         CHECK(names == vector<string>{"Ringo", "George"});
     }
     CHECK(beatles._members.empty());
+}
+
+
+TEST_CASE("Producer Consumer") {
+    RunCoroutine([]() -> Future<void> {
+        optional<SeriesProducer<int>> producer;
+        producer.emplace();
+        unique_ptr<SeriesConsumer<int>> consumer = producer->make_consumer();
+
+        auto producerTaskFn = [&]() -> Task {
+            for (int i = 1; i <= 10; i++) {
+                cerr << "Produce " << i << "...\n";
+                bool ok = AWAIT producer->produce(i);
+                CHECK(ok);
+            }
+            cerr << "Produce EOF...\n";
+            bool ok = AWAIT producer->produce(noerror);
+            CHECK(!ok);
+            cerr << "END producer\n";
+            producer = nullopt;
+        };
+
+        Task producerTask = producerTaskFn();
+
+        int expected = 1;
+        while (true) {
+            Result<int> r = AWAIT *consumer;
+            cerr << "Received " << r << endl;
+            if (!r.ok()) {
+                CHECK(r.error() == noerror);
+                break;
+            }
+            CHECK(r.value() == expected++);
+        }
+        CHECK(expected == 11);
+        RETURN noerror;
+    });
+    REQUIRE(Scheduler::current().assertEmpty());
 }
 
 

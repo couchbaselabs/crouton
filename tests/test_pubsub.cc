@@ -109,26 +109,62 @@ TEST_CASE("BaseConnector", "[pubsub]") {
 }
 
 
-/// Takes strings and splits them into lines at `\n`.
+/// Takes strings and splits them into lines at CR, LF or CRLF.
 class LineSplitter : public BaseConnector<string> {
 public:
     using super = BaseConnector<string>;
     using super::BaseConnector;
 protected:
-    ASYNC<void> produce(Result<string> input) override {
-        if (!input.ok()) {
-            AWAIT super::produce(std::move(input));
-            RETURN noerror;
+    Task run(SeriesRef<string> series) override {
+        string buffer;
+        bool skipLF = false;
+        while (true) {
+            // Read another chunk from the publisher:
+            if (Result<string> input = AWAIT *series; input.ok()) {
+                // Add the new input to any leftover suffix in the buffer:
+                string_view inputView(*input);
+                if (skipLF && inputView.starts_with('\n'))
+                    inputView = inputView.substr(1);        // Skip the LF after a CR in last input
+                skipLF = false;
+                buffer += inputView;
+
+                // Scan the input buffer for line breaks:
+                string_view rest(buffer);
+                while (!rest.empty()) {
+                    if (size_t pos = rest.find_first_of("\r\n"); pos != string::npos) {
+                        // Split `rest` at line break and produce the first piece:
+                        bool cr = rest[pos] == '\r';
+                        string_view line;
+                        tie(line, rest) = splitAt(rest, pos, 1);
+                        if (! AWAIT super::produce(string(line)))
+                            RETURN;
+
+                        if (cr) {
+                            if (rest.starts_with('\n'))
+                                rest = rest.substr(1);  // skip the LF in a CRLF
+                            else if (rest.empty())
+                                skipLF = true;          // remember that input ended with CR
+                        }
+                    } else {
+                        // No more delimiters; save the rest as leftovers to prepend to next input:
+                        break;
+                    }
+                }
+                buffer = string(rest);
+            } else {
+                // At the end, produce last bit if data didn't end in a line break:
+                if (!buffer.empty())
+                    if (! AWAIT produce(buffer))
+                        RETURN;
+
+                if (!AWAIT produce(std::move(input)))
+                    RETURN;
+                break;
+            }
         }
-        string_view rest(*input);
-        while (!rest.empty()) {
-            string_view line;
-            tie(line, rest) = split(rest, '\n');
-            AWAIT super::produce(string(line));
-        }
-        RETURN noerror;
     }
 };
+
 
 /// A string filter that passes strings containing a given substring.
 class Contains : public Filter<string> {

@@ -153,16 +153,16 @@ namespace crouton {
 
     /** General purpose awaiter that manages control flow during `co_yield`.
         It arranges for a specific 'consumer' coroutine, given in the constructor,
-        to be resumed by the `co_yield` call. It can be `CORO_NS::noop_coroutine()` to instead resume
-        the outer non-coro code that called `resume`. */
+        to be resumed by the `co_yield` call; or by default it returns `CORO_NS::noop_coroutine()`
+        to instead resume the outer non-coro code. */
     class YielderTo : public CORO_NS::suspend_always {
     public:
         /// Arranges for `consumer` to be returned from `await_suspend`, making it the next
         /// coroutine to run after the `co_yield`.
-        explicit YielderTo(coro_handle consumer) : _consumer(consumer) {}
+        explicit YielderTo(coro_handle consumer) :_consumer(consumer) {}
 
         /// Arranges for the outer non-coro caller to be resumed after the `co_yield`.
-        explicit YielderTo() :YielderTo(CORO_NS::noop_coroutine()) { }
+        explicit YielderTo()                     :YielderTo(CORO_NS::noop_coroutine()) { }
 
         coro_handle await_suspend(coro_handle cur) noexcept {
             return lifecycle::yieldingTo(cur, _consumer);

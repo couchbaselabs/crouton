@@ -8,6 +8,7 @@
 #include "Awaitable.hh"
 #include "Defer.hh"
 #include "Generator.hh"
+#include "Producer.hh"
 #include "Queue.hh"
 #include "Select.hh"
 #include "Task.hh"
@@ -21,9 +22,9 @@ namespace crouton::ps {
     template <typename T> using SeriesRef = std::unique_ptr<ISeries<T>>;
 
     template <typename T, std::derived_from<ISeries<T>> Impl>
-    SeriesRef<T> mkref(Impl &&impl)       {return std::make_unique<Impl>(std::forward<Impl>(impl));}
+    SeriesRef<T> mkseries(Impl &&impl)       {return std::make_unique<Impl>(std::forward<Impl>(impl));}
     template <typename T>
-    SeriesRef<T> mkref(SeriesRef<T>&& ref) {return ref;}
+    SeriesRef<T> mkseries(SeriesRef<T>&& ref) {return ref;}
 
 
     /** A `Publisher<T>` asynchronously provides `Series` of `T` items to `Subscriber`s.
@@ -57,7 +58,7 @@ namespace crouton::ps {
     class AnyPublisher : public Gen, public Publisher<T> {
     public:
         using Gen::Gen;
-        SeriesRef<T> publish() override                         {return mkref<T>(Gen::generate());}
+        SeriesRef<T> publish() override                     {return mkseries<T>(Gen::generate());}
     };
 
     
@@ -132,7 +133,7 @@ namespace crouton::ps {
         }
 
         /// Abstract method that handles an item received from the Publisher.
-        /// @warning  You must override either this method or `receive`.
+        /// @warning  You must override either this method or `run`.
         virtualASYNC<void> handle(T)            {return CroutonError::Unimplemented;}
 
         /// Handles the final Error/noerror item from the publisher.
@@ -234,6 +235,26 @@ namespace crouton::ps {
     };
 
 
+    /** Subscriber that calls a function on the values it receives. */
+    template <typename T>
+    class CollectorFn : public Subscriber<T> {
+    public:
+        using Fn = std::function<Future<void>(Result<T>)>;
+        explicit CollectorFn(Fn fn) :_fn(std::move(fn)) { }
+    protected:
+        virtual Task run(SeriesRef<T> series) {
+            bool ok;
+            do {
+                Result<T> result = AWAIT *series;
+                ok = result.ok();
+                AWAIT fn(std::move(result));
+            } while (ok);
+        }
+    private:
+        Fn _fn;
+    };
+
+
 #pragma mark - UTILITY PUBLISHERS
 
 
@@ -248,7 +269,7 @@ namespace crouton::ps {
         /// Sets an error to return at the end.
         void endWithError(Error err)                        {_error = err;}
 
-        SeriesRef<T> publish() override                    {return mkref<T>(_publish());}
+        SeriesRef<T> publish() override                    {return mkseries<T>(_publish());}
 
     private:
        Generator<T> _publish() {
@@ -267,65 +288,42 @@ namespace crouton::ps {
 
 
     /** Minimal concrete implementation of Connector, that simply propagates items.
-        Supports multiple subscribers. */
-    template <typename T>
-    class BaseConnector : public Connector<T> {
+        @warning  This currently only supports a single Subscriber. */
+    template <typename In, typename Out = In>
+    class BaseConnector : public Connector<In,Out> {
     public:
-        using Connector<T>::Connector;
+        using Connector<In,Out>::Connector;
 
-        SeriesRef<T> publish() override {
+        SeriesRef<Out> publish() override {
             this->start();
-            if (_subscriberCount == 0)
-                _readyForItem.notify();
-            ++_subscriberCount;
-            return mkref<T>(_publish());
+            return _producer.make_consumer();
         }
 
     protected:
-        Task run(SeriesRef<T> series) override {
+        Task run(SeriesRef<In> series) override {
+            Error error;
+            bool eof;
             do {
-                Result<T> nextItem = AWAIT *series;
-                AWAIT produce(std::move(nextItem));
-            } while (!_eof);
-        }
-
-        /// Sends the item to subscribers.
-        virtualASYNC<void> produce(Result<T> nextItem) {
-            // Wait until downstream Subscribers have finished with the current `_item`:
-            AWAIT _readyForItem;
-
-            // Update `_item` and `_eof`
-            _eof = !nextItem.ok();
-            _item = std::move(nextItem);
-
-            // Wake up subscribers (`_generate`):
-            assert(_usingItemCount == 0);
-            _usingItemCount = _subscriberCount;
-            _itemAvailable.notifyAll();
-            RETURN noerror;
-        }
-
-        Generator<T> _publish() {
-            DEFER {--_subscriberCount;};
-            do {
-                while (_usingItemCount == 0) {
-                    AWAIT _itemAvailable;
+                Result<In> nextItem = AWAIT *series;
+                eof = !nextItem.ok();
+                if (eof)
+                    error = nextItem.error();
+                if (! AWAIT produce(std::move(nextItem)) && !error) {
+                    error = CroutonError::Cancelled;
+                    eof = true;
                 }
-                if (!_item.empty())
-                    YIELD _item;
-                assert(_usingItemCount > 0);
-                if (--_usingItemCount == 0)
-                    _readyForItem.notify();
-            } while (!_eof);
+            } while (!eof);
+            this->handleEnd(error);
+        }
+
+        /// Sends the item to subscriber. Must be awaited; if result is false, stop.
+        [[nodiscard]] SeriesProducer<Out>::AwaitProduce produce(Result<Out> nextItem) {
+            return _producer.produce(std::move(nextItem));
         }
 
     private:
-        Result<T>     _item;                // Item produced by `receive` & consumed by `generate`
-        CoCondition   _itemAvailable;       // Notifies generators there's a new item to send
-        Blocker<void> _readyForItem;        // Notifies `receive` it can update `_item`
-        int           _subscriberCount = 0; // Number of subscribers (_generate coroutines)
-        int           _usingItemCount = 0;  // Number of subscribers still sending `_item`
-        bool          _eof = false;         // True once an EOF item is received
+        SeriesProducer<Out> _producer;
+        bool _eof = false;
     };
 
 
@@ -337,7 +335,7 @@ namespace crouton::ps {
     public:
         explicit Buffer(size_t queueSize)   :_queue(queueSize) { }
 
-        SeriesRef<T> publish() override    {this->start(); return mkref<T>(_queue.generate());}
+        SeriesRef<T> publish() override    {this->start(); return mkseries<T>(_queue.generate());}
 
     protected:
         // (exposed by subclass Filter)
@@ -408,7 +406,7 @@ namespace crouton::ps {
 
         SeriesRef<Out> publish() override {
             this->start();
-            return mkref<Out>(_queue.generate());
+            return mkseries<Out>(_queue.generate());
         }
 
     protected:
@@ -445,6 +443,7 @@ namespace crouton::ps {
         XformFn _xform;
     };
 
+    
 
     /** A Connector that produces an error if its upstream Publisher doesn't produce its first
         item within a given time. */
