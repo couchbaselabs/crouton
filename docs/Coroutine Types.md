@@ -10,7 +10,68 @@ A future-returning coroutine can also throw an exception; if so, the exception w
 
 The most common thing to do with a `Future<T>` is to `co_await` it; this blocks the current coroutine until the Future’s result is available, and returns it as a value of type `T`. It’s also possible the Future’s result is an error; if so, the error will be thrown as an exception. (There are ways to avoid this and examine the result as an Error instead.)
 
-It’s possible for non-coroutine code to receive or create Futures. More on that elsewhere.
+### The `ASYNC` macro
+
+Future is such a common return type, there's a macro to highlight it:
+```c++
+    ASYNC<string> readString();
+```
+
+`ASYNC` is short for `[[nodiscard]] Future`. The annotation makes it an error to ignore the return value; otherwise it's easy to forget to `co_await` it.
+
+### Creating Futures without coroutines
+
+It’s possible for non-coroutine code to create, return and even await Futures. In fact this is the main way to bridge between coroutine and non-coroutine functions.
+
+> Note: Returning `Future<T>` doesn't make a function a coroutine. It's only a coroutine if it uses `co_await`, `co_yield` or `co_return`.
+
+Most simply, you can create a `Future` that already has a value or an error simply by constructing it with one, like `Future<int>(17)` or `Future<string>(CroutonError::Unimplemented)`. As these are implicit constructors, if the function returns a Future you can just return the value/error:
+
+```c++
+    Future<int> answer()         {return 6 * 7;}
+    Future<string> fancyThing()  {return CroutonError::Unimplemented;}
+```
+
+The interesting case is if you _don't_ have the value yet. In that case you create a `FutureProvider` first and hang onto it (it’s a reference, a `shared_ptr`.) You construct a `Future` from it and return that. Later, you call `setResult` or `setError` on the provider to give the Future a value.
+
+```c++ 
+Future<double> longCalculation(double n) {
+    FutureProvider<double> provider = Future<double>::provider();
+    longCalculationWithCallback(n, [provider] (double answer) {
+        provider->setResult(answer);	// When result arrives, store it in the Future
+    });
+    return Future<double>(provider);	// For now, return the empty Future
+}
+```
+
+### Awaiting a Future
+
+What about the other direction: you call a function that returns a Future, but you’re not in a coroutine and can’t use `co_await`?
+
+In that case you usually use a callback. `Future::then()` takes a lambda that will be called when the Future’s value is available, and passed the value.
+
+```c++
+Future<double> answerF = longCalculation(123.456);
+answerF.then([=](Result<double> answer) { cout << answer.value() << endl; });
+```
+
+A `then` callback can even return a new value, which will become the value of a new Future:
+
+```c++
+Future<string> longCalculationAsString(double n) {
+	Future<string> answer = longCalculation(n).then([=](Result<double> answer) {
+    	return std::to_string(answer.value());
+    });
+    return answer;
+});
+```
+
+In the above example, what happens is:
+
+1. `longCalculationAsString` calls `longCalculation`, which returns an `empty Future<double>`.
+2. `longCalculationAsString` returns an empty `Future<string>`.
+3. `longCalculation` finishes, and the lambda ls called.
+4. The lambda’s return value is stored in the `Future<string>`.
 
 ## 2. `Generator<T>`
 

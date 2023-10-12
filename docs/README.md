@@ -1,5 +1,7 @@
 # Crouton Documentation
 
+(in progress...)
+
 * **[Introduction](Introduction.md)**
 * **Core**
   * Fundamental Types
@@ -10,7 +12,7 @@
     * [Awaitable Types](Awaitable Types.md)
   * Scheduling and Event Loops
   * Logging
-  * Publish And Subscribe
+  * [Publish And Subscribe](PubSub.md)
 * **I/O and Networking**
   * Filesystem operations
   * Streams
