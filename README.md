@@ -8,7 +8,7 @@ Async/await gives you concurrency without the pitfalls of multithreading. You ca
 
 How is that better than threads? It's safer and easier to reason about. The only places where concurrency happens are well-marked by the `co_await` and `co_yield` keywords. You don't need mutexes or atomic variables, and there are far fewer opportunities for race conditions or deadlocks. (There are performance benefits too: no expensive context switches, less stack usage.)
 
-[Detailed documentation](docs/README.md) is being written.
+[**Detailed documentation**](docs/README.md) is being written.
 
 ## Features
 
@@ -84,13 +84,13 @@ do {
 cout << endl;
 ```
 
-See also [demo_server.cc][tests/demo_server.cc], a simple HTTP and WebSocket server.
+See also [demo_server.cc](tests/demo_server.cc), a simple HTTP and WebSocket server.
 
 ## Status: ☠️EXPERIMENTAL☠️
 
 [![Build](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml/badge.svg)](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml)
 
-This is new code, under heavy development! So far, it builds with Clang (Xcode 15) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
+This is new code, under heavy development! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
 
 The tests run regularly on macOS, and occasionally on Ubuntu (though not in CI.) Test coverage is very limited.
 
@@ -104,12 +104,12 @@ APIs are still in flux. Things get refactored a lot.
 ### Prerequisites:
 
 - CMake
-- Clang 15, Xcode 15, or GCC 12
+- Clang 15, Xcode 14, or GCC 12
 - zlib (aka libz)
 
 #### on macOS:
 
-- Install Xcode 15 or later, or at least the command-line tools.
+- Install Xcode 14 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
 #### on Ubuntu Linux

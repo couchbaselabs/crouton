@@ -128,7 +128,6 @@ namespace crouton::util {
     class ToMany : private LinkedList<ToOne<Other,Self>>, private Child<Self> {
     public:
         using super = LinkedList<ToOne<Other,Self>>;
-        using ToOne = ToOne<Other,Self>;
 
         /// Initializes an unconnected Child. This should be a member initializer of Self.
         explicit ToMany(Self* self)     :Child<Self>(self) { }
@@ -151,35 +150,35 @@ namespace crouton::util {
 
         class iterator {
         public:
-            explicit iterator(super::iterator i)                            :_i(i) { }
+            explicit iterator(typename super::iterator i)                   :_i(i) { }
             Other& operator*() const                                        {return *(_i->self());}
             Other* operator->() const                                       {return _i->self();}
             iterator& operator++()                                          {++_i; return *this;}
             friend bool operator==(iterator const& a, iterator const& b)    {return a._i == b._i;}
         private:
-            super::iterator _i;
+            typename super::iterator _i;
         };
 
-        iterator begin()                {return iterator(super::begin());}
-        iterator end()                  {return iterator(super::end());}
+        iterator begin()                            {return iterator(super::begin());}
+        iterator end()                              {return iterator(super::end());}
 
-        void push_front(ToOne& link)    {super::push_front(link); link._parent = this;}
-        void push_back(ToOne& link)     {super::push_back(link); link._parent = this;}
-        void erase(ToOne& link)         {super::erase(link); link._parent = nullptr;}
+        void push_front(ToOne<Other,Self>& link)    {super::push_front(link); link._parent = this;}
+        void push_back(ToOne<Other,Self>& link)     {super::push_back(link); link._parent = this;}
+        void erase(ToOne<Other,Self>& link)         {super::erase(link); link._parent = nullptr;}
 
-        void clear()                    {deAdopt(); super::clear();}
+        void clear()                                {deAdopt(); super::clear();}
 
-        ~ToMany()                       {deAdopt();}
+        ~ToMany()                                   {deAdopt();}
 
     private:
-        friend ToOne;
+        friend ToOne<Other,Self>;
 
         void adopt() {
-            for (ToOne& child : (super&)*this)
+            for (ToOne<Other,Self>& child : (super&)*this)
                 child._parent = this;
         }
         void deAdopt() {
-            for (ToOne& child : (super&)*this)
+            for (ToOne<Other,Self>& child : (super&)*this)
                 child._parent = nullptr;
         }
     };

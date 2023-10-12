@@ -8,8 +8,8 @@
     * [Errors](Errors.md)
     * [Results](Results.md)
   * Basic Coroutine Types
-    * [Coroutine Types](Coroutine Types.md)
-    * [Awaitable Types](Awaitable Types.md)
+    * [Coroutine Types](Coroutine%20Types.md)
+    * [Awaitable Types](Awaitable%20Types.md)
   * Scheduling and Event Loops
   * Logging
   * [Publish And Subscribe](PubSub.md)
