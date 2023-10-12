@@ -160,7 +160,7 @@ namespace crouton::io::http {
         ASYNC<string> entireBody();
 
         /// After a call to parseData, returns body bytes that were read by the call.
-        string latestBodyData()    {return std::move(_body);}
+        string latestBodyData()    {string b(std::move(_body)); _body.clear(); return b;}
 
     private:
         Parser(IStream*, Role role);

@@ -198,7 +198,7 @@ namespace crouton::ps {
     /// ```
     template <typename P, typename S, typename PP = std::remove_reference_t<P>, typename SS = std::remove_reference_t<S>>  requires(std::is_same_v<pub_type<PP>,sub_type<SS>>)
     [[nodiscard]] S operator| (P&& pub, S&& sub) {
-        auto sharedP = std::make_shared<PP>(std::move(pub));
+        auto sharedP = std::make_shared<PP>(std::forward<P>(pub));
         sub.subscribeTo(std::move(sharedP));
         return sub;
     }
