@@ -32,7 +32,7 @@ namespace crouton::io {
         virtual ~Stream();
 
         /// Returns true while the stream is open.
-        bool isOpen() const override {return _stream != nullptr;}
+        bool isOpen() const override pure  {return _stream != nullptr;}
 
         /// Closes the write stream, leaving the read stream open until the peer closes it.
         ASYNC<void> closeWrite() override;
@@ -43,10 +43,10 @@ namespace crouton::io {
         //---- READING
 
         /// True if the stream has data available to read.
-        bool isReadable() const;
+        bool isReadable() const noexcept pure;
 
         /// The number of bytes known to be available without blocking.
-        size_t bytesAvailable() const;
+        size_t bytesAvailable() const noexcept pure;
 
         ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
         ASYNC<ConstBytes> peekNoCopy() override;
@@ -56,7 +56,7 @@ namespace crouton::io {
         //---- WRITING
 
         /// True if the stream has buffer space available to write to.
-        bool isWritable() const;
+        bool isWritable() const noexcept pure;
 
         /// Writes as much as possible immediately, without blocking.
         /// @return  Number of bytes written, which may be 0 if the write buffer is full.

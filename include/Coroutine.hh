@@ -32,12 +32,12 @@ namespace crouton {
     class Coroutine {
     public:
         // movable, but not copyable.
-        Coroutine(Coroutine&& c)                    :_handle(c._handle) {c._handle = {};}
+        Coroutine(Coroutine&& c) noexcept           :_handle(c._handle) {c._handle = {};}
 
         using promise_type = IMPL;                  // The name `promise_type` is magic here
 
         /// Returns my Impl object.
-        IMPL& impl()                                {return _handle.promise();}
+        IMPL& impl() pure                           {return _handle.promise();}
 
     protected:
         using handle_type = CORO_NS::coroutine_handle<IMPL>;

@@ -31,9 +31,9 @@ namespace crouton {
     template <typename T>
     class SeriesProducer {
     public:
-        SeriesProducer()    :_consumer(this) { }
-        SeriesProducer(SeriesProducer&&) = default;
-        SeriesProducer& operator=(SeriesProducer&&) = default;
+        SeriesProducer() noexcept    :_consumer(this) { }
+        SeriesProducer(SeriesProducer&&) noexcept = default;
+        SeriesProducer& operator=(SeriesProducer&&) noexcept = default;
         ~SeriesProducer()   {assert(!_consumer);}
 
         /// Creates the SeriesConsumer. Can only be called once.
@@ -88,10 +88,10 @@ namespace crouton {
     template <typename T>
     class SeriesConsumer final : public ISeries<T> {
     public:
-        SeriesConsumer(SeriesConsumer&&) = default;
-        SeriesConsumer& operator=(SeriesConsumer&&) = default;
+        SeriesConsumer(SeriesConsumer&&) noexcept = default;
+        SeriesConsumer& operator=(SeriesConsumer&&) noexcept = default;
 
-        bool await_ready() override {
+        bool await_ready() noexcept override {
             precondition(_producer);
             return _hasValue;
         }

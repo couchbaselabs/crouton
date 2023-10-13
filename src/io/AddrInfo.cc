@@ -39,7 +39,7 @@ namespace crouton::io {
     };
 
 
-    AddrInfo& AddrInfo::operator=(AddrInfo&& ai) {
+    AddrInfo& AddrInfo::operator=(AddrInfo&& ai) noexcept {
         uv_freeaddrinfo(_info);
         _info = ai._info;
         ai._info = nullptr;

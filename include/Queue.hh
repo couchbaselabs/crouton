@@ -34,8 +34,8 @@ namespace crouton {
     class AsyncQueue {
     public:
         AsyncQueue() = default;
-        AsyncQueue(AsyncQueue&&) = default;
-        AsyncQueue& operator=(AsyncQueue&&) = default;
+        AsyncQueue(AsyncQueue&&) noexcept = default;
+        AsyncQueue& operator=(AsyncQueue&&) noexcept = default;
 
         virtual ~AsyncQueue() {close();}
 

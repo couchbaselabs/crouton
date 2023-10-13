@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "betterassert.hh"
+#include "util/betterassert.hh"
 #include <exception> // for std::terminate()
 #include <stdio.h>
 #include <string.h>
@@ -70,21 +70,21 @@ namespace crouton {
 
 
     __cold
-    void _assert_failed(const char *cond, std::source_location const& loc) {
+    void _assert_failed(const char *cond, std::source_location const& loc) noexcept {
         log("FATAL: FAILED ASSERTION `%s` in %s (at %s line %d)",
             cond, loc);
         std::terminate();
     }
 
     __cold
-    void _precondition_failed(const char *cond, std::source_location const& loc) {
+    void _precondition_failed(const char *cond, std::source_location const& loc) noexcept {
         log("FATAL: FAILED PRECONDITION: `%s` not true when calling %s (at %s line %d)",
             cond, loc);
         std::terminate();
     }
 
     __cold
-    void _postcondition_failed(const char *cond, std::source_location const& loc) {
+    void _postcondition_failed(const char *cond, std::source_location const& loc) noexcept {
         log("FATAL: FAILED POSTCONDITION: `%s` not true at end of %s (at %s line %d)",
             cond, loc);
         std::terminate();

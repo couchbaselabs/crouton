@@ -43,11 +43,11 @@ namespace crouton::io {
         string primaryAddressString() const;
 
         ~AddrInfo();
-        AddrInfo(AddrInfo&& ai) :_info(ai._info) {ai._info = nullptr;}
-        AddrInfo& operator=(AddrInfo&& ai);
+        AddrInfo(AddrInfo&& ai) noexcept :_info(ai._info) {ai._info = nullptr;}
+        AddrInfo& operator=(AddrInfo&& ai) noexcept;
 
     private:
-        AddrInfo(struct ::addrinfo* info) :_info(info) { }
+        explicit AddrInfo(struct ::addrinfo* info) noexcept :_info(info) { }
         AddrInfo(AddrInfo const&) = delete;
         AddrInfo& operator=(AddrInfo const&) = delete;
         sockaddr const* _primaryAddress(int af) const;

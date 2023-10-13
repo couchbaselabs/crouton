@@ -71,8 +71,8 @@ namespace crouton::io {
 
     FileStream::FileStream(int fd)                     :_fd(fd) { }
     FileStream::~FileStream()                          {_close();}
-    FileStream::FileStream(FileStream&& fs)            = default;
-    FileStream& FileStream::operator=(FileStream&& fs) = default;
+    FileStream::FileStream(FileStream&& fs) noexcept            = default;
+    FileStream& FileStream::operator=(FileStream&& fs) noexcept = default;
 
 
     Future<void> FileStream::open() {

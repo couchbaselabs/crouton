@@ -35,7 +35,7 @@ namespace crouton::endian {
     #  error "unexpected define!" // freebsd may define these; probably just need to undefine them
     #endif
 
-        /* Define byte-swap functions, using fast processor-native built-ins where possible */
+    /* Define byte-swap functions, using fast processor-native built-ins where possible */
     #if defined(_MSC_VER) // needs to be first because msvc doesn't short-circuit after failing defined(__has_builtin)
     #  define bswap16(x)     _byteswap_ushort((x))
     #  define bswap32(x)     _byteswap_ulong((x))
@@ -50,16 +50,16 @@ namespace crouton::endian {
     #  define bswap64(x)     __builtin_bswap64((x))
     #else
         /* even in this case, compilers often optimize by using native instructions */
-        static inline uint16_t bswap16(uint16_t x) {
+        pure inline constexpr uint16_t bswap16(uint16_t x) {
             return ((( x  >> 8 ) & 0xffu ) | (( x  & 0xffu ) << 8 ));
         }
-        static inline uint32_t bswap32(uint32_t x) {
+        pure inline constexpr uint32_t bswap32(uint32_t x) {
             return ((( x & 0xff000000u ) >> 24 ) |
                     (( x & 0x00ff0000u ) >> 8  ) |
                     (( x & 0x0000ff00u ) << 8  ) |
                     (( x & 0x000000ffu ) << 24 ));
         }
-        static inline uint64_t bswap64(uint64_t x) {
+        pure inline constexpr uint64_t bswap64(uint64_t x) {
             return ((( x & 0xff00000000000000ull ) >> 56 ) |
                     (( x & 0x00ff000000000000ull ) >> 40 ) |
                     (( x & 0x0000ff0000000000ull ) >> 24 ) |
@@ -70,24 +70,24 @@ namespace crouton::endian {
                     (( x & 0x00000000000000ffull ) << 56 ));
         }
     #endif
-    template <std::integral T> constexpr T byteswap(T) noexcept;
-    template <> constexpr int16_t  byteswap(int16_t i)  noexcept {return bswap16(i);}
-    template <> constexpr uint16_t byteswap(uint16_t i) noexcept {return bswap16(i);}
-    template <> constexpr int32_t  byteswap(int32_t i)  noexcept {return bswap32(i);}
-    template <> constexpr uint32_t byteswap(uint32_t i) noexcept {return bswap32(i);}
-    template <> constexpr int64_t  byteswap(int64_t i)  noexcept {return bswap64(i);}
-    template <> constexpr uint64_t byteswap(uint64_t i) noexcept {return bswap64(i);}
+    template <std::integral T> pure constexpr T byteswap(T) noexcept;
+    template <> pure constexpr int16_t  byteswap(int16_t i)  noexcept {return bswap16(i);}
+    template <> pure constexpr uint16_t byteswap(uint16_t i) noexcept {return bswap16(i);}
+    template <> pure constexpr int32_t  byteswap(int32_t i)  noexcept {return bswap32(i);}
+    template <> pure constexpr uint32_t byteswap(uint32_t i) noexcept {return bswap32(i);}
+    template <> pure constexpr int64_t  byteswap(int64_t i)  noexcept {return bswap64(i);}
+    template <> pure constexpr uint64_t byteswap(uint64_t i) noexcept {return bswap64(i);}
 #endif
 
-    template <std::integral T> constexpr T encodeBig(T i) noexcept {
+    template <std::integral T> pure constexpr T encodeBig(T i) noexcept {
         if constexpr (IsBig) return i; else return byteswap<T>(i);
     }
 
-    template <std::integral T> constexpr T encodeLittle(T i) noexcept {
+    template <std::integral T> pure constexpr T encodeLittle(T i) noexcept {
         if constexpr (IsLittle) return i; else return byteswap<T>(i);
     }
 
-    template <std::integral T> constexpr T decodeBig(T i) noexcept {return encodeBig<T>(i);}
-    template <std::integral T> constexpr T decodeLittle(T i) noexcept {return encodeLittle<T>(i);}
+    template <std::integral T> pure constexpr T decodeBig(T i) noexcept    {return encodeBig<T>(i);}
+    template <std::integral T> pure constexpr T decodeLittle(T i) noexcept {return encodeLittle<T>(i);}
 
 }

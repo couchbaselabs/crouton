@@ -95,10 +95,10 @@ namespace crouton::io {
         uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
         std::byte   data[kCapacity];        ///< The data itself
 
-        size_t available() const {return size - used;}
-        bool empty() const       {return size == used;}
+        size_t available() const noexcept pure {return size - used;}
+        bool empty() const noexcept pure       {return size == used;}
 
-        ConstBytes bytes() const {return {data + used, size - used};}
+        ConstBytes bytes() const noexcept pure {return {data + used, size - used};}
 
         ConstBytes read(size_t maxLen) {
             size_t n = std::min(maxLen, available());

@@ -48,11 +48,11 @@
 
     namespace crouton {
         [[noreturn]] NOINLINE void _assert_failed(const char *cond,
-                                    std::source_location const& = std::source_location::current());
+                                    std::source_location const& = std::source_location::current()) noexcept;
         [[noreturn]] NOINLINE void _precondition_failed(const char *cond,
-                                    std::source_location const& = std::source_location::current());
+                                    std::source_location const& = std::source_location::current()) noexcept;
         [[noreturn]] NOINLINE void _postcondition_failed(const char *cond,
-                                    std::source_location const& = std::source_location::current());
+                                    std::source_location const& = std::source_location::current()) noexcept;
 
         extern void (*assert_failed_hook)(const char *message);
     }

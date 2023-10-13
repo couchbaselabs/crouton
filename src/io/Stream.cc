@@ -64,12 +64,12 @@ namespace crouton::io {
 #pragma mark - READING:
 
 
-    size_t Stream::bytesAvailable() const {
+    size_t Stream::bytesAvailable() const noexcept {
         return _inputBuf ? _inputBuf->available() : 0;
     }
 
 
-    bool Stream::isReadable() const {
+    bool Stream::isReadable() const noexcept {
         return _stream && (bytesAvailable() > 0 || uv_is_readable(_stream));
     }
 
@@ -215,7 +215,7 @@ namespace crouton::io {
 #pragma mark - WRITING:
 
 
-    bool Stream::isWritable() const {
+    bool Stream::isWritable() const noexcept {
         return _stream && uv_is_writable(_stream);
     }
 

@@ -30,17 +30,17 @@ namespace crouton::io {
     class URLRef {
     public:
         URLRef() = default;
-        explicit URLRef(const char* str)           {parse(str);}
+        explicit URLRef(const char* str)      {parse(str);}
         explicit URLRef(string const& str)    :URLRef(str.c_str()) { }
 
         URLRef(string_view scheme,
                string_view hostname,
                uint16_t port = 0,
                string_view path = "/",
-               string_view query = "");
+               string_view query = "") noexcept;
 
         /// Parses a URL, updating the properties. Returns false on error.
-        [[nodiscard]] bool tryParse(const char*);
+        [[nodiscard]] bool tryParse(const char*) noexcept;
 
         /// Parses a URL, updating the properties. Throws CroutonError::InvalidURL on error.
         void parse(const char*);
@@ -58,7 +58,7 @@ namespace crouton::io {
         string unescapedPath() const   {return unescape(path);}
 
         /// Returns the value for a key in the query, or "" if not found.
-        string_view queryValueForKey(string_view key);
+        string_view queryValueForKey(string_view key) noexcept pure;
 
         /// Recombines the parts back into a URL. Useful if you've changed them.
         string reencoded() const;
@@ -79,7 +79,7 @@ namespace crouton::io {
     public:
         explicit URL(string&& str)     :URLRef(), _str(std::move(str)) {parse(_str.c_str());}
         explicit URL(string_view str)  :URL(string(str)) { }
-        explicit URL(const char* str)       :URL(string(str)) { }
+        explicit URL(const char* str)  :URL(string(str)) { }
 
         URL(string_view scheme,
             string_view hostname,
@@ -87,11 +87,13 @@ namespace crouton::io {
             string_view path = "/",
             string_view query = "");
 
-        URL(URL const& url)                 :URL(url.asString()) { }
+        URL(URL const& url)                 :URL(url._str) { }
         URL& operator=(URL const& url)      {_str = url._str; parse(_str.c_str()); return *this;}
+        URL(URL&& url) noexcept             :URL(std::move(url._str)) { }
+        URL& operator=(URL&& url)           {_str = std::move(url._str); parse(_str.c_str()); return *this;}
 
-        string const& asString() const {return _str;}
-        operator string() const        {return _str;}
+        string const& asString() const noexcept pure {return _str;}
+        operator string() const             {return _str;}
 
         void reencode() {
             _str = reencoded();

@@ -32,8 +32,8 @@ namespace crouton {
     public:
         using TT = std::conditional_t<std::is_void_v<T>, std::monostate, T>;
 
-        Result()                        :_value(noerror) { }
-        Result(Error err)               :_value(err) { }
+        Result() noexcept               :_value(noerror) { }
+        Result(Error err) noexcept      :_value(err) { }
 
         template <typename U> requires (!std::is_void_v<T> && std::constructible_from<T, U>)
         Result(U&& val)                 :_value(std::forward<U>(val)) { }
@@ -54,24 +54,24 @@ namespace crouton {
         void set()  requires (std::is_void_v<T>)    {_value = TT();}
 
         /// True if there is a T value.
-        bool ok() const                             {return _value.index() == 0;}
+        bool ok() const noexcept pure               {return _value.index() == 0;}
 
         /// True if there is neither a value nor an error.
-        bool empty() const {
+        bool empty() const noexcept pure {
             Error const* err = std::get_if<Error>(&_value);
             return err && !*err;
         }
 
         /// True if there is an error.
-        bool isError() const {
+        bool isError() const noexcept pure {
             Error const* err = std::get_if<Error>(&_value);
             return err && *err;
         }
 
         /// True if there's a value, false if empty. If there's an error, raises it.
         explicit operator bool() const {
-            if (Error const* err = std::get_if<Error>(&_value)) {
-                if (*err)
+            if (Error const* err = std::get_if<Error>(&_value)) [[unlikely]] {
+                if (*err) [[unlikely]]
                     err->raise();
                 return false;
             } else {
@@ -80,7 +80,7 @@ namespace crouton {
         }
 
         /// Returns the error, if any, else `noerror`.
-        Error error() const {
+        Error error() const noexcept pure {
             Error const* err = std::get_if<Error>(&_value);
             return err ? *err : noerror;
         }
@@ -122,7 +122,7 @@ namespace crouton {
 
     private:
         void raise_if() const {
-            if (Error const* errp = std::get_if<Error>(&_value)) {
+            if (Error const* errp = std::get_if<Error>(&_value)) [[unlikely]] {
                 Error err = *errp ? *errp : CroutonError::EmptyResult;
                 err.raise();
             }
@@ -133,7 +133,7 @@ namespace crouton {
 
 
 
-#if 0
+#if 0 //FIXME: `({...})` is a GCC extension, not standard C++, and MSVC doesn't support it :(
     /// Syntactic sugar to handle a `Result<T>`, similar to Swift's `try`.
     /// - If R has a value, evaluates to its value.
     /// - If R has an error, `co_return`s the error from the current coroutine.
@@ -141,9 +141,6 @@ namespace crouton {
         ({ auto _r_ = (R); \
            if (_r_.isError())  co_return _r_.error(); \
            std::move(_r_).value(); })
-    //FIXME: MSVC doesn't support `({...})`, AFAIK
-
-
 
     /// Syntactic sugar to await a Future without throwing exceptions.
     /// - If the future returns a value, evaluates to that value.

@@ -108,10 +108,10 @@ namespace crouton::ps {
         /// @note  Before the Subscriber is done, this returns `noerror`.
         Error error() const                     {return _error;}
 
-        Subscriber(Subscriber&& s)              {*this = std::move(s);}
+        Subscriber(Subscriber&& s) noexcept     {*this = std::move(s);}
         virtual ~Subscriber()                   {precondition(!_task || done());}
 
-        Subscriber& operator=(Subscriber&& s) {
+        Subscriber& operator=(Subscriber&& s) noexcept {
             precondition(!_task);
             _publisher = std::move(s._publisher);
             return *this;

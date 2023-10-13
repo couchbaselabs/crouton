@@ -28,8 +28,8 @@ namespace crouton {
     ConstBytes::ConstBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
     MutableBytes::MutableBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
 
-    ConstBytes::operator uv_buf_t() const   { return uv_buf_init((char*)data(), unsigned(size())); }
-    MutableBytes::operator uv_buf_t() const { return uv_buf_init((char*)data(), unsigned(size())); }
+    ConstBytes::operator uv_buf_t() const noexcept   { return uv_buf_init((char*)data(), unsigned(size())); }
+    MutableBytes::operator uv_buf_t() const noexcept { return uv_buf_init((char*)data(), unsigned(size())); }
 
     string ErrorDomainInfo<io::UVError>::description(errorcode_t code) {
         switch (code) {

@@ -178,13 +178,13 @@ namespace crouton {
     class Suspension {
     public:
         /// Default constructor creates an empty/null Suspension.
-        Suspension()                    :_impl(nullptr) { }
+        Suspension()                                    :_impl(nullptr) { }
 
-        Suspension(Suspension&& s)      :_impl(s._impl) {s._impl = nullptr;}
-        Suspension& operator=(Suspension&& s) {std::swap(_impl, s._impl); return *this;}
-        ~Suspension()                   {if (_impl) cancel();}
+        Suspension(Suspension&& s) noexcept             :_impl(s._impl) {s._impl = nullptr;}
+        Suspension& operator=(Suspension&& s) noexcept  {std::swap(_impl, s._impl); return *this;}
+        ~Suspension()                                   {if (_impl) cancel();}
 
-        explicit operator bool() const  {return _impl != nullptr;}
+        explicit operator bool() const pure {return _impl != nullptr;}
 
         coro_handle handle() const;
 
@@ -202,7 +202,7 @@ namespace crouton {
 
     private:
         friend class Scheduler;
-        explicit Suspension(Scheduler::SuspensionImpl* impl) :_impl(impl) { };
+        explicit Suspension(Scheduler::SuspensionImpl* impl) noexcept :_impl(impl) { };
         Suspension(Suspension const&) = delete;
 
         Scheduler::SuspensionImpl* _impl;

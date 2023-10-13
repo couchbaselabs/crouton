@@ -32,8 +32,8 @@ namespace crouton {
     class CoCondition {
     public:
         CoCondition() = default;
-        CoCondition(CoCondition&&) = default;
-        CoCondition& operator=(CoCondition&&) = default;
+        CoCondition(CoCondition&&) noexcept = default;
+        CoCondition& operator=(CoCondition&&) noexcept = default;
         ~CoCondition() {precondition(_awaiters.empty());}
 
         void notifyOne();
