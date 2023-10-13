@@ -71,6 +71,7 @@ else()
         -Werror
         -Wall
         -Wpedantic
+        -Wno-assume             # Lots of bogus "argument to '__builtin_assume' has side effects"
         -Wno-unknown-pragmas
         -Wno-unknown-warning-option
     )
@@ -134,6 +135,7 @@ add_library( LibCrouton STATIC
     src/io/mbed/TLSSocket.cc
 
     src/support/Backtrace.cc
+    src/support/betterassert.cc
     src/support/Memoized.cc
     src/support/StringUtils.cc
 )
