@@ -96,7 +96,7 @@ namespace crouton {
             }
 
             void await_resume() noexcept {
-                assert(_sched->isCurrent());
+                precondition(_sched->isCurrent());
             }
         private:
             Scheduler* _sched;

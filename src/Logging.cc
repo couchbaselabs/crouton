@@ -85,6 +85,10 @@ namespace crouton {
             spdlog::cfg::load_env_levels();
 
             spdlog::info("---------- Welcome to Crouton ----------");
+
+            assert_failed_hook = [](const char* message) {
+                spdlog::critical("{}", message);
+            };
         });
     }
 

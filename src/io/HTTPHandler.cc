@@ -117,7 +117,7 @@ namespace crouton::io::http {
     { }
 
     void Handler::Response::writeHeader(string_view name, string_view value) {
-        assert(!_sentHeaders);
+        precondition(!_sentHeaders);
         _headers.set(string(name), string(value));
     }
 

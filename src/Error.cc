@@ -70,7 +70,7 @@ namespace crouton {
     void Error::raise(string_view logMessage) const {
         spdlog::error("*** Throwing crouton::Exception({}, {}): {} ({})",
                       domain(), _code, description(), logMessage);
-        assert(*this); // it's illegal to throw `noerror`
+        precondition(*this); // it's illegal to throw `noerror`
         throw Exception(*this);
     }
 

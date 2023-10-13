@@ -22,7 +22,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <cassert>
+#include "util/betterassert.hh"
 
 // Find <coroutine> in std or experimental.
 // Always use `CORO_NS` instead of `std` for coroutine types

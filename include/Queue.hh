@@ -160,7 +160,7 @@ namespace crouton {
 
         /// Removes an item equal to the given `item`.
         virtual bool remove(T const& item) {
-            assert(_state == Open);
+            precondition(_state == Open);
             if (auto i = find(item); i != _queue.end()) {
                 _queue.erase(i);
                 return true;
@@ -173,7 +173,7 @@ namespace crouton {
         /// Returns a Generator that will yield items from the queue until it closes.
         /// @warning  Currently, this can only be called once.
         Generator<T> generate() {
-            assert(!_generating);
+            precondition(!_generating);
             _generating = true;
             while (_state != Closed) {
                 if (_queue.empty()) {
@@ -211,7 +211,7 @@ namespace crouton {
     public:
         using super = AsyncQueue<T>;
 
-        explicit BoundedAsyncQueue(size_t maxSize)     :_maxSize(maxSize) {assert(maxSize > 0); }
+        explicit BoundedAsyncQueue(size_t maxSize) :_maxSize(maxSize) {precondition(maxSize > 0); }
 
         /// True if the queue is at capacity and no items can be pushed.
         bool full() const   {return this->size() >= _maxSize;}

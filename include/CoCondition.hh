@@ -34,7 +34,7 @@ namespace crouton {
         CoCondition() = default;
         CoCondition(CoCondition&&) = default;
         CoCondition& operator=(CoCondition&&) = default;
-        ~CoCondition() {assert(_awaiters.empty());}
+        ~CoCondition() {precondition(_awaiters.empty());}
 
         void notifyOne();
 

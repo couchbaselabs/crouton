@@ -24,7 +24,7 @@
 #include <sstream>
 #include <string.h>
 #include <algorithm>
-#include <cassert>
+#include "util/betterassert.hh"
 
 
 #ifndef _MSC_VER
@@ -101,7 +101,7 @@ namespace fleece {
 
 
     Backtrace::frameInfo Backtrace::getFrame(unsigned i) const {
-        assert(i < _addrs.size());
+        precondition(i < _addrs.size());
         frameInfo frame = { };
         Dl_info info;
         if (dladdr(_addrs[i], &info)) {

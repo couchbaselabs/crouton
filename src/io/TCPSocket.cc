@@ -30,8 +30,8 @@ namespace crouton::io {
 
 
     Future<void> TCPSocket::open() {
-        assert(!isOpen());
-        assert(_binding);
+        precondition(!isOpen());
+        precondition(_binding);
         int err;
 
         // Resolve the address/hostname:

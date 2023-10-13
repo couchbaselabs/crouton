@@ -20,6 +20,7 @@
 #include "Producer.hh"
 #include "util/Relation.hh"
 #include "io/UVBase.hh"
+#include "betterassert.hh"
 
 
 void RunCoroutine(Future<void> (*test)()) {

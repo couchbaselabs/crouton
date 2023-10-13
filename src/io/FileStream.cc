@@ -84,7 +84,7 @@ namespace crouton::io {
 
     // This is FileStream's primitive read operation.
     Future<size_t> FileStream::_preadv(const MutableBytes bufs[], size_t nbufs, int64_t offset) {
-        assert(isOpen());
+        precondition(isOpen());
         static constexpr size_t kMaxBufs = 8;
         if (nbufs > kMaxBufs) 
             return Error(CroutonError::InvalidArgument, "too many bufs");
@@ -144,7 +144,7 @@ namespace crouton::io {
     // This is FileStream's primitive write operation.
     Future<void> FileStream::pwritev(const ConstBytes bufs[], size_t nbufs, int64_t offset) {
         NotReentrant nr(_busy);
-        assert(isOpen());
+        precondition(isOpen());
 
         _readBuf = nullptr; // because this write might invalidate it
 
@@ -177,7 +177,7 @@ namespace crouton::io {
 
     void FileStream::_close() {
         if (isOpen()) {
-            assert(!_busy);
+            precondition(!_busy);
             _readBuf = nullptr;
             // Close synchronously, for simplicity
             uv_fs_t closeReq;

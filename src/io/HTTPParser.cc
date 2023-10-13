@@ -106,7 +106,7 @@ namespace crouton::io::http {
 
 
     Future<void> Parser::readHeaders() {
-        assert(_stream);
+        precondition(_stream);
         if (!_stream->isOpen())
             AWAIT _stream->open();
 
@@ -119,7 +119,7 @@ namespace crouton::io::http {
 
 
     Future<string> Parser::readBody() {
-        assert(_stream);
+        precondition(_stream);
         ConstBytes data;
         while (_body.empty() && !complete()) {
             data = AWAIT _stream->readNoCopy();
@@ -148,7 +148,7 @@ namespace crouton::io::http {
         if (err != HPE_OK) {
             if (err == HPE_PAUSED_UPGRADE) {
                 // We have a (WebSocket) upgrade. Put any data after the request into _body.
-                assert(llhttp_get_upgrade(_parser.get()) != 0);
+                assert_always(llhttp_get_upgrade(_parser.get()) != 0);
                 _upgraded = true;
                 const char* end = llhttp_get_error_pos(_parser.get());
                 assert((byte*)end >= data.data() && (byte*)end <= data.data() + data.size());
@@ -170,7 +170,7 @@ namespace crouton::io::http {
 
 
     int Parser::addHeader(string value) {
-        assert(!_curHeaderName.empty());
+        precondition(!_curHeaderName.empty());
         this->headers.add(_curHeaderName, value);
         _curHeaderName = "";
         return 0;

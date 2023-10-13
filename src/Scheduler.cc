@@ -157,7 +157,7 @@ namespace crouton {
 
 
     EventLoop& Scheduler::eventLoop() {
-        assert(isCurrent());
+        precondition(isCurrent());
         if (!_eventLoop) {
             _eventLoop = newEventLoop();
             _ownsEventLoop = true;
@@ -166,7 +166,7 @@ namespace crouton {
     }
 
     void Scheduler::useEventLoop(EventLoop* loop) {
-        assert(isCurrent());
+        precondition(isCurrent());
         assert(!_eventLoop);
         _eventLoop = loop;
         _ownsEventLoop = false;
@@ -222,7 +222,7 @@ namespace crouton {
     /// be returned from next().
     void Scheduler::schedule(coro_handle h) {
         LSched->debug("schedule {}", logCoro{h});
-        assert(isCurrent());
+        precondition(isCurrent());
         assert(!isWaiting(h));
         if (!isReady(h))
             _ready.push_back(h);
@@ -241,7 +241,7 @@ namespace crouton {
     }
 
     void Scheduler::resumed(coro_handle h) {
-        assert(isCurrent());
+        precondition(isCurrent());
         if (auto i = std::find(_ready.begin(), _ready.end(), h); i != _ready.end())
             _ready.erase(i);
     }
@@ -253,7 +253,7 @@ namespace crouton {
 
     /// Returns the coroutine that should be resumed, or else `dflt`.
     coro_handle Scheduler::nextOr(coro_handle dflt) {
-        assert(isCurrent());
+        precondition(isCurrent());
         scheduleWakers();
         if (_ready.empty()) {
             return dflt;
@@ -269,7 +269,7 @@ namespace crouton {
     /// or else the no-op coroutine that returns to the outer caller.
     coro_handle Scheduler::finished(coro_handle h) {
         LSched->debug("finished {}", logCoro{h});
-        assert(isCurrent());
+        precondition(isCurrent());
         assert(h.done());
         assert(!isReady(h));
         assert(!isWaiting(h));
@@ -282,7 +282,7 @@ namespace crouton {
     /// from any thread.
     Suspension Scheduler::suspend(coro_handle h) {
         LSched->debug("suspend {}", logCoro{h});
-        assert(isCurrent());
+        precondition(isCurrent());
         assert(!isReady(h));
         auto [i, added] = _suspended.try_emplace(h.address(), h, this);
         i->second._visible = true;
@@ -291,7 +291,7 @@ namespace crouton {
 
     void Scheduler::destroying(coro_handle h) {
         LSched->debug("destroying {}", logCoro{h});
-        assert(isCurrent());
+        precondition(isCurrent());
         if (auto i = _suspended.find(h.address()); i != _suspended.end()) {
             SuspensionImpl& sus = i->second;
             if (sus._wakeMe.test_and_set()) {

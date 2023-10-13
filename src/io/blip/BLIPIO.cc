@@ -192,7 +192,7 @@ namespace crouton::io::blip {
     /// Public API to send a new request.
     Future<MessageInRef> BLIPIO::sendRequest(MessageBuilder& mb) {
         auto message = make_shared<MessageOut>(this, mb, MessageNo::None);
-        assert(message->type() == kRequestType);
+        precondition(message->type() == kRequestType);
         send(message);
         return message->onResponse();
     }

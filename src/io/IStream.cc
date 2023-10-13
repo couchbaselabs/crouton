@@ -64,8 +64,8 @@ namespace crouton::io {
 
 
     Future<string> IStream::readUntil(string end, size_t maxLen) {
-        assert(!end.empty());
-        assert(maxLen >= end.size());
+        precondition(!end.empty());
+        precondition(maxLen >= end.size());
         string data;
         while (data.size() < maxLen) {
             auto dataLen = data.size();

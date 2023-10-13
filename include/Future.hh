@@ -222,12 +222,10 @@ namespace crouton {
         Result<T> & result() &                          {return _result;}
 
         std::add_rvalue_reference_t<T> resultValue()  requires (!std::is_void_v<T>) {
-            assert(hasResult());
             return std::move(_result).value();
         }
 
         void resultValue()  requires (std::is_void_v<T>) {
-            assert(hasResult());
             _result.value();
         }
 

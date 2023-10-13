@@ -154,9 +154,9 @@ namespace crouton {
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
         template <std::convertible_to<Result<T>> From>
         YielderTo yield_value(From&& value) {
-            assert(!_eof);
+            precondition(!_eof);
             _yielded_value = std::forward<From>(value);
-            assert(!_yielded_value.empty());
+            precondition(!_yielded_value.empty());
             ready();
             auto resumer = _consumer;
             if (resumer)
@@ -200,7 +200,7 @@ namespace crouton {
 
         // Tells me which coroutine should resume after I co_yield the next value.
         coro_handle generateFor(coro_handle consumer) {
-            assert(!_consumer); // multiple awaiters not supported
+            precondition(!_consumer); // multiple awaiters not supported
             _consumer = consumer;
             clear();
             return this->handle();

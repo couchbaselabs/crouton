@@ -38,7 +38,7 @@ namespace crouton {
 
         /// Creates the SeriesConsumer. Can only be called once.
         std::unique_ptr<SeriesConsumer<T>> make_consumer() {
-            assert(!_consumer);
+            precondition(!_consumer);
             return std::unique_ptr<SeriesConsumer<T>>(new SeriesConsumer<T>(this));
         }
 
@@ -71,7 +71,7 @@ namespace crouton {
         /// **Must be awaited.** Suspends until the SeriesConsumer reads the previous value.
         /// `co_await` returns true if the SeriesConsumer still exists, false if it's been destroyed.
         [[nodiscard]] AwaitProduce produce(Result<T> value) {
-            assert(!_consumer || !_consumer->_eof);
+            precondition(!_consumer || !_consumer->_eof);
             return AwaitProduce(this, std::move(value));
         }
 
@@ -92,7 +92,7 @@ namespace crouton {
         SeriesConsumer& operator=(SeriesConsumer&&) = default;
 
         bool await_ready() override {
-            assert(_producer);
+            precondition(_producer);
             return _hasValue;
         }
 

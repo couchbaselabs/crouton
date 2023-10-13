@@ -43,6 +43,7 @@
 		275EB4372ACDCC5D0022ED53 /* BLIPIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330502AB2763B0066C8DA /* BLIPIO.cc */; };
 		275EB4402ACDCD660022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
 		275EB4412ACDCD760022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
+		277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652B2AD8B5D8006F053D /* betterassert.cc */; };
 		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
 		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
@@ -331,6 +332,8 @@
 		275EB43F2ACDCC5D0022ED53 /* libBLIP.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBLIP.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		277B65272AD739B1006F053D /* Producer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Producer.hh; sourceTree = "<group>"; };
 		277B65282AD766EF006F053D /* Relation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Relation.hh; sourceTree = "<group>"; };
+		277B652A2AD8B5CA006F053D /* betterassert.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = betterassert.hh; sourceTree = "<group>"; };
+		277B652B2AD8B5D8006F053D /* betterassert.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = betterassert.cc; sourceTree = "<group>"; };
 		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
 		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
@@ -1023,6 +1026,7 @@
 			isa = PBXGroup;
 			children = (
 				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
+				277B652A2AD8B5CA006F053D /* betterassert.hh */,
 				27B3306A2AB391F30066C8DA /* Bytes.hh */,
 				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
 				277B65282AD766EF006F053D /* Relation.hh */,
@@ -1396,6 +1400,7 @@
 			children = (
 				27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */,
 				27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */,
+				277B652B2AD8B5D8006F053D /* betterassert.cc */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
 				27B330692AB388960066C8DA /* Endian.hh */,
 				275A5F132AAFB3B1009791E8 /* Memoized.hh */,
@@ -1722,6 +1727,7 @@
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				27F603092A9FA366006FA1D0 /* NWConnection.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
+				277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */,
 				272730532A8EC61D000CCA22 /* FileStream.cc in Sources */,
 				272A852B2A97B2090083D947 /* HTTPConnection.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,

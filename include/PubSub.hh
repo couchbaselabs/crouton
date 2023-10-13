@@ -79,8 +79,8 @@ namespace crouton::ps {
 
         /// Connects the subscriber to a Publisher.
         virtual void subscribeTo(std::shared_ptr<Publisher<T>> pub) {
-            assert(!_publisher);
-            assert(!_series);
+            precondition(!_publisher);
+            precondition(!_series);
             _publisher = std::move(pub);
         }
 
@@ -94,7 +94,7 @@ namespace crouton::ps {
             if (!_task) {
                 SeriesRef<T> series = std::move(_series);
                 if (!series) {
-                    assert(_publisher);
+                    precondition(_publisher);
                     series = _publisher->publish();
                 }
                 _task.emplace(run(std::move(series)));
@@ -109,8 +109,13 @@ namespace crouton::ps {
         Error error() const                     {return _error;}
 
         Subscriber(Subscriber&& s)              {*this = std::move(s);}
-        Subscriber& operator=(Subscriber&& s)   {assert(!_task); _publisher = std::move(s._publisher); return *this;}
-        virtual ~Subscriber()                   {assert(!_task || done());}
+        virtual ~Subscriber()                   {precondition(!_task || done());}
+
+        Subscriber& operator=(Subscriber&& s) {
+            precondition(!_task);
+            _publisher = std::move(s._publisher);
+            return *this;
+        }
 
     protected:
         /// Coroutine method that's the lifecycle of the Subscriber.
@@ -431,7 +436,7 @@ namespace crouton::ps {
                 bool inEof = !item.ok();
                 Result<Out> out = transform(std::move(item));
                 eof = !out.ok();
-                assert(!inEof || eof);  // EOF input has to produce EOF output
+                assert_always(!inEof || eof);  // EOF input has to produce EOF output
                 if (eof)
                     this->handleEnd(out.error());
                 closed = ! AWAIT _queue.asyncPush(std::move(out));

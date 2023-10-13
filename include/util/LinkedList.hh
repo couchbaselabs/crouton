@@ -112,7 +112,7 @@ namespace crouton::util {
         void push_back(Link& link)      {link.insertAfter(_head._prev);}
 
         Link& pop_front() {
-            assert(!empty());
+            precondition(!empty());
             auto link = _head._next;
             link->remove();
             return *link;

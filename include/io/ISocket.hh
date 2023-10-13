@@ -33,7 +33,7 @@ namespace crouton::io {
 
         /// Specifies the address and port to connect to, and whether to use TLS.
         virtual void bind(string const& address, uint16_t port) {
-            assert(!_binding);
+            precondition(!_binding);
             _binding.reset(new binding{address, port});
         }
 

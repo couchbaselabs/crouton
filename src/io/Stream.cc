@@ -40,7 +40,7 @@ namespace crouton::io {
 
 
     Future<void> Stream::closeWrite() {
-        assert(isOpen());
+        precondition(isOpen());
 
         AwaitableRequest<uv_shutdown_t> req("closing connection");
         check( uv_shutdown(&req, _stream, req.callback), "closing connection");
@@ -50,7 +50,7 @@ namespace crouton::io {
 
 
     void Stream::_close() {
-        assert(!_readBusy);
+        precondition(!_readBusy);
         _inputBuf.reset();
         closeHandle(_stream);
     }
@@ -75,7 +75,7 @@ namespace crouton::io {
 
     
     Future<ConstBytes> Stream::readNoCopy(size_t maxLen) {
-        assert(isOpen());
+        precondition(isOpen());
         NotReentrant nr(_readBusy);
         if (_inputBuf && !_inputBuf->empty()) {
             // Advance _inputBuf->used and return the pointer:
@@ -92,7 +92,7 @@ namespace crouton::io {
 
 
     Future<ConstBytes> Stream::peekNoCopy() {
-        assert(isOpen());
+        precondition(isOpen());
         NotReentrant nr(_readBusy);
         if (!_inputBuf || _inputBuf->empty())
             return fillInputBuf();
@@ -103,8 +103,7 @@ namespace crouton::io {
 
     /// Low-level read method that ensures there is data to read in `_inputBuf`.
     Future<ConstBytes> Stream::fillInputBuf() {
-        assert(isOpen());
-        assert(_readBusy);
+        precondition(isOpen() && _readBusy);
         if (_inputBuf && _inputBuf->available() == 0) {
             // Recycle the used-up buffer:
             _spare.emplace_back(std::move(_inputBuf));
@@ -120,8 +119,7 @@ namespace crouton::io {
 
     /// Reads once from the uv_stream and returns the result as a BufferRef.
     Future<BufferRef> Stream::readBuf() {
-        assert(isOpen());
-        assert(!_readFuture);
+        precondition(isOpen() && !_readFuture);
         if (!_input.empty()) {
             // We have an already-read buffer available; return it:
             Future<BufferRef> result(std::move(_input[0]));
@@ -222,7 +220,7 @@ namespace crouton::io {
     }
 
     Future<void> Stream::write(const ConstBytes bufs[], size_t nbufs) {
-        assert(isOpen());
+        precondition(isOpen());
 
         static constexpr size_t kMaxBufs = 8;
         if (nbufs > kMaxBufs)

@@ -30,7 +30,7 @@ namespace crouton::io::blip {
 
     
     MessageBuilder::MessageBuilder(MessageIn* inReplyTo) : MessageBuilder() {
-        assert(!inReplyTo->isResponse());
+        precondition(inReplyTo && !inReplyTo->isResponse());
         type = kResponseType;
         urgent = inReplyTo->urgent();
     }
@@ -48,7 +48,7 @@ namespace crouton::io::blip {
 
 
     void MessageBuilder::makeError(Message::Error err) {
-        assert(!err.domain.empty() && err.code != 0);
+        precondition(!err.domain.empty() && err.code != 0);
         type = kErrorType;
         addProperty("Error-Domain", err.domain);
         addProperty("Error-Code", err.code);
@@ -66,13 +66,13 @@ namespace crouton::io::blip {
 
 
     void MessageBuilder::writeTokenizedString(ostream& out, string_view str) {
-        assert(str.find('\0') == string::npos);
+        precondition(str.find('\0') == string::npos);
         out << str << '\0';
     }
 
 
     MessageBuilder& MessageBuilder::addProperty(string_view name, string_view value) {
-        assert(!_wroteProperties);
+        precondition(!_wroteProperties);
         writeTokenizedString(_properties, name);
         writeTokenizedString(_properties, value);
         return *this;

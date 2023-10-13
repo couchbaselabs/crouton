@@ -290,7 +290,7 @@ namespace crouton::io::mbed {
     }
 
     Future<void> TLSSocket::open() {
-        assert(!_impl);
+        precondition(!_impl);
         NotReentrant nr(_busy);
         auto stream = make_unique<TCPSocket>();
         stream->bind(_binding->address, _binding->port);
