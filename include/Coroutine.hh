@@ -57,12 +57,11 @@ namespace crouton {
 
 
 
+    /** To be returned from a CoroutineImpl's `initial_suspend` method. */
     template <bool SUS>
     struct SuspendInitial : public CORO_NS::suspend_always {
-        SuspendInitial(coro_handle h) :_handle(h) { };
         constexpr bool await_ready() const noexcept { return !SUS; }
-    private:
-        coro_handle _handle;
+        void await_suspend(coro_handle cur) const noexcept {lifecycle::suspendInitial(cur);}
     };
 
     /** To be returned from a CoroutineImpl's `final_suspend` method.
@@ -73,7 +72,7 @@ namespace crouton {
         void await_suspend(coro_handle cur) const noexcept {
             lifecycle::finalSuspend(cur, nullptr);
             if constexpr (Destroy)
-                cur.destroy();
+                lifecycle::destroy(cur);
         }
     };
 
@@ -85,7 +84,7 @@ namespace crouton {
         coro_handle await_suspend(coro_handle cur) const noexcept {
             auto target = lifecycle::finalSuspend(cur, _target);
             if constexpr (Destroy)
-                cur.destroy();
+                lifecycle::destroy(cur);
             return target;
         }
         coro_handle _target;
@@ -96,7 +95,12 @@ namespace crouton {
     class CoroutineImplBase {
     public:
         CoroutineImplBase() = default;
-        ~CoroutineImplBase()                        {lifecycle::ended(_handle);}
+
+        ~CoroutineImplBase() {
+            // FYI, a coroutine impl (`promise_type`) is destructed when its coroutine handle's
+            // `destroy` method is called.
+            lifecycle::ended(_handle);
+        }
 
         coro_handle handle() const                  {assert(_handle); return _handle;}
 
@@ -146,7 +150,7 @@ namespace crouton {
         }
 
         // Determines whether the coroutine starts suspended when created, or runs immediately.
-        SuspendInitial<!EAGER> initial_suspend()       {return {handle()};}
+        SuspendInitial<!EAGER> initial_suspend()       {return {};}
     };
 
 
@@ -165,7 +169,7 @@ namespace crouton {
         explicit YielderTo()                     :YielderTo(CORO_NS::noop_coroutine()) { }
 
         coro_handle await_suspend(coro_handle cur) noexcept {
-            return lifecycle::yieldingTo(cur, _consumer);
+            return lifecycle::yieldingTo(cur, _consumer, true);
         }
 
     private:

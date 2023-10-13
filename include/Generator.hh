@@ -44,13 +44,13 @@ namespace crouton {
     template <typename T>
     class Generator : public Coroutine<GeneratorImpl<T>>, public ISeries<T> {
     public:
-        Generator(Generator&&) = default;
+        Generator(Generator&&) noexcept = default;
 
         ~Generator() {
             if (auto h = this->handle()) {
                 if (!h.done())
                     this->impl().stop();
-                h.destroy();
+                lifecycle::destroy(h);
             }
         }
 
@@ -72,7 +72,7 @@ namespace crouton {
 
         coro_handle await_suspend(coro_handle cur) override {
             coro_handle next = this->impl().generateFor(cur);
-            return lifecycle::suspendingTo(cur, typeid(this), this, next);
+            return lifecycle::suspendingTo(cur, this->handle(), next);
         }
 
         Result<T> await_resume() override                   {return this->impl().yieldedValue();}

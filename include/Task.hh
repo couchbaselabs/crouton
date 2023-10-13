@@ -68,6 +68,7 @@ namespace crouton {
             struct sus : public CORO_NS::suspend_always {
                 void await_suspend(coro_handle h) {
                     Scheduler::current().schedule(h);
+                    lifecycle::suspendInitial(h);
                 }
             };
             return sus{};

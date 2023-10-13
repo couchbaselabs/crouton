@@ -116,7 +116,7 @@ namespace crouton {
             if (this->handle())
                 return lifecycle::suspendingTo(coro, this->handle(), _state->suspend(coro));
             else
-                return lifecycle::suspendingTo(coro, typeid(this), this, _state->suspend(coro));
+                return lifecycle::suspendingTo(coro, typeid(*this), this, _state->suspend(coro));
         }
         [[nodiscard]] std::add_rvalue_reference_t<T> await_resume() requires (!std::is_void_v<T>) {
             return std::move(_state->resultValue());

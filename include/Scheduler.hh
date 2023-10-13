@@ -215,7 +215,7 @@ namespace crouton {
     struct Yielder : public CORO_NS::suspend_always {
         coro_handle await_suspend(coro_handle h) noexcept {
             _handle = h;
-            return lifecycle::yieldingTo(h, Scheduler::current().yield(h));
+            return lifecycle::yieldingTo(h, Scheduler::current().yield(h), false);
         }
 
         void await_resume() noexcept {
