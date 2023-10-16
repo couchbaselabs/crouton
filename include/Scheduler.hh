@@ -164,7 +164,7 @@ namespace crouton {
 
         std::deque<coro_handle> _ready;                     // Coroutines that are ready to run
         SuspensionMap           _suspended;                 // Suspended/sleeping coroutines
-        EventLoop*              _eventLoop;                 // My event loop
+        EventLoop*              _eventLoop = nullptr;       // My event loop
         coro_handle             _eventLoopTask = nullptr;   // EventLoop's coroutine handle
         std::atomic<bool>       _woke = false;              // True if a suspended is waking
         bool                    _ownsEventLoop = false;     // True if I created _eventLoop
