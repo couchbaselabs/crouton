@@ -52,8 +52,6 @@ namespace crouton::io {
         void stop(bool threadSafe) override;
         void perform(std::function<void()>) override;
 
-        ASYNC<void> sleep(double delaySecs);
-
         void ensureWaits();
         uv_loop_s* uvLoop() {return _loop.get();}
     private:
@@ -166,36 +164,42 @@ namespace crouton {
 
     Timer::Timer(std::function<void()> fn)
     :_fn(std::move(fn))
-    ,_handle(new uv_timer_t)
+    ,_impl(new uv_timer_t)
     {
-        uv_timer_init(io::curLoop(), _handle);
-        _handle->data = this;
+        uv_timer_init(io::curLoop(), ((uv_timer_t*)_impl));
+        ((uv_timer_t*)_impl)->data = this;
     }
 
 
     Timer::~Timer() {
-        uv_timer_stop(_handle);
-        io::closeHandle(_handle);
+        auto handle = ((uv_timer_t*)_impl);
+        uv_timer_stop(handle);
+        io::closeHandle(handle);
     }
 
 
     void Timer::_start(double delaySecs, double repeatSecs) {
         auto callback = [](uv_timer_t *handle) noexcept {
             auto self = (Timer*)handle->data;
-            try {
-                self->_fn();
-            } catch (...) {
-                LLoop->error("*** Caught unexpected exception in Timer callback ***");
-            }
-            if (self->_deleteMe)
-                delete self;
+            self->_fire();
         };
-        uv_timer_start(_handle, callback, ms(delaySecs), ms(repeatSecs));
+        uv_timer_start(((uv_timer_t*)_impl), callback, ms(delaySecs), ms(repeatSecs));
+    }
+
+
+    void Timer::_fire() {
+        try {
+            _fn();
+        } catch (...) {
+            LLoop->error("*** Caught unexpected exception in Timer callback ***");
+        }
+        if (_deleteMe)
+            delete this;
     }
 
 
     void Timer::stop() {
-        uv_timer_stop(_handle);
+        uv_timer_stop(((uv_timer_t*)_impl));
     }
 
 

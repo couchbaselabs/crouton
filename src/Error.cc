@@ -20,8 +20,7 @@
 #include "Backtrace.hh"
 #include "Internal.hh"
 #include "Logging.hh"
-#include "UVInternal.hh"
-#include "llhttp.h"
+#include <iostream>
 #include <sstream>
 
 namespace crouton {
@@ -67,9 +66,11 @@ namespace crouton {
     }
 
 
-    void Error::raise(string_view logMessage) const {
-        spdlog::error("*** Throwing crouton::Exception({}, {}): {} ({})",
-                      domain(), _code, description(), logMessage);
+    void Error::raise(string_view logMessage, std::source_location const& loc) const {
+        spdlog::error("*** Throwing crouton::Exception({}, {}): {} ({}) -- from {} [{}:{}]",
+                      domain(), _code, description(), logMessage,
+                      loc.function_name(), loc.file_name(), loc.line());
+        fleece::Backtrace(1).writeTo(std::cerr);
         precondition(*this); // it's illegal to throw `noerror`
         throw Exception(*this);
     }
@@ -91,7 +92,7 @@ namespace crouton {
         static mutex sMutex;
         unique_lock<mutex> lock(sMutex);
 
-        spdlog::info("Error: Registering domain {}", type.name());
+        spdlog::debug("Error: Registering domain {}", type.name());
         for (auto &d : sDomains) {
             if (d.type == &type) {
                 return uint8_t(&d - &sDomains[0]);
@@ -126,6 +127,7 @@ namespace crouton {
             {errorcode_t(LogicError), "internal error (logic error)"},
             {errorcode_t(ParseError), "unreadable data"},
             {errorcode_t(Timeout), "operation timed out"},
+            {errorcode_t(EndOfData), "unexpected end of data"},
             {errorcode_t(Unimplemented), "unimplemented operation"},
         };
         return NameEntry::lookup(code, names);

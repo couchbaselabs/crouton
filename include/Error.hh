@@ -21,11 +21,15 @@
 
 #include <array>
 #include <concepts>
+#include <source_location>
 #include <stdexcept>
 #include <type_traits>
 #include <typeinfo>
 
 namespace crouton {
+
+    #define SOURCE_LOC std::source_location const& sourceLoc = std::source_location::current()
+
 
     /// Numeric base type of error codes. However, Error only uses 18 bits to store the code,
     /// giving a maximum range of ±131072. 
@@ -121,14 +125,20 @@ namespace crouton {
         }
 
         /// Throws the error as an Exception.
-        [[noreturn]] void raise(string_view logMessage = "") const;
+        [[noreturn]] void raise(string_view logMessage = "", SOURCE_LOC) const;
 
         /// Throws the error as an Exception, if there is one.
-        void raise_if(string_view logMessage = "") const      {if (*this) raise(logMessage);}
+        void raise_if(string_view logMessage = "", SOURCE_LOC) const
+        {
+            if (*this) raise(logMessage, sourceLoc);
+        }
 
         /// Convenience that directly throws an Exception from an ErrorDomain enum.
         template <ErrorDomain D>
-        [[noreturn]] static void raise(D d, string_view msg = "") {Error(d).raise(msg);}
+        [[noreturn]] static void raise(D d, string_view msg = "", SOURCE_LOC)
+        {
+            Error(d).raise(msg, sourceLoc);
+        }
 
     private:
         Error(errorcode_t code, uint8_t domain) :_code(code), _domain(domain) {assert(_code == code);}
@@ -184,6 +194,7 @@ namespace crouton {
         LogicError,                 // Something impossible happened due to a bug
         ParseError,                 // Syntax error parsing something, like an HTTP stream.
         Timeout,                    // Operation failed because it took too long
+        EndOfData,                  // Read past end of data in a stream
         Unimplemented,              // Unimplemented functionality or abstract-by-convention method
     };
 

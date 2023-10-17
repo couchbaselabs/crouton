@@ -35,7 +35,7 @@ namespace crouton::io {
 
         bool isOpen() const override                {return Stream::isOpen();}
         IStream& stream() override                  {return *this;}
-        ASYNC<void> close() override {return Stream::close();}
+        ASYNC<void> close() override                {return Stream::close();}
 
     protected:
         friend class TCPServer;

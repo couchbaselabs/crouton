@@ -20,9 +20,10 @@
 #include "io/IStream.hh"
 #include "Generator.hh"
 
-
-namespace crouton::io {
+namespace crouton {
     struct Buffer;
+}
+namespace crouton::io {
     
     /** Asynchronous file I/O. 
 

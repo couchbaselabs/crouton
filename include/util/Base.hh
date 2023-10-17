@@ -52,7 +52,7 @@
 #define __unused
 #endif
 
-#if __has_attribute(__pure__)
+#if __has_attribute(__pure__) && !defined(ESP_PLATFORM)
 #define pure        __attribute__((__pure__))
 #else
 #define pure

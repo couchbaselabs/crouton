@@ -86,9 +86,11 @@ namespace crouton {
 
             spdlog::info("---------- Welcome to Crouton ----------");
 
+#ifndef ESP_PLATFORM
             assert_failed_hook = [](const char* message) {
                 spdlog::critical("{}", message);
             };
+#endif
         });
     }
 

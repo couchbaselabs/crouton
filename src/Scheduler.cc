@@ -93,13 +93,20 @@ namespace crouton {
 
 
 #pragma mark - SCHEDULER:
+
+
+    Scheduler::Scheduler()
+    :_suspended(new SuspensionMap)
+    { }
+
+    Scheduler::~Scheduler() = default;
     
 
     Scheduler& Scheduler::_create() {
         InitLogging();
         assert(!sCurSched);
         sCurSched = new Scheduler();
-        LSched->info("Created Scheduler {}", (void*)sCurSched);
+        LSched->debug("Created Scheduler {}", (void*)sCurSched);
         return *sCurSched;
     }
 
@@ -116,7 +123,7 @@ namespace crouton {
     }
 
     bool Scheduler::isEmpty() const {
-        return isIdle() && _suspended.empty();
+        return isIdle() && _suspended->empty();
     }
 
     /// Returns true if there are no coroutines ready or suspended, except possibly for the one
@@ -131,7 +138,7 @@ namespace crouton {
             return true;
 
         LSched->info("Scheduler::assertEmpty: Running event loop until {} ready and {} suspended coroutines finish...",
-                     _ready.size(), _suspended.size());
+                     _ready.size(), _suspended->size());
         int attempt = 0;
         const_cast<Scheduler*>(this)->runUntil([&] {
             return (isEmpty() && lifecycle::count() == 0) || ++attempt >= 10;
@@ -149,7 +156,7 @@ namespace crouton {
             if (r != _eventLoopTask) {
                 LSched->info("ready: {}", logCoro{r});
             }
-        for (auto &s : _suspended) {
+        for (auto &s : *_suspended) {
             LSched->info("\tsuspended: {}" , logCoro{s.second._handle});
         }
         return false;
@@ -284,7 +291,7 @@ namespace crouton {
         LSched->debug("suspend {}", logCoro{h});
         precondition(isCurrent());
         assert(!isReady(h));
-        auto [i, added] = _suspended.try_emplace(h.address(), h, this);
+        auto [i, added] = _suspended->try_emplace(h.address(), h, this);
         i->second._visible = true;
         return Suspension(&i->second);
     }
@@ -292,11 +299,11 @@ namespace crouton {
     void Scheduler::destroying(coro_handle h) {
         LSched->debug("destroying {}", logCoro{h});
         precondition(isCurrent());
-        if (auto i = _suspended.find(h.address()); i != _suspended.end()) {
+        if (auto i = _suspended->find(h.address()); i != _suspended->end()) {
             SuspensionImpl& sus = i->second;
             if (sus._wakeMe.test_and_set()) {
                 // The holder of the Suspension already tried to wake it, so it's OK to delete it:
-                _suspended.erase(i);
+                _suspended->erase(i);
             } else {
                 assert(!sus._visible);
                 sus._handle = nullptr;
@@ -329,7 +336,7 @@ namespace crouton {
     }
 
     bool Scheduler::isWaiting(coro_handle h) const {
-        return _suspended.find(h.address()) != _suspended.end();
+        return _suspended->find(h.address()) != _suspended->end();
     }
 
     /// Changes a waiting coroutine's state to 'ready' and notifies the Scheduler to resume
@@ -342,7 +349,7 @@ namespace crouton {
 
     bool Scheduler::hasWakers() const {
         if (_woke) {
-            for (auto &[h, sus] : _suspended) {
+            for (auto &[h, sus] :*_suspended) {
                 if (sus._wakeMe.test() && sus._handle)
                     return true;
             }
@@ -355,7 +362,7 @@ namespace crouton {
     void Scheduler::scheduleWakers() {
         while (_woke.exchange(false) == true) {
             // Some waiting coroutine is now ready:
-            for (auto i = _suspended.begin(); i != _suspended.end();) {
+            for (auto i = _suspended->begin(); i != _suspended->end();) {
                 if (i->second._wakeMe.test()) {
                     if (i->second._handle) {
                         LSched->debug("scheduleWaker({})", logCoro{i->second._handle});
@@ -363,7 +370,7 @@ namespace crouton {
                     } else {
                         LSched->debug("cleaned up canceled Suspension {}", (void*)&i->second);
                     }
-                    i = _suspended.erase(i);
+                    i = _suspended->erase(i);
                 } else {
                     ++i;
                 }

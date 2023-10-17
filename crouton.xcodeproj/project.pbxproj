@@ -44,6 +44,9 @@
 		275EB4402ACDCD660022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
 		275EB4412ACDCD760022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
 		277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652B2AD8B5D8006F053D /* betterassert.cc */; };
+		277B652E2AD9FCDC006F053D /* Backtrace+Unix.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */; };
+		277B6C172ADDB6B7006F053D /* ESPTCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */; };
+		277B6C1B2ADDB904006F053D /* ESPAddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C192ADDB904006F053D /* ESPAddrInfo.hh */; };
 		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
 		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
@@ -334,6 +337,21 @@
 		277B65282AD766EF006F053D /* Relation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Relation.hh; sourceTree = "<group>"; };
 		277B652A2AD8B5CA006F053D /* betterassert.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = betterassert.hh; sourceTree = "<group>"; };
 		277B652B2AD8B5D8006F053D /* betterassert.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = betterassert.cc; sourceTree = "<group>"; };
+		277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+Unix.cc"; sourceTree = "<group>"; };
+		277B652F2AD9FD47006F053D /* Backtrace+Windows.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+Windows.cc"; sourceTree = "<group>"; };
+		277B65302AD9FECA006F053D /* Backtrace+ESP32.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+ESP32.cc"; sourceTree = "<group>"; };
+		277B65332ADA07E0006F053D /* sdkconfig */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdkconfig; sourceTree = "<group>"; };
+		277B65362ADA07E0006F053D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		277B6C122ADA07E3006F053D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		277B6C132ADA07E3006F053D /* main.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cc; sourceTree = "<group>"; };
+		277B6C142ADA0873006F053D /* ESPEventLoop.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPEventLoop.cc; sourceTree = "<group>"; };
+		277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPTCPSocket.hh; sourceTree = "<group>"; };
+		277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPTCPSocket.cc; sourceTree = "<group>"; };
+		277B6C192ADDB904006F053D /* ESPAddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPAddrInfo.hh; sourceTree = "<group>"; };
+		277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPAddrInfo.cc; sourceTree = "<group>"; };
+		277B6C1D2ADDBE82006F053D /* ESPBase.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPBase.hh; sourceTree = "<group>"; };
+		277B6C1E2ADDDF13006F053D /* ESPBase.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPBase.cc; sourceTree = "<group>"; };
+		277B6C212ADDEEF3006F053D /* Kconfig.projbuild */ = {isa = PBXFileReference; lastKnownFileType = text; path = Kconfig.projbuild; sourceTree = "<group>"; };
 		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
 		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
@@ -712,6 +730,7 @@
 		272728BA2A8D6505000CCA22 = {
 			isa = PBXGroup;
 			children = (
+				277B65312ADA07E0006F053D /* ESP32 */,
 				272A85332A99451B0083D947 /* README.md */,
 				27F49CD12A9E45C300BFB24C /* CMakeLists.txt */,
 				27F49CD82A9E593700BFB24C /* Makefile */,
@@ -1032,6 +1051,42 @@
 				277B65282AD766EF006F053D /* Relation.hh */,
 			);
 			path = util;
+			sourceTree = "<group>";
+		};
+		277B65312ADA07E0006F053D /* ESP32 */ = {
+			isa = PBXGroup;
+			children = (
+				277B65322ADA07E0006F053D /* hello_world */,
+			);
+			path = ESP32;
+			sourceTree = "<group>";
+		};
+		277B65322ADA07E0006F053D /* hello_world */ = {
+			isa = PBXGroup;
+			children = (
+				277B65332ADA07E0006F053D /* sdkconfig */,
+				277B65362ADA07E0006F053D /* CMakeLists.txt */,
+				277B6C112ADA07E3006F053D /* main */,
+			);
+			path = hello_world;
+			sourceTree = "<group>";
+		};
+		277B6C112ADA07E3006F053D /* main */ = {
+			isa = PBXGroup;
+			children = (
+				277B6C122ADA07E3006F053D /* CMakeLists.txt */,
+				277B6C212ADDEEF3006F053D /* Kconfig.projbuild */,
+				277B6C132ADA07E3006F053D /* main.cc */,
+				277B6C1D2ADDBE82006F053D /* ESPBase.hh */,
+				277B6C1E2ADDDF13006F053D /* ESPBase.cc */,
+				277B65302AD9FECA006F053D /* Backtrace+ESP32.cc */,
+				277B6C142ADA0873006F053D /* ESPEventLoop.cc */,
+				277B6C192ADDB904006F053D /* ESPAddrInfo.hh */,
+				277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */,
+				277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */,
+				277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */,
+			);
+			path = main;
 			sourceTree = "<group>";
 		};
 		2788E3562AC4E31700254A88 /* io */ = {
@@ -1399,6 +1454,8 @@
 			isa = PBXGroup;
 			children = (
 				27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */,
+				277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */,
+				277B652F2AD9FD47006F053D /* Backtrace+Windows.cc */,
 				27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */,
 				277B652B2AD8B5D8006F053D /* betterassert.cc */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
@@ -1445,6 +1502,7 @@
 				277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */,
 				27B330632AB373430066C8DA /* MessageOut.hh in Headers */,
 				27B330522AB2763B0066C8DA /* Message.hh in Headers */,
+				277B6C172ADDB6B7006F053D /* ESPTCPSocket.hh in Headers */,
 				27B3305D2AB36F1D0066C8DA /* MessageBuilder.hh in Headers */,
 				279D5D652A952DD1005C3066 /* Pipe.hh in Headers */,
 				27F603082A9FA366006FA1D0 /* NWConnection.hh in Headers */,
@@ -1452,6 +1510,7 @@
 				279D5D472A902588005C3066 /* TCPServer.hh in Headers */,
 				272730402A8D6F35000CCA22 /* TCPSocket.hh in Headers */,
 				278F7E532AA7D1BC005B12F2 /* Process.hh in Headers */,
+				277B6C1B2ADDB904006F053D /* ESPAddrInfo.hh in Headers */,
 				278F7E3A2AA1489B005B12F2 /* HTTPParser.hh in Headers */,
 				27ED1C722AABF47200ADC971 /* CoroLifecycle.hh in Headers */,
 				279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */,
@@ -1724,6 +1783,7 @@
 				2788E3542AC38B5E00254A88 /* Select.cc in Sources */,
 				278F7F202AAA9212005B12F2 /* bundled_fmtlib_format.cpp in Sources */,
 				278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */,
+				277B652E2AD9FCDC006F053D /* Backtrace+Unix.cc in Sources */,
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
 				27F603092A9FA366006FA1D0 /* NWConnection.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,

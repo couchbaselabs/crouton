@@ -128,4 +128,33 @@ namespace crouton {
         }
     };
 
+
+    /** A data buffer used by stream_wrapper and Stream. */
+    struct Buffer {
+        static constexpr size_t kCapacity = 65536 - 2 * sizeof(uint32_t);
+
+        uint32_t    size = 0;               ///< Length of valid data
+        uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
+        std::byte   data[kCapacity];        ///< The data itself
+
+        size_t available() const noexcept pure {return size - used;}
+        bool empty() const noexcept pure       {return size == used;}
+
+        ConstBytes bytes() const noexcept pure {return {data + used, size - used};}
+
+        ConstBytes read(size_t maxLen) {
+            size_t n = std::min(maxLen, available());
+            ConstBytes result(data + used, n);
+            used += n;
+            return result;
+        }
+
+        void unRead(size_t len) {
+            assert(len <= used);
+            used -= len;
+        }
+    };
+
+    using BufferRef = std::unique_ptr<Buffer>;
+
 }

@@ -1,0 +1,35 @@
+idf_component_register(
+    SRCS
+    "../../../src/Coroutine.cc"
+    "../../../src/CoCondition.cc"
+    "../../../src/CoroLifecycle.cc"
+    "../../../src/Coroutine.cc"
+    "../../../src/Error.cc"
+    "../../../src/Future.cc"
+    "../../../src/Internal.hh"
+    "../../../src/Logging.cc"
+    "../../../src/Scheduler.cc"
+    "../../../src/Select.cc"
+    "../../../src/io/IStream.cc"
+    "../../../src/support/Backtrace.cc"
+    "../../../src/support/betterassert.cc"
+    "../../../src/support/Memoized.cc"
+    "../../../src/support/StringUtils.cc"
+    "Backtrace+ESP32.cc"
+    "ESPBase.cc"
+    "ESPEventLoop.cc"
+    "ESPAddrInfo.cc"
+    "ESPTCPSocket.cc"
+    "main.cc"
+
+    INCLUDE_DIRS
+    "../../../include/"
+    "../../../vendor/spdlog/include/"
+    "../../../src/"
+    "../../../src/support/"
+)
+
+target_compile_options(${COMPONENT_LIB} PRIVATE
+    "-UNDEBUG"
+    "-Wno-unknown-pragmas"      # ignore Xcode `#pragma mark` in source code
+)

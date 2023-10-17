@@ -22,10 +22,9 @@
 #include <functional>
 #include <optional>
 
-struct uv_timer_s;
-
 namespace crouton {
     template <typename T> class Future;
+    class Timer;
 
 
     /** Abstract event loop class, owned by a Scheduler.
@@ -54,6 +53,8 @@ namespace crouton {
 
     protected:
         virtual ~EventLoop();
+        inline void fireTimer(Timer* t);
+
         bool _running = false;
     };
 
@@ -85,10 +86,13 @@ namespace crouton {
         staticASYNC<void> sleep(double delaySecs);
 
     private:
+        friend class EventLoop;
         void _start(double delaySecs, double repeatSecs);
+        void _fire();
 
         std::function<void()>   _fn;
-        uv_timer_s*             _handle = nullptr;
+        EventLoop*              _eventLoop = nullptr;
+        void*                   _impl = nullptr;
         bool                    _deleteMe = false;
     };
 
@@ -107,5 +111,8 @@ namespace crouton {
         });
         RETURN std::move(result.value());
     }
+
+
+    void EventLoop::fireTimer(Timer* t)    {t->_fire();}
 
 }

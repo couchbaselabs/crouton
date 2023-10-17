@@ -146,7 +146,8 @@ namespace crouton {
         struct SuspensionImpl;
         friend class Suspension;
         
-        Scheduler() = default;
+        Scheduler();
+        ~Scheduler();
         static Scheduler& _create();
         EventLoop* newEventLoop();
         coro_handle eventLoopHandle();
@@ -163,7 +164,7 @@ namespace crouton {
         static inline thread_local Scheduler* sCurSched;    // Current thread's instance
 
         std::deque<coro_handle> _ready;                     // Coroutines that are ready to run
-        SuspensionMap           _suspended;                 // Suspended/sleeping coroutines
+        std::unique_ptr<SuspensionMap> _suspended;          // Suspended/sleeping coroutines
         EventLoop*              _eventLoop = nullptr;       // My event loop
         coro_handle             _eventLoopTask = nullptr;   // EventLoop's coroutine handle
         std::atomic<bool>       _woke = false;              // True if a suspended is waking

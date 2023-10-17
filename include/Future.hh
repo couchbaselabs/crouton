@@ -74,6 +74,10 @@ namespace crouton {
         /// @note In `Future<void>`, this constructor takes no parameters.
         Future(nonvoidT&& v)  requires (!std::is_void_v<T>) {_state->setResult(std::move(v));}
 
+        /// Creates an already-ready `Future`.
+        /// @note In `Future<void>`, this constructor takes no parameters.
+        Future(nonvoidT const& v)  requires (!std::is_void_v<T>) {_state->setResult(v);}
+
         /// Creates an already-ready `Future<void>`.
         Future()  requires (std::is_void_v<T>)          {_state->setResult();}
 

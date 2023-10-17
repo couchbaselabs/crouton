@@ -17,7 +17,7 @@
 //
 
 #include "io/IStream.hh"
-#include "UVInternal.hh"
+#include "util/Bytes.hh"
 #include <cstring> // for memcpy
 
 namespace crouton::io {
@@ -39,7 +39,7 @@ namespace crouton::io {
     Future<void> IStream::readExactly(MutableBytes buf) {
         return read(buf).then([buf](size_t bytesRead) {
             if (bytesRead < buf.size())
-                check(int(UV_EOF), "reading from the network");
+                Error(CroutonError::ParseError).raise();
         });
     }
 
