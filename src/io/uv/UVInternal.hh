@@ -23,7 +23,7 @@
 #include "util/Bytes.hh"
 #include "Logging.hh"
 #include "Scheduler.hh"
-#include "io/UVBase.hh"
+#include "io/uv/UVBase.hh"
 
 #include <algorithm>
 #include <concepts>
@@ -36,7 +36,7 @@
 
 
 
-namespace crouton::io {
+namespace crouton::io::uv {
 
     /// Checks a libuv function result and throws a UVError exception if it's negative.
     static inline void check(std::signed_integral auto status, const char* what) {

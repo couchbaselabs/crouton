@@ -23,6 +23,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
 
     TCPServer::TCPServer(uint16_t port)

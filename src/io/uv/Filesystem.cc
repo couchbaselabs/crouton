@@ -24,6 +24,7 @@
 
 namespace crouton::io::fs {
     using namespace std;
+    using namespace crouton::io::uv;
 
     struct fs_request : public uv_fs_t {
     public:

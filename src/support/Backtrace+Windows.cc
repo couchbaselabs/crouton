@@ -16,6 +16,8 @@
 // limitations under the License.
 //
 
+#ifdef _WIN32
+
 #include "Backtrace.hh"
 #include <csignal>
 #include <exception>
@@ -119,3 +121,4 @@ namespace fleece {
 
 }
 
+#endif // _WIN32

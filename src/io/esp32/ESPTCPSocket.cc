@@ -40,6 +40,7 @@ namespace crouton::esp {
 
     TCPSocket::~TCPSocket() {
         if (_tcp) {
+            LNet->info("Closing TCPSocket (destructor)");
             if (tcp_close(_tcp) != ERR_OK)
                 tcp_abort(_tcp);
             _tcp = nullptr;
@@ -51,6 +52,7 @@ namespace crouton::esp {
     ASYNC<void> TCPSocket::open() {
         AddrInfo addr = AWAIT AddrInfo::lookup(_binding->address, _binding->port);
 
+        LNet->info("Opening TCP connection to {}:{} ...", _binding->address, _binding->port);
         Blocker<err_t> block;
         auto onConnect = [](void *arg, struct tcp_pcb *tpcb, err_t err) -> err_t {
             // this is called on the lwip thread
@@ -58,32 +60,38 @@ namespace crouton::esp {
             return 0;
         };
         tcp_arg(_tcp, &block);
-        if (err_t err = tcp_connect(_tcp, &addr.primaryAddress(), _binding->port, onConnect))
-            RETURN LWIPError(err);
-
-        Error error;
-        err_t err = AWAIT block;
-        if (err)
-            RETURN LWIPError(err);
+        err_t err = tcp_connect(_tcp, &addr.primaryAddress(), _binding->port, onConnect);
+        if (!err)
+            err = AWAIT block;
+        if (err) {
+            Error error(LWIPError{err});
+            LNet->error("...TCP connection failed: {}", error);
+            RETURN error;
+        }
 
         // Initialize read/write callbacks:
         _isOpen = true;
         tcp_arg(_tcp, this);
         tcp_sent(_tcp, [](void *arg, struct tcp_pcb *tpcb, u16_t len) -> err_t {
-            return ((TCPSocket*)arg)->_writeCompleted(len);
+            return ((TCPSocket*)arg)->_writeCallback(len);
         });
         tcp_recv(_tcp, [](void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) -> err_t {
-            return ((TCPSocket*)arg)->_readCompleted(p, err);
+            return ((TCPSocket*)arg)->_readCallback(p, err);
         });
-        RETURN error;
+        RETURN noerror;
     }
 
 
     Future<void> TCPSocket::close() {
+        LNet->info("Closing TCPSocket");
         precondition(_isOpen);
         err_t err = tcp_close(_tcp);
         _tcp = nullptr;
         _isOpen = false;
+        if (_readBufs) {
+            pbuf_free(_readBufs);
+            _readBufs = nullptr;
+        }
         postcondition(!err);
         return Future<void>{};
     }
@@ -91,7 +99,7 @@ namespace crouton::esp {
 
     Future<void> TCPSocket::closeWrite() {
         // TODO: Implement
-        return Future<void>{};
+        return CroutonError::Unimplemented;
     }
 
 
@@ -111,7 +119,6 @@ namespace crouton::esp {
     Future<ConstBytes> TCPSocket::readNoCopy(size_t maxLen) {
         precondition(isOpen());
         if (!_inputBuf.empty()) {
-            // Advance _inputBuf->used and return the pointer:
             return _inputBuf.read(maxLen);
         } else {
             return fillInputBuf().then([this,maxLen](ConstBytes bytes) -> ConstBytes {
@@ -164,7 +171,7 @@ namespace crouton::esp {
     }
 
 
-    int TCPSocket::_readCompleted(::pbuf *pb, int err) {
+    int TCPSocket::_readCallback(::pbuf *pb, int err) {
         // Warning: This is called on the lwip thread.
         //FIXME: Needs a mutex accessing _readBufs?
         if (pb) {
@@ -187,6 +194,7 @@ namespace crouton::esp {
 
 
     Future<void> TCPSocket::write(ConstBytes data) {
+        precondition(isOpen());
         int flag = TCP_WRITE_FLAG_COPY | TCP_WRITE_FLAG_MORE;
         while (!data.empty()) {
             auto nextData = data;
@@ -213,7 +221,7 @@ namespace crouton::esp {
     }
 
 
-    int TCPSocket::_writeCompleted(uint16_t len) {
+    int TCPSocket::_writeCallback(uint16_t len) {
         // Warning: This is called on the lwip thread.
         ESP_LOGI("TCPSocket", "write completed, %u bytes", len);
         _writeBlocker.notify();

@@ -21,6 +21,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
 
     const int FileStream::Append = O_APPEND;
@@ -37,7 +38,7 @@ namespace crouton::io {
 
         void check(int r) {
             if (r < 0)
-                _futureP->setError(Error(UVError{r}, _what));
+                _futureP->setError(Error(uv::UVError{r}, _what));
         }
 
         static void callback(uv_fs_s *req) {

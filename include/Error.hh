@@ -55,7 +55,7 @@ namespace crouton {
     template <typename T>
     concept ErrorDomain = requires {
         std::is_enum_v<T>;
-        requires std::same_as<std::underlying_type_t<T>, errorcode_t>;
+        requires std::convertible_to<std::underlying_type_t<T>, errorcode_t>;
         {ErrorDomainInfo<T>::name} -> std::convertible_to<string_view>;
         {ErrorDomainInfo<T>::description} -> std::convertible_to<ErrorDescriptionFunc>;
     };

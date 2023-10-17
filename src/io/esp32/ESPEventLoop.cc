@@ -214,9 +214,4 @@ namespace crouton {
         Error(CroutonError::Unimplemented).raise();  // TODO
     }
 
-
-    void Randomize(void* buf, size_t len) {
-        Error(CroutonError::Unimplemented).raise();  // TODO
-    }
-
 }

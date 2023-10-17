@@ -25,6 +25,8 @@
 #include "Future.hh"
 #include "Generator.hh"
 #include "Logging.hh"
+#include "Misc.hh"
+#include "PubSub.hh"
 #include "Queue.hh"
 #include "Result.hh"
 #include "Scheduler.hh"

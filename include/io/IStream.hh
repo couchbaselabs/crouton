@@ -72,7 +72,7 @@ namespace crouton::io {
         /// Will always read the full number of bytes unless it hits EOF.
         ASYNC<string> readString(size_t maxLen);
 
-        /// Reads exactly `len` bytes; on eof, throws UVError(UV_EOF).
+        /// Reads exactly `len` bytes; on EOF, returns/throws an error.
         ASYNC<void> readExactly(MutableBytes);
 
         /// Reads up through the first occurrence of the string `end`,

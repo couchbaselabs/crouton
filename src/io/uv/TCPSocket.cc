@@ -22,6 +22,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
     using connect_request = AwaitableRequest<uv_connect_s>;
 

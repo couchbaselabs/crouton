@@ -115,26 +115,30 @@ add_library( LibCrouton STATIC
     src/Scheduler.cc
     src/Select.cc
 
-    src/io/AddrInfo.cc
-    src/io/FileStream.cc
-    src/io/Filesystem.cc
     src/io/HTTPConnection.cc
     src/io/HTTPHandler.cc
     src/io/HTTPParser.cc
     src/io/ISocket.cc
     src/io/IStream.cc
-    src/io/Pipe.cc
-    src/io/Process.cc
-    src/io/Stream.cc
-    src/io/TCPServer.cc
-    src/io/TCPSocket.cc
     src/io/URL.cc
-    src/io/UVBase.cc
     src/io/WebSocket.cc
 
     src/io/mbed/TLSSocket.cc
 
+    src/io/uv/AddrInfo.cc
+    src/io/uv/FileStream.cc
+    src/io/uv/Filesystem.cc
+    src/io/uv/Pipe.cc
+    src/io/uv/Process.cc
+    src/io/uv/Stream.cc
+    src/io/uv/TCPServer.cc
+    src/io/uv/TCPSocket.cc
+
+    src/io/uv/UVBase.cc
+
     src/support/Backtrace.cc
+    src/support/Backtrace+Unix.cc
+    src/support/Backtrace+Windows.cc
     src/support/betterassert.cc
     src/support/Memoized.cc
     src/support/StringUtils.cc

@@ -17,10 +17,16 @@
 //
 
 #include "ESPBase.hh"
+#include "Misc.hh"
+#include <esp_random.h>
 #include <lwip/err.h>
 
 namespace crouton {
     using namespace std;
+
+    void Randomize(void* buf, size_t len) {
+        esp_fill_random(buf, len);
+    }
 
     string ErrorDomainInfo<esp::ESPError>::description(errorcode_t code) {
         switch (esp::ESPError(code)) {

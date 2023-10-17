@@ -19,7 +19,7 @@
 #include "io/HTTPConnection.hh"
 #include "io/TCPSocket.hh"
 #include "io/mbed/TLSSocket.hh"
-#include "UVInternal.hh"
+#include "Internal.hh"
 #include "llhttp.h"
 #include <sstream>
 

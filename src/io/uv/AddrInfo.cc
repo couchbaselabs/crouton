@@ -21,6 +21,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
 
 #pragma mark - DNS LOOKUP:
@@ -95,7 +96,7 @@ namespace crouton::io {
         if (auto addr = _primaryAddress(af))
             return *addr;
         else
-            Error::raise(UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
+            Error::raise(uv::UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
     }
 
     sockaddr const& AddrInfo::primaryAddress() const {
@@ -105,7 +106,7 @@ namespace crouton::io {
         if (addr)
             return *addr;
         else
-            Error::raise(UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
+            Error::raise(uv::UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
     }
 
     string AddrInfo::primaryAddressString() const {

@@ -6,7 +6,6 @@
 
 #pragma once
 #include "Awaitable.hh"
-#include "Defer.hh"
 #include "Generator.hh"
 #include "Producer.hh"
 #include "Queue.hh"

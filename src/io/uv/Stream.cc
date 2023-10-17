@@ -21,6 +21,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
     using write_request = AwaitableRequest<uv_write_s>;
 
@@ -131,7 +132,7 @@ namespace crouton::io {
             if (err == UV_EOF || err == UV_EINVAL)
                 return BufferRef();
             else
-                return Error(UVError(err), "reading from the network");
+                return Error(uv::UVError(err), "reading from the network");
         } else {
             // Start an async read:
             read_start();
@@ -197,7 +198,7 @@ namespace crouton::io {
             else if (err == UV_EOF || err == UV_EINVAL)
                 _readFuture->setResult(nullptr);
             else
-                _readFuture->setError(Error(UVError{err}, "reading from the network"));
+                _readFuture->setError(Error(uv::UVError{err}, "reading from the network"));
             _readFuture = nullptr;
         } else {
             // If this is an unrequested read, queue it up for later:

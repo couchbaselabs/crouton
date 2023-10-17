@@ -16,6 +16,8 @@
 // limitations under the License.
 //
 
+#ifndef _WIN32
+
 #include "Backtrace.hh"
 #include "StringUtils.hh"
 #include "util/betterassert.hh"
@@ -176,3 +178,4 @@ namespace fleece {
 
 }
 
+#endif // _WIN32

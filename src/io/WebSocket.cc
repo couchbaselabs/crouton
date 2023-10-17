@@ -18,8 +18,9 @@
 
 #include "io/WebSocket.hh"
 #include "Logging.hh"
+#include "Misc.hh"
 #include "StringUtils.hh"
-#include "UVInternal.hh"
+#include "Internal.hh"
 #include "WebSocketProtocol.hh"
 #include <mbedtls/base64.h>
 #include <mbedtls/sha1.h>

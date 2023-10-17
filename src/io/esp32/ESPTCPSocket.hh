@@ -48,8 +48,8 @@ namespace crouton::esp {
     private:
         using BufferRef = std::unique_ptr<Buffer>;
 
-        int _writeCompleted(uint16_t len);
-        int _readCompleted(::pbuf *p, int err);
+        int _writeCallback(uint16_t len);
+        int _readCallback(::pbuf *p, int err);
         ASYNC<int64_t> _read(size_t len, void* dst);
         ASYNC<BufferRef> readBuf();
         ASYNC<ConstBytes> fillInputBuf();

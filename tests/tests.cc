@@ -19,7 +19,7 @@
 #include "tests.hh"
 #include "Producer.hh"
 #include "util/Relation.hh"
-#include "io/UVBase.hh"
+#include "io/uv/UVBase.hh"
 
 
 void RunCoroutine(Future<void> (*test)()) {
@@ -35,7 +35,7 @@ TEST_CASE("Randomize") {
     uint8_t buf[10];
     ::memset(buf, 0, sizeof(buf));
     for (int pass = 0; pass < 5; ++pass) {
-        io::Randomize(buf, sizeof(buf));
+        Randomize(buf, sizeof(buf));
         for (int i = 0; i < 10; ++i)
             printf("%02x ", buf[i]);
         printf("\n");

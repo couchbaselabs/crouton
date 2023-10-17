@@ -213,6 +213,12 @@ namespace crouton::io::mbed {
             mbedtls_esp_enable_debug_log(_config, kSpdToMbedLogLevel[LMbed->level()]);
     #endif
 #else
+            static std::once_flag once;
+            call_once(once, [] {
+                // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
+                LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
+            });
+
             // spdlog level values corresponding to ones used by mbedTLS
             static constexpr int kSpdToMbedLogLevel[] = {4, 3, 2, 1, 1, 1, 0};
 
@@ -238,11 +244,6 @@ namespace crouton::io::mbed {
             mbedtls_ssl_conf_dbg(&_config, mbedLogCallback, this);
             mbedtls_debug_set_threshold(kSpdToMbedLogLevel[LMbed->level()]);
 #endif
-            static std::once_flag once;
-            call_once(once, [] {
-                // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
-                LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
-            });
         }
 
         // Returns a shared singleton mbedTLS random-number generator context.
