@@ -1,6 +1,5 @@
 #include "Crouton.hh"
 #include "ESPAddrInfo.hh"
-#include "ESPTCPSocket.hh"
 #include <lwip/dns.h>
 
 #include "sdkconfig.h"
@@ -67,16 +66,16 @@ void coro_main() {
             postcondition(addr.primaryAddressString() == "93.184.216.34");
         }
 
-        spdlog::info("Testing TCPSocket");
+        spdlog::info("Testing TCPSocket with TLS");
         {
-            esp::TCPSocket socket;
-            AWAIT socket.connect("example.com", 80);
+            auto socket = io::ISocket::newSocket(true);
+            AWAIT socket->connect("example.com", 443);
 
             spdlog::info("-- Connected! Test Writing...");
-            AWAIT socket.write(string_view("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"));
+            AWAIT socket->stream().write(string_view("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"));
 
             spdlog::info("-- Test Reading...");
-            string result = AWAIT socket.readAll();
+            string result = AWAIT socket->stream().readAll();
 
             spdlog::info("Got HTTP response");
             printf("%s\n", result.c_str());

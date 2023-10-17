@@ -28,7 +28,7 @@ namespace crouton::io {
     class ISocket {
     public:
 
-        /// Creates a new ISocket instance of a default subclass.
+        /// Factory method: Creates a new ISocket instance of a default subclass.
         static std::unique_ptr<ISocket> newSocket(bool useTLS);
 
         /// Specifies the address and port to connect to, and whether to use TLS.

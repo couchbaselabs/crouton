@@ -10,7 +10,12 @@ idf_component_register(
     "../../../src/Logging.cc"
     "../../../src/Scheduler.cc"
     "../../../src/Select.cc"
+    "../../../src/io/HTTPHandler.cc"
+    "../../../src/io/HTTPParser.cc"
+    "../../../src/io/ISocket.cc"
     "../../../src/io/IStream.cc"
+    "../../../src/io/URL.cc"
+    "../../../src/io/mbed/TLSSocket.cc"
     "../../../src/support/Backtrace.cc"
     "../../../src/support/betterassert.cc"
     "../../../src/support/Memoized.cc"
@@ -24,9 +29,12 @@ idf_component_register(
 
     INCLUDE_DIRS
     "../../../include/"
+    "../../../vendor/llhttp/include/"
     "../../../vendor/spdlog/include/"
     "../../../src/"
+    "../../../src/io/mbed/"
     "../../../src/support/"
+    "."
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE

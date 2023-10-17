@@ -200,6 +200,7 @@ namespace crouton {
         template <typename U>
         void setResult(U&& value)  requires (!std::is_void_v<T>) {
             _result = std::forward<U>(value);
+            assert(!_result.empty());   // A Future's result cannot be `noerror`
             _notify();
         }
 

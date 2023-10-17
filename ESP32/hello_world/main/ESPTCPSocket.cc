@@ -44,6 +44,8 @@ namespace crouton::esp {
                 tcp_abort(_tcp);
             _tcp = nullptr;
         }
+        if (_readBufs)
+            pbuf_free(_readBufs);
     }
 
     ASYNC<void> TCPSocket::open() {
@@ -132,9 +134,10 @@ namespace crouton::esp {
     Future<ConstBytes> TCPSocket::fillInputBuf() {
         precondition(isOpen() && _inputBuf.empty());
         //FIXME: Needs a mutex accessing _readBufs?
+        _readBlocker.reset();
         if (_readBufs) {
             // Clean up the pbuf I just completed:
-            tcp_recved(_tcp, _readBufs->len);   // Acknowledge this pbuf has been read
+            tcp_recved(_tcp, _readBufs->len);   // Flow control: Acknowledge this pbuf has been read
             pbuf* next = _readBufs->next;
             if (next)
                 pbuf_ref(next);
@@ -147,8 +150,7 @@ namespace crouton::esp {
             LNet->debug("TCPSocket: waiting to receive data...");
             AWAIT _readBlocker;
             LNet->debug("...TCPSocket: received data");
-            if (!_readBufs)
-                RETURN _readErr;
+            assert(_readBufs || _readErr);
         }
 
         if (_readBufs) {
@@ -175,6 +177,7 @@ namespace crouton::esp {
             ESP_LOGI("TCPSocket", "read completed, LWIP error %d", err);
             _readErr = err ? Error(LWIPError(err)) : Error(CroutonError::EndOfData);
         }
+        assert(_readBufs || _readErr);
         _readBlocker.notify();
         return ERR_OK;
     }

@@ -134,6 +134,7 @@ namespace crouton {
 
     // Updates the chained FutureState based on my `then` callback.
     void FutureStateBase::resolveChain() {
+        assert(_state == Ready);
         if (auto x = getError()) {
             _chainedFuture->setError(x);
         } else {
