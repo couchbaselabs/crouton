@@ -1,5 +1,4 @@
 #include "Crouton.hh"
-#include "ESPAddrInfo.hh"
 #include <lwip/dns.h>
 
 #include "sdkconfig.h"
@@ -59,7 +58,7 @@ void coro_main() {
 
         spdlog::info("Testing AddrInfo -- looking up example.com");
         {
-            esp::AddrInfo addr = AWAIT esp::AddrInfo::lookup("example.com");
+            io::AddrInfo addr = AWAIT io::AddrInfo::lookup("example.com");
             printf("Addr = %s\n", addr.primaryAddressString().c_str());
             auto ip4addr = addr.primaryAddress();
             postcondition(ip4addr.type == IPADDR_TYPE_V4);

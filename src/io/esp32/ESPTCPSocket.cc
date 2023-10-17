@@ -1,7 +1,7 @@
 //
 // ESPTCPSocket.cc
 //
-// 
+// Copyright 2023-Present Couchbase, Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,17 +19,19 @@
 // <https://www.nongnu.org/lwip/2_0_x/raw_api.html>
 
 #include "ESPTCPSocket.hh"
-#include "ESPBase.hh"
-#include "ESPAddrInfo.hh"
 #include "CoCondition.hh"
+#include "ESPBase.hh"
 #include "Internal.hh"
 #include "Logging.hh"
+#include "io/AddrInfo.hh"
+
 #include <esp_log.h>
 #include <lwip/pbuf.h>
 #include <lwip/tcp.h>
 
-namespace crouton::esp {
+namespace crouton::io::esp {
     using namespace std;
+    using crouton::io::AddrInfo;
 
 
     TCPSocket::TCPSocket()

@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "Misc.hh"
 #include "Producer.hh"
 #include "util/Relation.hh"
 #include "io/uv/UVBase.hh"

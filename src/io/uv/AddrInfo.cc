@@ -40,21 +40,13 @@ namespace crouton::io {
     };
 
 
-    AddrInfo& AddrInfo::operator=(AddrInfo&& ai) noexcept {
-        uv_freeaddrinfo(_info);
-        _info = ai._info;
-        ai._info = nullptr;
-        return *this;
-    }
+    void AddrInfo::deleter::operator()(addrinfo* info)  {uv_freeaddrinfo(info);}
 
-
-    AddrInfo::~AddrInfo() {
-        uv_freeaddrinfo(_info);
-    }
+    AddrInfo::AddrInfo(addrinfo* info)                  :_info(info, deleter{}) { }
 
 
     Future<AddrInfo> AddrInfo::lookup(string hostName, uint16_t port) {
-        struct addrinfo hints = {
+        addrinfo hints = {
             .ai_family = AF_UNSPEC,
             .ai_socktype = SOCK_STREAM,
             .ai_protocol = IPPROTO_TCP,
@@ -77,7 +69,7 @@ namespace crouton::io {
     }
 
 
-    sockaddr const* AddrInfo::_primaryAddress(int ipv) const {
+    sockaddr const* AddrInfo::primaryAddress(int ipv) const {
         assert(_info);
         int af = ipv;
         switch (ipv) {
@@ -85,24 +77,17 @@ namespace crouton::io {
             case 6: af = AF_INET6; break;
         }
 
-        for (auto i = _info; i; i = i->ai_next) {
+        for (auto i = _info.get(); i; i = i->ai_next) {
             if (i->ai_socktype == SOCK_STREAM && i->ai_protocol == IPPROTO_TCP && i->ai_family == af)
                 return i->ai_addr;
         }
         return nullptr;
     }
 
-    sockaddr const& AddrInfo::primaryAddress(int af) const {
-        if (auto addr = _primaryAddress(af))
-            return *addr;
-        else
-            Error::raise(uv::UVError(UV__EAI_ADDRFAMILY), "getting address of hostname");
-    }
-
     sockaddr const& AddrInfo::primaryAddress() const {
-        auto addr = _primaryAddress(4);
+        auto addr = primaryAddress(4);
         if (!addr)
-            addr = _primaryAddress(6);
+            addr = primaryAddress(6);
         if (addr)
             return *addr;
         else

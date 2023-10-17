@@ -17,7 +17,7 @@
 //
 
 #include "io/mbed/TLSSocket.hh"
-#include "io/TCPSocket.hh"
+#include "io/ISocket.hh"
 #include "Internal.hh"
 #include "TLSContext.hh"
 

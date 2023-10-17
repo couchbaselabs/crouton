@@ -40,7 +40,6 @@ idf_component_register(
         "."
 
     PRIV_REQUIRES
-        esp_hw_support
         lwip
         mbedtls
 )

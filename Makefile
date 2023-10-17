@@ -30,3 +30,9 @@ xcode_deps: debug release
 	mkdir -p build_cmake/release/xcodedeps
 	cp build_cmake/release/vendor/libuv/libuv*.a build_cmake/release/xcodedeps/
 	cp build_cmake/release/vendor/mbedtls/library/libmbed*.a build_cmake/release/xcodedeps/
+
+esp:
+	cd tests/ESP32 && idf.py build
+
+esptest:
+	cd tests/ESP32 && idf.py build flash monitor

@@ -1,7 +1,7 @@
 //
 // ESPAddrInfo.cc
 //
-// 
+// Copyright 2023-Present Couchbase, Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 // limitations under the License.
 //
 
-#include "ESPAddrInfo.hh"
+#include "io/AddrInfo.hh"
 #include "ESPBase.hh"
 #include "CoCondition.hh"
 #include "Logging.hh"
 #include <lwip/dns.h>
 
-namespace crouton::esp {
+namespace crouton::io {
     using namespace std;
-    
+    using namespace crouton::io::esp;
+
 
     Future<AddrInfo> AddrInfo::lookup(string hostname, uint16_t port) {
         Blocker<ip_addr_t> blocker;
@@ -41,13 +42,13 @@ namespace crouton::esp {
         ip_addr addr;
         switch (err_t err = dns_gethostbyname(hostname.c_str(), &addr, callback, &blocker)) {
             case ERR_OK:
-                RETURN AddrInfo(addr);
+                RETURN AddrInfo(&addr);
             case ERR_INPROGRESS:
                 LNet->debug("Awaiting DNS lookup of {}", hostname);
                 addr = AWAIT blocker;
                 LNet->debug("DNS lookup {}", (addr.type != 0xFF ? "succeeded" : "failed"));
                 if (addr.type != 0xFF)
-                    RETURN AddrInfo(addr);
+                    RETURN AddrInfo(&addr);
                 else
                     RETURN ESPError::HostNotFound;
             default:
@@ -56,15 +57,25 @@ namespace crouton::esp {
     }
 
 
-    AddrInfo::AddrInfo(ip_addr const& addr)
-    :_addr(make_unique<ip_addr>(addr))
+    AddrInfo::AddrInfo(ip_addr* addr)
+    :_info(make_unique<ip_addr>(*addr))
     { }
 
+    ip_addr const& AddrInfo::primaryAddress() const {
+        return *_info;
+    }
+
+    ip_addr const* AddrInfo::primaryAddress(int af) const {
+        if (af == 4)
+            return _info.get();
+        else
+            Error(ESPError::HostNotFound).raise();
+    }
 
     /// The primary address converted to a numeric string.
     string AddrInfo::primaryAddressString() const {
         char buf[32];
-        return string(ipaddr_ntoa_r(_addr.get(), buf, sizeof(buf)));
+        return string(ipaddr_ntoa_r(_info.get(), buf, sizeof(buf)));
     }
 
 

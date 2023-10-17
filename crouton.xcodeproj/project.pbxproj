@@ -46,7 +46,6 @@
 		277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652B2AD8B5D8006F053D /* betterassert.cc */; };
 		277B652E2AD9FCDC006F053D /* Backtrace+Unix.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */; };
 		277B6C172ADDB6B7006F053D /* ESPTCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */; };
-		277B6C1B2ADDB904006F053D /* ESPAddrInfo.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C192ADDB904006F053D /* ESPAddrInfo.hh */; };
 		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
 		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
@@ -347,7 +346,6 @@
 		277B6C142ADA0873006F053D /* ESPEventLoop.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPEventLoop.cc; sourceTree = "<group>"; };
 		277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPTCPSocket.hh; sourceTree = "<group>"; };
 		277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPTCPSocket.cc; sourceTree = "<group>"; };
-		277B6C192ADDB904006F053D /* ESPAddrInfo.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPAddrInfo.hh; sourceTree = "<group>"; };
 		277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPAddrInfo.cc; sourceTree = "<group>"; };
 		277B6C1D2ADDBE82006F053D /* ESPBase.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPBase.hh; sourceTree = "<group>"; };
 		277B6C1E2ADDDF13006F053D /* ESPBase.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPBase.cc; sourceTree = "<group>"; };
@@ -619,7 +617,7 @@
 		27F49CD22A9E48A100BFB24C /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Backtrace.hh; sourceTree = "<group>"; };
 		27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Backtrace.cc; sourceTree = "<group>"; };
-		27F49CD82A9E593700BFB24C /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; usesTabs = 1; };
+		27F49CD82A9E593700BFB24C /* Makefile */ = {isa = PBXFileReference; indentWidth = 8; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; usesTabs = 1; };
 		27F603022A9EB826006FA1D0 /* IStream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IStream.hh; sourceTree = "<group>"; };
 		27F603032A9EB826006FA1D0 /* IStream.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IStream.cc; sourceTree = "<group>"; };
 		27F603062A9FA366006FA1D0 /* NWConnection.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = NWConnection.hh; sourceTree = "<group>"; };
@@ -1084,7 +1082,6 @@
 				277B6C1E2ADDDF13006F053D /* ESPBase.cc */,
 				277B65302AD9FECA006F053D /* Backtrace+ESP32.cc */,
 				277B6C142ADA0873006F053D /* ESPEventLoop.cc */,
-				277B6C192ADDB904006F053D /* ESPAddrInfo.hh */,
 				277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */,
 				277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */,
 				277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */,
@@ -1530,7 +1527,6 @@
 				279D5D472A902588005C3066 /* TCPServer.hh in Headers */,
 				272730402A8D6F35000CCA22 /* TCPSocket.hh in Headers */,
 				278F7E532AA7D1BC005B12F2 /* Process.hh in Headers */,
-				277B6C1B2ADDB904006F053D /* ESPAddrInfo.hh in Headers */,
 				278F7E3A2AA1489B005B12F2 /* HTTPParser.hh in Headers */,
 				27ED1C722AABF47200ADC971 /* CoroLifecycle.hh in Headers */,
 				279D5D422A8FE08D005C3066 /* AddrInfo.hh in Headers */,

@@ -26,7 +26,7 @@ struct uv_tcp_s;
 namespace crouton::io {
 
     /** A TCP socket. (For TLS connections, use TLSSocket or NWConnection.) */
-    class TCPSocket : public Stream, public ISocket {
+    class TCPSocket : public ISocket, public Stream {
     public:
         TCPSocket();
 

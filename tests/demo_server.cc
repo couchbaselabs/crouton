@@ -17,6 +17,7 @@
 //
 
 #include "Crouton.hh"
+#include "io/TCPServer.hh"
 #include <functional>
 #include <iomanip>
 #include <iostream>
