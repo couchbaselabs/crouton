@@ -19,6 +19,7 @@
 #include "Task.hh"
 #include <ranges>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/ostr.h>    // Makes custom types loggable via `operator <<` overloads
 
 namespace crouton {
     string ErrorDomainInfo<io::blip::BLIPError>::description(errorcode_t code) {
@@ -49,7 +50,7 @@ namespace crouton::io::blip {
     static constexpr size_t kOutboxCapacity = 10;
 
     /// Logger
-    shared_ptr<spdlog::logger> LBLIP = MakeLogger("BLIP");
+    LoggerRef LBLIP = MakeLogger("BLIP");
 
 
     uint64_t readUVarint(ConstBytes& bytes) {
@@ -292,7 +293,7 @@ namespace crouton::io::blip {
         *flagsPos = frameFlags;
         ConstBytes frame(frameBuf, out.data());
 
-        if (LBLIP->should_log(spdlog::level::debug)) {
+        if (LBLIP->should_log(LogLevel::debug)) {
             LBLIP->debug("    Sending frame: {} {} {}{}{}{}, bytes {}--{}",
                          kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
                          (frameFlags & kMoreComing ? 'M' : '-'),

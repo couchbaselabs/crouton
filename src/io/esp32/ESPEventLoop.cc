@@ -24,6 +24,7 @@
 #include <freertos/queue.h>
 #include <freertos/timers.h>
 
+#include <cmath>
 #include <functional>
 
 namespace crouton {

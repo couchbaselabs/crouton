@@ -21,6 +21,7 @@
 #include "Internal.hh"
 #include "Logging.hh"
 #include <iostream>
+#include <mutex>
 #include <sstream>
 
 namespace crouton {
@@ -73,7 +74,7 @@ namespace crouton {
 
 
     void Error::raise(string_view logMessage, std::source_location const& loc) const {
-        spdlog::error("*** Throwing crouton::Exception({}, {}): {} ({}) -- from {} [{}:{}]",
+        Log->error("*** Throwing crouton::Exception({}, {}): {} ({}) -- from {} [{}:{}]",
                       domain(), _code, description(), logMessage,
                       loc.function_name(), loc.file_name(), loc.line());
         fleece::Backtrace(1).writeTo(std::cerr);
@@ -104,7 +105,7 @@ namespace crouton {
 #else
         type = typeRef;
 #endif
-        spdlog::debug("Error: Registering domain {}", name);
+        Log->debug("Error: Registering domain {}", name);
         for (auto &d : sDomains) {
             if (d.type == type) {
                 return uint8_t(&d - &sDomains[0]);
@@ -191,7 +192,7 @@ namespace crouton {
             if (0 == strcmp(entry.name, name.c_str()))
                 return CppError{entry.code};
         }
-        spdlog::warn("No CppErr enum value matches exception class {}", name);
+        Log->warn("No CppErr enum value matches exception class {}", name);
 #endif
         return exception;
     }

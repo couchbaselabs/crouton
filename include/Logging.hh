@@ -19,10 +19,87 @@
 #pragma once
 #include "util/Base.hh"
 
+#ifdef ESP_PLATFORM
+#define CROUTON_USE_SPDLOG 0
+#endif
+
+#ifndef CROUTON_USE_SPDLOG
+#define CROUTON_USE_SPDLOG 1
+#endif
+
+#if CROUTON_USE_SPDLOG
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>    // Makes custom types loggable via `operator <<` overloads
+#endif
 
 namespace crouton {
+
+#if CROUTON_USE_SPDLOG
+    using LoggerRef = spdlog::logger*;
+    namespace LogLevel = spdlog::level;
+    using LogLevelType = spdlog::level::level_enum;
+#else
+    namespace LogLevel {
+        enum level_enum {
+            trace, debug, info, warn, err, critical, off
+        };
+    };
+    using LogLevelType = LogLevel::level_enum;
+
+    class Logger {
+    public:
+        LogLevelType level() const {
+            return LogLevel::off;
+        }
+        void set_level(LogLevelType) const {
+        }
+        bool should_log(LogLevelType msg_level) const {
+            return false;
+        }
+        template<typename... Args>
+        void log(LogLevelType lvl, string_view fmt, Args &&...args) {
+            
+        }
+        void log(LogLevelType lvl, string_view msg)
+        {
+        }
+        template<typename... Args>
+        void trace(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::trace, fmt, std::forward<Args>(args)...);
+        }
+
+        template<typename... Args>
+        void debug(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::debug, fmt, std::forward<Args>(args)...);
+        }
+
+        template<typename... Args>
+        void info(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::info, fmt, std::forward<Args>(args)...);
+        }
+
+        template<typename... Args>
+        void warn(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::warn, fmt, std::forward<Args>(args)...);
+        }
+
+        template<typename... Args>
+        void error(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::err, fmt, std::forward<Args>(args)...);
+        }
+        template<typename... Args>
+        void critical(string_view fmt, Args &&...args)
+        {
+            log(LogLevel::critical, fmt, std::forward<Args>(args)...);
+        }
+    };
+    using LoggerRef = Logger*;
+#endif
 
     /*
      You can configure the log level(s) by setting the environment variable `SPDLOG_LEVEL`.
@@ -34,6 +111,8 @@ namespace crouton {
             `export SPDLOG_LEVEL="*=off,logger1=debug"`
         * Turn off all logging except for logger1 and logger2:
             `export SPDLOG_LEVEL="off,logger1=debug,logger2=info"`
+
+        For much more information about spdlog, see docs at https://github.com/gabime/spdlog/
      */
 
 
@@ -44,7 +123,8 @@ namespace crouton {
 
 
     /// Well-known loggers:
-    extern std::shared_ptr<spdlog::logger>
+    extern LoggerRef
+        Log,    // Default logger
         LCoro,  // Coroutine lifecycle
         LSched, // Scheduler
         LLoop,  // Event-loop
@@ -52,9 +132,10 @@ namespace crouton {
 
 
     /// Creates a new spdlog logger.
-    std::shared_ptr<spdlog::logger> MakeLogger(string_view name,
-                                               spdlog::level::level_enum = spdlog::level::info);
+    LoggerRef MakeLogger(string_view name, LogLevelType = LogLevel::info);
 
+#if CROUTON_USE_SPDLOG
     /// Creates a log destination.
     void AddSink(spdlog::sink_ptr);
+#endif
 }

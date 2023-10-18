@@ -1,5 +1,4 @@
 #include "Crouton.hh"
-#include <lwip/dns.h>
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -7,9 +6,12 @@
 #include <esp_chip_info.h>
 #include <esp_event.h>
 #include <esp_flash.h>
-#include <esp_pthread.h>
-#include <nvs_flash.h>
 #include <esp_netif.h>
+#include <esp_pthread.h>
+#include <lwip/dns.h>
+#include <nvs_flash.h>
+
+#include <thread>
 
 using namespace std;
 using namespace crouton;
@@ -37,14 +39,14 @@ static Generator<int64_t> fibonacci(int64_t limit, bool slow = false) {
 void coro_main() {
     printf("---------- CORO MAIN ----------\n\n");
     InitLogging();
-//    LCoro->set_level(spdlog::level::trace);
-//    LLoop->set_level(spdlog::level::trace);
-//    LSched->set_level(spdlog::level::trace);
-    LNet->set_level(spdlog::level::trace);
+//    LCoro->set_level(LogLevel::trace);
+//    LLoop->set_level(LogLevel::trace);
+//    LSched->set_level(LogLevel::trace);
+    LNet->set_level(LogLevel::trace);
 
     RunCoroutine([]() -> Future<void> {
 
-        spdlog::info("Testing Generator");
+        Log->info("Testing Generator");
         {
             Generator<int64_t> fib = fibonacci(100, true);
             vector<int64_t> results;
@@ -56,7 +58,7 @@ void coro_main() {
             printf("\n");
         }
 
-        spdlog::info("Testing AddrInfo -- looking up example.com");
+        Log->info("Testing AddrInfo -- looking up example.com");
         {
             io::AddrInfo addr = AWAIT io::AddrInfo::lookup("example.com");
             printf("Addr = %s\n", addr.primaryAddressString().c_str());
@@ -65,25 +67,25 @@ void coro_main() {
             postcondition(addr.primaryAddressString() == "93.184.216.34");
         }
 
-        spdlog::info("Testing TCPSocket with TLS");
+        Log->info("Testing TCPSocket with TLS");
         {
             auto socket = io::ISocket::newSocket(true);
             AWAIT socket->connect("example.com", 443);
 
-            spdlog::info("-- Connected! Test Writing...");
+            Log->info("-- Connected! Test Writing...");
             AWAIT socket->stream().write(string_view("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"));
 
-            spdlog::info("-- Test Reading...");
+            Log->info("-- Test Reading...");
             string result = AWAIT socket->stream().readAll();
 
-            spdlog::info("Got HTTP response");
+            Log->info("Got HTTP response");
             printf("%s\n", result.c_str());
             postcondition(result.starts_with("HTTP/1.1 "));
             postcondition(result.size() > 1000);
             postcondition(result.size() < 2000);
         }
         
-        spdlog::info("End of tests");
+        Log->info("End of tests");
         RETURN noerror;
     });
     postcondition(Scheduler::current().assertEmpty());
@@ -137,9 +139,9 @@ void app_main(void)
     t.join();
 
     printf("Minimum heap space was %ld bytes\n", esp_get_minimum_free_heap_size());
-    printf("Restarting in 10 seconds...");
+    printf("Restarting in 100 seconds...");
     fflush(stdout);
-    for (int i = 9; i >= 0; i--) {
+    for (int i = 99; i >= 0; i--) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         printf(" %d ...", i);
         fflush(stdout);

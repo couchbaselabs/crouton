@@ -154,7 +154,7 @@ namespace crouton::io::mbed {
     // - SPDLOG_LEVEL_CRITICAL 5
     // - SPDLOG_LEVEL_OFF 6
 
-    static shared_ptr<spdlog::logger> LMbed;
+    LoggerRef LMbed;
 
 
     // Simple RAII helper for mbedTLS cert struct
@@ -216,7 +216,7 @@ namespace crouton::io::mbed {
             static std::once_flag once;
             call_once(once, [] {
                 // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
-                LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
+                LMbed = MakeLogger("mbedTLS", LogLevel::warn);
             });
 
             // spdlog level values corresponding to ones used by mbedTLS
@@ -224,8 +224,8 @@ namespace crouton::io::mbed {
 
             auto mbedLogCallback = [](void *ctx, int level, const char *file, int line, 
                                       const char *msg) {
-                using enum spdlog::level::level_enum;
-                static constexpr spdlog::level::level_enum kMbedToSpdLevel[] = {
+                using enum LogLevelType;
+                static constexpr LogLevelType kMbedToSpdLevel[] = {
                     off, err, info, debug, trace};
 
                 auto spdLevel = kMbedToSpdLevel[level];
@@ -238,7 +238,11 @@ namespace crouton::io::mbed {
                     if (auto lastSlash = strrchr(file, '/'))
                         file = lastSlash + 1;
 
+#if CROUTON_USE_SPDLOG
                     LMbed->log(spdlog::source_loc(file, line, "?"), spdLevel, msgStr);
+#else
+                    LMbed->log(spdLevel, msgStr);
+#endif
                 }
             };
             mbedtls_ssl_conf_dbg(&_config, mbedLogCallback, this);

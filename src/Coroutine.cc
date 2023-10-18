@@ -22,6 +22,7 @@
 #include "Scheduler.hh"
 
 #include <charconv>
+#include <iostream>
 
 namespace crouton {
     using namespace std;

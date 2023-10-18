@@ -59,7 +59,7 @@ namespace crouton::io::blip {
     };
 
 
-    extern std::shared_ptr<spdlog::logger> LBLIP;
+    extern LoggerRef LBLIP;
 
 
 #pragma mark - VARINTS:

@@ -24,6 +24,7 @@ idf_component_register(
         "${src}/support/betterassert.cc"
         "${src}/support/Memoized.cc"
         "${src}/support/StringUtils.cc"
+        
         "Backtrace+ESP32.cc"
         "ESPBase.cc"
         "ESPEventLoop.cc"
@@ -32,14 +33,15 @@ idf_component_register(
 
     INCLUDE_DIRS
         "${root}/include/"
+
+    PRIV_INCLUDE_DIRS
+        "${src}/"
+        "${src}/support/"
         "${root}/vendor/llhttp/include/"
         "${root}/vendor/spdlog/include/"
-        "${src}/"
-        "${src}/io/mbed/"
-        "${src}/support/"
         "."
 
-    PRIV_REQUIRES
+    REQUIRES
         lwip
         mbedtls
 )

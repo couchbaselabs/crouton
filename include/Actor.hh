@@ -51,21 +51,21 @@ namespace crouton {
         bool startNew(coro_handle h) const {
             if (_scheduler.isCurrent()) {
                 if (_activeCoro == nullptr) {
-                    spdlog::info("Actor {} immediately starting {}", (void*)this, logCoro{h});
+                    Log->info("Actor {} immediately starting {}", (void*)this, logCoro{h});
                     _activeCoro = h;
                     return true;
                 } else {
-                    spdlog::info("Actor {} queued {}", (void*)this, logCoro{h});
+                    Log->info("Actor {} queued {}", (void*)this, logCoro{h});
                     _queue.push_back(h);
                 }
             } else {
                 _scheduler.onEventLoop([this,h]{
                     if (_activeCoro == nullptr) {
                         _activeCoro = h;
-                        spdlog::info("Actor {} scheduled ", (void*)this, logCoro{h});
+                        Log->info("Actor {} scheduled ", (void*)this, logCoro{h});
                         _scheduler.schedule(h);
                     } else {
-                        spdlog::info("Actor {} queued ", (void*)this, logCoro{h});
+                        Log->info("Actor {} queued ", (void*)this, logCoro{h});
                         _queue.push_back(h);
                     }
                 });
@@ -82,7 +82,7 @@ namespace crouton {
             } else {
                 _activeCoro = _queue.front();
                 _queue.pop_front();
-                spdlog::info("Actor {} scheduled ", (void*)this, logCoro{h});
+                Log->info("Actor {} scheduled ", (void*)this, logCoro{h});
                 _scheduler.schedule(_activeCoro);
             }
         }
@@ -101,7 +101,7 @@ namespace crouton {
         explicit ActorMethodImpl(crouton::Actor const& actor, ...)
         :_actor(const_cast<Actor&>(actor).shared_from_this())
         {
-            spdlog::info("Created ActorMethodImpl {} on const Actor {}", (void*)this, (void*)&actor);
+            Log->info("Created ActorMethodImpl {} on const Actor {}", (void*)this, (void*)&actor);
         }
 
         explicit ActorMethodImpl(crouton::Actor const* actor, ...) :ActorMethodImpl(*actor) { }

@@ -28,17 +28,19 @@
 namespace crouton {
     using namespace std;
 
+    LoggerRef Log, LCoro, LSched, LLoop, LNet;
+
+#if CROUTON_USE_SPDLOG
+
     /// Defines the format of textual log output.
     static constexpr const char* kLogPattern = "▣ %H:%M:%S.%f %^%L | <%n>%$ %v";
     
     static vector<spdlog::sink_ptr> sSinks;
     static spdlog::sink_ptr         sStderrSink;
 
-    std::shared_ptr<spdlog::logger> LCoro, LSched, LLoop, LNet;
-    
-    
-    static shared_ptr<spdlog::logger> makeLogger(string_view name,
-                                                 spdlog::level::level_enum level = spdlog::level::info)
+
+    static LoggerRef makeLogger(string_view name, 
+                                spdlog::level::level_enum level = spdlog::level::info)
     {
         string nameStr(name);
         auto logger = spdlog::get(nameStr);
@@ -49,7 +51,7 @@ namespace crouton {
             if (logger->level() == spdlog::level::info)
                 logger->set_level(level);
         }
-        return logger;
+        return logger.get();
     }
     
     
@@ -62,10 +64,23 @@ namespace crouton {
         spdlog::set_level(std::min(sink->level(), spdlog::get_level()));
     }
 
+    
+    void AddSink(spdlog::sink_ptr sink) {
+        InitLogging();
+        addSink(sink);
+    }
+
+#else
+    static LoggerRef makeLogger(string_view name, LogLevelType level = LogLevel::info) {
+        return new Logger();
+    }
+#endif
+
 
     void InitLogging() {
         static std::once_flag sOnce;
         std::call_once(sOnce, []{
+#if CROUTON_USE_SPDLOG
             // Configure log output:
             spdlog::set_pattern(kLogPattern);
             spdlog::flush_every(5s);
@@ -74,34 +89,30 @@ namespace crouton {
             // Get the default stderr sink:
             sStderrSink = spdlog::default_logger()->sinks().front();
             sSinks.push_back(sStderrSink);
-
+            Log       = spdlog::default_logger().get();
+#else
+            Log       = makeLogger("");
+#endif
             // Make the standard loggers:
             LCoro     = makeLogger("Coro");
             LSched    = makeLogger("Sched");
             LLoop     = makeLogger("Loop");
             LNet      = makeLogger("Net");
 
+#if CROUTON_USE_SPDLOG
             // Set log levels from `SPDLOG_LEVEL` env var:
             spdlog::cfg::load_env_levels();
-
-            spdlog::info("---------- Welcome to Crouton ----------");
-
-#ifndef ESP_PLATFORM
             assert_failed_hook = [](const char* message) {
                 spdlog::critical("{}", message);
             };
 #endif
+            Log->info("---------- Welcome to Crouton ----------");
         });
     }
 
-    shared_ptr<spdlog::logger> MakeLogger(string_view name, spdlog::level::level_enum level) {
+
+    LoggerRef MakeLogger(string_view name, LogLevelType level) {
         InitLogging();
         return makeLogger(name, level);
     }
-
-    void AddSink(spdlog::sink_ptr sink) {
-        InitLogging();
-        addSink(sink);
-    }
-
 }

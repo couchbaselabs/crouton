@@ -74,10 +74,10 @@ namespace crouton::io {
             Scheduler::current().runUntil([&]{ return fut.hasResult(); });
             return fut.result();
         } catch (std::exception const& x) {
-            spdlog::error("*** Unexpected exception: {}" , x.what());
+            Log->error("*** Unexpected exception: {}" , x.what());
             return 1;
         } catch (...) {
-            spdlog::error("*** Unexpected exception");
+            Log->error("*** Unexpected exception");
             return 1;
         }
     }
@@ -89,10 +89,10 @@ namespace crouton::io {
             Scheduler::current().run();
             return 0;
         } catch (std::exception const& x) {
-            spdlog::error("*** Unexpected exception: {}", x.what());
+            Log->error("*** Unexpected exception: {}", x.what());
             return 1;
         } catch (...) {
-            spdlog::error("*** Unexpected exception");
+            Log->error("*** Unexpected exception");
             return 1;
         }
     }
