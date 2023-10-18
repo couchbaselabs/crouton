@@ -17,6 +17,7 @@
 //
 
 #include "tests.hh"
+#include "MiniFormat.hh"
 #include "Misc.hh"
 #include "Producer.hh"
 #include "util/Relation.hh"
@@ -232,6 +233,37 @@ TEST_CASE("Producer Consumer") {
         RETURN noerror;
     });
     REQUIRE(Scheduler::current().assertEmpty());
+}
+
+
+TEST_CASE("MiniFormat") {
+    CHECK(minifmt::format("No placeholders")
+          == "No placeholders");
+
+    CHECK(minifmt::format("char '{}', i16 {}, u16 {}, i32 {}, u32 {}, i {}, u {}",
+                          'X', int16_t(-1234), uint16_t(65432), int32_t(123456789), uint32_t(987654321),
+                          int(-1234567), unsigned(7654321))
+          == "char 'X', i16 -1234, u16 65432, i32 123456789, u32 987654321, i -1234567, u 7654321");
+    CHECK(minifmt::format("long {}, ulong {}, i64 {}, u64 {}",
+                          12345678l, 87654321ul, int64_t(-12345678901234), uint64_t(12345678901234))
+          == "long 12345678, ulong 87654321, i64 -12345678901234, u64 12345678901234");
+    double d = 3.1415926;
+    CHECK(minifmt::format("float {}, double {}", 12345.125f, d)
+          == "float 12345.1, double 3.14159");
+
+    const char* cstr = "C string";
+    string str = "C++ string";
+    CHECK(minifmt::format("cstr '{}', C++ str '{}', string_view '{}'", cstr, str, string_view(str))
+          == "cstr 'C string', C++ str 'C++ string', string_view 'C++ string'");
+
+    coro_handle h = std::noop_coroutine();
+    CHECK(minifmt::format("{}", minifmt::write(logCoro{h}))
+          == "¢exit");
+
+    CHECK(minifmt::format("One {} two {} three", 1, 2, 3)
+          == "One 1 two 2 three{{{TOO FEW PLACEHOLDERS}}}");
+    CHECK(minifmt::format("One {} two {} three {} four {}", 1, 2)
+          == "One 1 two 2 three {{{TOO FEW ARGS}}}");
 }
 
 
