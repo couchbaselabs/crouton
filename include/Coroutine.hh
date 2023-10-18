@@ -145,7 +145,7 @@ namespace crouton {
 
         handle_type typedHandle()          {
             auto h = handle_type::from_promise((SELF&)*this);
-            if (!_handle) registerHandle(h, EAGER, typeid(SELF));
+            if (!_handle) registerHandle(h, EAGER, CRTN_TYPEID(SELF));
             return h;
         }
 

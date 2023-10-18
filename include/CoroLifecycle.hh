@@ -20,6 +20,10 @@
 #include "util/Base.hh"
 #include <typeinfo>
 
+#if defined(ESP_PLATFORM) && !defined(CROUTON_LIFECYCLES)
+#define CROUTON_LIFECYCLES 0
+#endif
+
 // Enable lifecycle tracking in debug builds, by default. Override by defining CROUTON_LIFECYCLES=0
 #if !defined(CROUTON_LIFECYCLES) && !defined(NDEBUG)
 #define CROUTON_LIFECYCLES 1
@@ -75,7 +79,7 @@ namespace crouton {
 
         // These two do something:
         inline void resume(coro_handle h)   {h.resume();}
-        void destroy(coro_handle h)         {h.destroy();}
+        inline void destroy(coro_handle h)  {h.destroy();}
 
         inline void ignoreInCount(coro_handle) { }
         inline size_t count() {return 0;}

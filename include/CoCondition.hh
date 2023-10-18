@@ -80,7 +80,7 @@ namespace crouton {
                 assert(curState == Ready);
                 _suspension.wakeUp();
             }
-            return lifecycle::suspendingTo(h, typeid(*this), this);
+            return lifecycle::suspendingTo(h, CRTN_TYPEID(*this), this);
         }
 
         void await_resume() noexcept {

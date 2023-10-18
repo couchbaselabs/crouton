@@ -58,6 +58,18 @@
 #define pure
 #endif
 
+#if __cpp_rtti
+#   define CROUTON_RTTI 1
+#else
+#   define CROUTON_RTTI 0
+#endif
+
+#if CROUTON_RTTI
+#  define CRTN_TYPEID(T)  typeid(T)
+#else
+#  define CRTN_TYPEID(T)  (*(std::type_info*)-1L)   // just a placeholder
+#endif
+
 
 // Synonyms for coroutine primitives. Optional, but they're more visible in the code.
 #define AWAIT  co_await

@@ -52,7 +52,7 @@ namespace crouton {
             coro_handle await_suspend(coro_handle cur) {
                 assert(!self._suspension);
                 self._suspension = Scheduler::current().suspend(cur);
-                return lifecycle::suspendingTo(cur, typeid(self), &self, nullptr);
+                return lifecycle::suspendingTo(cur, CRTN_TYPEID(self), &self, nullptr);
             }
 
             [[nodiscard]] bool await_resume() {
@@ -98,7 +98,7 @@ namespace crouton {
 
         coro_handle await_suspend(coro_handle cur) override {
             _suspension = Scheduler::current().suspend(cur);
-            return lifecycle::suspendingTo(cur, typeid(*this), this, nullptr);
+            return lifecycle::suspendingTo(cur, CRTN_TYPEID(*this), this, nullptr);
         }
 
         [[nodiscard]] Result<T> await_resume() override {

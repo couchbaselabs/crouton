@@ -42,12 +42,17 @@ namespace crouton {
 
 
     string const& GetTypeName(type_info const& info) {
+#if CROUTON_RTTI
         static Memoized sTypeNames([](const void* addr) -> string {
             string name = fleece::Unmangle(*(type_info*)addr);      // Get unmangled name
             cleanup(name);
             return name;
         });
         return sTypeNames.lookup(&info);
+#else
+        static const string name = "???";
+        return name;
+#endif
     }
 
 

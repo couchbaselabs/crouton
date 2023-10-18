@@ -45,6 +45,5 @@ idf_component_register(
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE
-    "-UNDEBUG"              #TEMP: Enable assert()
     "-Wno-unknown-pragmas"      # ignore Xcode `#pragma mark` in source code
 )

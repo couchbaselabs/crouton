@@ -97,11 +97,15 @@ namespace fleece {
             try {
                 rethrow_exception(xp);
             } catch(const exception& x) {
+#if __cpp_rtti
                 const char *name = typeid(x).name();
                 char *unmangled = internal::unmangle(name);
                 out << unmangled << ": " <<  x.what() << "\n";
                 if (unmangled != name)
                     free(unmangled);
+#else
+                out << x.what() << "\n";
+#endif
             } catch (...) {
                 out << "unknown exception type\n";
             }

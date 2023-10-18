@@ -69,6 +69,15 @@ namespace crouton {
         /// The default no-error value. Available as the constant `noerror`.
         constexpr Error() = default;
 
+#if CROUTON_RTTI
+        using DomainInfo = std::type_info const&;
+        #define ErrorDomainTypeID(T) typeid(T)
+#else
+        // Without RTTI, identify error domains by the address of their associated description fns.
+        using DomainInfo = const void*;
+        #define ErrorDomainTypeID(T) crouton::Error::DomainInfo(&crouton::ErrorDomainInfo<T>::description)
+#endif
+
         /// Constructs an Error from an enum value.
         template <ErrorDomain D>
         Error(D d)                          :Error(errorcode_t(d), domainID<D>()) { }
@@ -91,7 +100,7 @@ namespace crouton {
         string_view domain() const pure;
 
         /// The `type_info` metadata of the original enum type.
-        std::type_info const& typeInfo() const pure;
+        DomainInfo typeInfo() const pure;
 
         /// A human-readable description of the error.
         /// First calls `ErrorDomainInfo<D>::description` where `D` is the domain enum.
@@ -109,7 +118,7 @@ namespace crouton {
 
         /// True if the error is of type D.
         template <ErrorDomain D> 
-        bool is() const pure                     {return typeInfo() == typeid(D);}
+        bool is() const pure                     {return typeInfo() == ErrorDomainTypeID(D);}
 
         /// Converts the error code back into a D, if it is one.
         /// If its type isn't D, returns `D{0}`.
@@ -121,7 +130,7 @@ namespace crouton {
 
         /// Compares an Error to an ErrorDomain enum value.
         friend bool operator== (Error const& err, ErrorDomain auto d) {
-            return err.typeInfo() == typeid(d) && err.code() == errorcode_t(d);
+            return err.typeInfo() == ErrorDomainTypeID(decltype(d)) && err.code() == errorcode_t(d);
         }
 
         /// Throws the error as an Exception.
@@ -154,16 +163,16 @@ namespace crouton {
 
         template <ErrorDomain T>
         static uint8_t domainID() {
-            static uint8_t id = _registerDomain(typeid(T),
+            static uint8_t id = _registerDomain(ErrorDomainTypeID(T),
                                                 ErrorDomainInfo<T>::name,
                                                 ErrorDomainInfo<T>::description);
             return id;
         }
 
-        static uint8_t _registerDomain(std::type_info const&, string_view, ErrorDescriptionFunc);
+        static uint8_t _registerDomain(DomainInfo, string_view, ErrorDescriptionFunc);
 
         struct DomainMeta {
-            std::type_info const*   type {nullptr};         // The C++ type_info of the enum
+            const void*       type {nullptr};         // The C++ type_info of the enum
             string_view             name;                   // The name of the domain
             ErrorDescriptionFunc    description {nullptr};  // Function mapping codes to names
         };
@@ -237,4 +246,5 @@ namespace crouton {
         static string description(errorcode_t);
     };
 
+#undef ErrorDomainTypeID
 }

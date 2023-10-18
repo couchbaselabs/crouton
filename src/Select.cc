@@ -47,7 +47,7 @@ namespace crouton {
 
     coro_handle Select::await_suspend(coro_handle h) {
         _suspension = Scheduler::current().suspend(h);
-        return lifecycle::suspendingTo(h, typeid(*this), this);
+        return lifecycle::suspendingTo(h, CRTN_TYPEID(*this), this);
     }
 
     int Select::await_resume() {

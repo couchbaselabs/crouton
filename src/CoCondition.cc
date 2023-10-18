@@ -39,7 +39,7 @@ namespace crouton {
         LSched->debug("CoCondition {}: suspending {}",
                       (void*)this, logCoro{h});
         _cond->_awaiters.push_back(*this);
-        return lifecycle::suspendingTo(h, typeid(*_cond), _cond);
+        return lifecycle::suspendingTo(h, CRTN_TYPEID(*_cond), _cond);
     }
 
 

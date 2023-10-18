@@ -91,7 +91,7 @@ namespace crouton {
 
             coro_handle await_suspend(coro_handle h) noexcept   {
                 _sched->suspend(h);
-                return lifecycle::suspendingTo(h, typeid(*_sched), _sched,
+                return lifecycle::suspendingTo(h, CRTN_TYPEID(*_sched), _sched,
                                                Scheduler::current().next());
             }
 

@@ -120,7 +120,7 @@ namespace crouton {
             if (this->handle())
                 return lifecycle::suspendingTo(coro, this->handle(), _state->suspend(coro));
             else
-                return lifecycle::suspendingTo(coro, typeid(*this), this, _state->suspend(coro));
+                return lifecycle::suspendingTo(coro, CRTN_TYPEID(*this), this, _state->suspend(coro));
         }
         [[nodiscard]] std::add_rvalue_reference_t<T> await_resume() requires (!std::is_void_v<T>) {
             return std::move(_state->resultValue());
@@ -346,8 +346,8 @@ namespace crouton {
     template <typename FN, typename U>  requires(!std::is_void_v<T>)
     Future<U> Future<T>::then(FN fn) {
         return _state->template chain<U>([fn](FutureStateBase& baseState, FutureStateBase& myBaseState) {
-            auto& state = dynamic_cast<FutureState<U>&>(baseState);
-            T&& result = dynamic_cast<FutureState<T>&>(myBaseState).resultValue();
+            auto& state = static_cast<FutureState<U>&>(baseState);
+            T&& result = static_cast<FutureState<T>&>(myBaseState).resultValue();
             if constexpr (std::is_void_v<U>) {
                 fn(std::move(result));
                 state.setResult();

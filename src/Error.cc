@@ -37,10 +37,16 @@ namespace crouton {
     }
 
 
-    type_info const& Error::typeInfo() const {
+    Error::DomainInfo Error::typeInfo() const {
+#if CROUTON_RTTI
         if (_code != 0)
-            return *sDomains[_domain].type;
+            return *(std::type_info*)sDomains[_domain].type;
         return typeid(void);
+#else
+        if (_code != 0)
+            return sDomains[_domain].type;
+        return nullptr;
+#endif
     }
 
 
@@ -82,7 +88,7 @@ namespace crouton {
     std::array<Error::DomainMeta,Error::kNDomains> Error::sDomains;
 
 
-    uint8_t Error::_registerDomain(std::type_info const& type,
+    uint8_t Error::_registerDomain(DomainInfo typeRef,
                                    string_view name,
                                    ErrorDescriptionFunc description)
     {
@@ -92,12 +98,18 @@ namespace crouton {
         static mutex sMutex;
         unique_lock<mutex> lock(sMutex);
 
-        spdlog::debug("Error: Registering domain {}", type.name());
+        const void* type;
+#if CROUTON_RTTI
+        type = &typeRef;
+#else
+        type = typeRef;
+#endif
+        spdlog::debug("Error: Registering domain {}", name);
         for (auto &d : sDomains) {
-            if (d.type == &type) {
+            if (d.type == type) {
                 return uint8_t(&d - &sDomains[0]);
             } else if (d.type == nullptr ) {
-                d.type = &type;
+                d.type = type;
                 d.name = name;
                 d.description = description;
                 return uint8_t(&d - &sDomains[0]);
@@ -173,20 +185,24 @@ namespace crouton {
 
 
     static CppError exceptionToCppError(std::exception const& x) {
+#if CROUTON_RTTI
         string name = fleece::Unmangle(typeid(x));
         for (auto &entry : kExceptionNames) {
             if (0 == strcmp(entry.name, name.c_str()))
                 return CppError{entry.code};
         }
         spdlog::warn("No CppErr enum value matches exception class {}", name);
+#endif
         return exception;
     }
 
 
     Error::Error(std::exception const& x) {
+#if CROUTON_RTTI
         if (auto exc = dynamic_cast<Exception const*>(&x))
             *this = exc->error();
         else
+#endif
             *this = exceptionToCppError(x);
     }
 
