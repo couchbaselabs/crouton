@@ -33,9 +33,10 @@
 #  include <io.h>
 #  include <conio.h>
 #  define isatty _isatty
-#  define STDIN_FILENO _fileno(stdin)
-#  define STDOUT_FILENO _fileno(stdout)
-#elif !defined(ESP_PLATFORM)
+#elif defined(ESP_PLATFORM)
+#   include <esp_system.h>
+#   include <thread>
+#else
 #  include <unistd.h>
 #  include <sys/ioctl.h>
 #endif
@@ -90,6 +91,9 @@ namespace crouton::io {
 
 
     int Main(int argc, const char * argv[], Future<int>(*fn)()) {
+#ifdef ESP_PLATFORM
+        std::thread([&] {
+#endif
         try {
             initArgs(argc, argv);
             InitLogging();
@@ -103,9 +107,18 @@ namespace crouton::io {
             Log->error("*** Unexpected exception");
             return 1;
         }
+#ifdef ESP_PLATFORM
+        }).join();
+        printf(" Restarting now.\n");
+        fflush(stdout);
+        esp_restart();
+#endif
     }
 
     int Main(int argc, const char * argv[], Task(*fn)()) {
+#ifdef ESP_PLATFORM
+        std::thread([&] {
+#endif
         try {
             initArgs(argc, argv);
             Task task = fn();
@@ -118,6 +131,12 @@ namespace crouton::io {
             Log->error("*** Unexpected exception");
             return 1;
         }
+#ifdef ESP_PLATFORM
+        }).join();
+        printf(" Restarting now.\n");
+        fflush(stdout);
+        esp_restart();
+#endif
     }
 
 
@@ -160,11 +179,12 @@ namespace crouton::io {
             return true;
         }
 
-        const char *term = getenv("TERM");
-        if(term != nullptr
-           && isatty(fd)
-           && (strstr(term,"ANSI") || strstr(term,"ansi") || strstr(term,"color"))) {
-            return true;
+        if (!isatty(fd))
+            return false;
+
+        if (const char *term = getenv("TERM")) {
+            if (strstr(term,"ANSI") || strstr(term,"ansi") || strstr(term,"color"))
+                return true;
         }
 
 #ifdef _MSC_VER
@@ -181,14 +201,15 @@ namespace crouton::io {
             return true;
         }
 #endif
+
         return false;
 #endif
     }
 
 
+    // <https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters>
     #define ANSI "\033["
 
-    // <https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters>
     TTY::TTY(int fd)
     :color(isColor(fd))
     ,bold       (color ? ANSI "1m"  : "")

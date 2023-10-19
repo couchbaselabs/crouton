@@ -15,15 +15,10 @@
 
 #include <thread>
 
+static void initialize();
+
 using namespace std;
 using namespace crouton;
-
-
-void RunCoroutine(Future<void> (*test)()) {
-    Future<void> f = test();
-    Scheduler::current().runUntil([&]{return f.hasResult();});
-    f.result(); // check exception
-}
 
 
 static Generator<int64_t> fibonacci(int64_t limit, bool slow = false) {
@@ -38,71 +33,80 @@ static Generator<int64_t> fibonacci(int64_t limit, bool slow = false) {
 }
 
 
-void coro_main() {
-    printf("---------- CORO MAIN ----------\n\n");
-    InitLogging();
+Task mainTask() {
+    initialize();
+
+    printf("---------- TESTING CROUTON ----------\n\n");
     esp_log_level_set("Crouton", ESP_LOG_DEBUG);
 //    LCoro->set_level(LogLevel::trace);
 //    LLoop->set_level(LogLevel::trace);
 //    LSched->set_level(LogLevel::trace);
     LNet->set_level(LogLevel::trace);
 
-    RunCoroutine([]() -> Future<void> {
-
-        Log->info("Testing Generator");
-        {
-            Generator<int64_t> fib = fibonacci(100, true);
-            vector<int64_t> results;
-            Result<int64_t> result;
-            while ((result = AWAIT fib)) {
-                printf("%lld ", result.value());
-                results.push_back(result.value());
-            }
-            printf("\n");
+    Log->info("Testing Generator");
+    {
+        Generator<int64_t> fib = fibonacci(100, true);
+        vector<int64_t> results;
+        Result<int64_t> result;
+        while ((result = AWAIT fib)) {
+            printf("%lld ", result.value());
+            results.push_back(result.value());
         }
+        printf("\n");
+    }
 
-        Log->info("Testing AddrInfo -- looking up example.com");
-        {
-            io::AddrInfo addr = AWAIT io::AddrInfo::lookup("example.com");
-            printf("Addr = %s\n", addr.primaryAddressString().c_str());
-            auto ip4addr = addr.primaryAddress();
-            postcondition(ip4addr.type == IPADDR_TYPE_V4);
-            postcondition(addr.primaryAddressString() == "93.184.216.34");
-        }
+    Log->info("Testing AddrInfo -- looking up example.com");
+    {
+        io::AddrInfo addr = AWAIT io::AddrInfo::lookup("example.com");
+        printf("Addr = %s\n", addr.primaryAddressString().c_str());
+        auto ip4addr = addr.primaryAddress();
+        postcondition(ip4addr.type == IPADDR_TYPE_V4);
+        postcondition(addr.primaryAddressString() == "93.184.216.34");
+    }
 
-        Log->info("Testing TCPSocket with TLS");
-        {
-            auto socket = io::ISocket::newSocket(true);
-            AWAIT socket->connect("example.com", 443);
+    Log->info("Testing TCPSocket with TLS");
+    {
+        auto socket = io::ISocket::newSocket(true);
+        AWAIT socket->connect("example.com", 443);
 
-            Log->info("-- Connected! Test Writing...");
-            AWAIT socket->stream().write(string_view("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"));
+        Log->info("-- Connected! Test Writing...");
+        AWAIT socket->stream().write(string_view("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"));
 
-            Log->info("-- Test Reading...");
-            string result = AWAIT socket->stream().readAll();
+        Log->info("-- Test Reading...");
+        string result = AWAIT socket->stream().readAll();
 
-            Log->info("Got HTTP response");
-            printf("%s\n", result.c_str());
-            postcondition(result.starts_with("HTTP/1.1 "));
-            postcondition(result.size() > 1000);
-            postcondition(result.size() < 2000);
-        }
-        
-        Log->info("End of tests");
-        RETURN noerror;
-    });
+        Log->info("Got HTTP response");
+        printf("%s\n", result.c_str());
+        postcondition(result.starts_with("HTTP/1.1 "));
+        postcondition(result.size() > 1000);
+        postcondition(result.size() < 2000);
+    }
+
+    Log->info("End of tests");
     postcondition(Scheduler::current().assertEmpty());
 
-    printf("\n---------- END CORO MAIN ----------\n");
+    printf("\n---------- END CROUTON TESTS ----------\n");
+
+    
+    printf("Minimum heap space was %ld bytes\n", esp_get_minimum_free_heap_size());
+    printf("Restarting in 100 seconds...");
+    fflush(stdout);
+    for (int i = 99; i >= 0; i--) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        printf(" %d ...", i);
+        fflush(stdout);
+    }
+    RETURN;
 }
+
+CROUTON_MAIN(mainTask)
+
 
 
 extern "C" esp_err_t example_connect(void);
 
 // Taken from ESP-IDF "hello world" example
-extern "C"
-void app_main(void)
-{
+static void initialize() {
     printf("Hello world!\n");
 
     /* Print chip information */
@@ -135,21 +139,6 @@ void app_main(void)
      * examples/protocols/README.md for more information about this function.
      */
     ESP_ERROR_CHECK(example_connect());
-
-    // Start a thread to run Crouton. Necessary because `std::this_thread` calls pthreads API,
-    // which crashes if not called on a thread created by pthreads.
-    std::thread t(coro_main);
-    t.join();
-
-    printf("Minimum heap space was %ld bytes\n", esp_get_minimum_free_heap_size());
-    printf("Restarting in 100 seconds...");
-    fflush(stdout);
-    for (int i = 99; i >= 0; i--) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        printf(" %d ...", i);
-        fflush(stdout);
-    }
-    printf(" Restarting now.\n");
-    fflush(stdout);
-    esp_restart();
 }
+
+
