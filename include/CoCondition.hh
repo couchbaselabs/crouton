@@ -20,6 +20,7 @@
 #include "util/LinkedList.hh"
 #include "Scheduler.hh"
 
+#include <atomic>
 #include <concepts>
 #include <optional>
 

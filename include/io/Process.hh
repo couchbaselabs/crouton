@@ -53,4 +53,21 @@ namespace crouton::io {
     /// Make a copy if you want to use methods like `popFirst`.
     extern const Args& MainArgs();
 
+
+    struct TTY {
+        explicit TTY(int fd);
+        const bool color;
+        const char* const bold;
+        const char* const dim;
+        const char* const italic;
+        const char* const underline;
+        const char* const red;
+        const char* const yellow;
+        const char* const green;
+        const char* const reset;
+
+        static const TTY out;
+        static const TTY err;
+    };
+
 }

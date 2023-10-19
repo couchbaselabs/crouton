@@ -18,7 +18,7 @@
 
 #pragma once
 #include "Future.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 
 #include <deque>
 
@@ -51,21 +51,21 @@ namespace crouton {
         bool startNew(coro_handle h) const {
             if (_scheduler.isCurrent()) {
                 if (_activeCoro == nullptr) {
-                    Log->info("Actor {} immediately starting {}", (void*)this, logCoro{h});
+                    Log->info("Actor {} immediately starting {}", (void*)this, minifmt::write(logCoro{h}));
                     _activeCoro = h;
                     return true;
                 } else {
-                    Log->info("Actor {} queued {}", (void*)this, logCoro{h});
+                    Log->info("Actor {} queued {}", (void*)this, minifmt::write(logCoro{h}));
                     _queue.push_back(h);
                 }
             } else {
                 _scheduler.onEventLoop([this,h]{
                     if (_activeCoro == nullptr) {
                         _activeCoro = h;
-                        Log->info("Actor {} scheduled ", (void*)this, logCoro{h});
+                        Log->info("Actor {} scheduled ", (void*)this, minifmt::write(logCoro{h}));
                         _scheduler.schedule(h);
                     } else {
-                        Log->info("Actor {} queued ", (void*)this, logCoro{h});
+                        Log->info("Actor {} queued ", (void*)this, minifmt::write(logCoro{h}));
                         _queue.push_back(h);
                     }
                 });
@@ -82,7 +82,7 @@ namespace crouton {
             } else {
                 _activeCoro = _queue.front();
                 _queue.pop_front();
-                Log->info("Actor {} scheduled ", (void*)this, logCoro{h});
+                Log->info("Actor {} scheduled ", (void*)this, minifmt::write(logCoro{h}));
                 _scheduler.schedule(_activeCoro);
             }
         }

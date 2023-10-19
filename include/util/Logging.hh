@@ -18,13 +18,12 @@
 
 #pragma once
 #include "util/Base.hh"
+#include "util/MiniFormat.hh"
 
-#ifdef ESP_PLATFORM
-#define CROUTON_USE_SPDLOG 0
-#endif
-
+// By default, Crouton uses its own small logging library.
+// To make it use spdlog instead, pre-define the macro `CROUTON_USE_SPDLOG` to `1`.
 #ifndef CROUTON_USE_SPDLOG
-#define CROUTON_USE_SPDLOG 1
+#define CROUTON_USE_SPDLOG 0
 #endif
 
 #if CROUTON_USE_SPDLOG
@@ -48,56 +47,53 @@ namespace crouton {
 
     class Logger {
     public:
-        LogLevelType level() const {
-            return LogLevel::off;
-        }
-        void set_level(LogLevelType) const {
-        }
-        bool should_log(LogLevelType msg_level) const {
-            return false;
-        }
-        template<typename... Args>
+        Logger(string name, LogLevelType level)         :_name(std::move(name)), _level(level) { }
+
+        LogLevelType level() const pure                 {return _level;}
+        void set_level(LogLevelType level)              {_level = level;}
+        bool should_log(LogLevelType level) const pure  {return level >= _level;}
+
+        template<minifmt::Formattable... Args>
         void log(LogLevelType lvl, string_view fmt, Args &&...args) {
-            
+            if (should_log(lvl)) [[unlikely]]
+                _log(lvl, fmt, minifmt::FmtIDs<Args...>::ids, minifmt::passArg(args)...);
         }
-        void log(LogLevelType lvl, string_view msg)
-        {
-        }
-        template<typename... Args>
-        void trace(string_view fmt, Args &&...args)
-        {
+
+        void log(LogLevelType lvl, string_view msg);
+
+        template<minifmt::Formattable... Args>
+        void trace(string_view fmt, Args &&...args) {
             log(LogLevel::trace, fmt, std::forward<Args>(args)...);
         }
-
-        template<typename... Args>
-        void debug(string_view fmt, Args &&...args)
-        {
+        template<minifmt::Formattable... Args>
+        void debug(string_view fmt, Args &&...args) {
             log(LogLevel::debug, fmt, std::forward<Args>(args)...);
         }
-
-        template<typename... Args>
-        void info(string_view fmt, Args &&...args)
-        {
+        template<minifmt::Formattable... Args>
+        void info(string_view fmt, Args &&...args) {
             log(LogLevel::info, fmt, std::forward<Args>(args)...);
         }
-
-        template<typename... Args>
-        void warn(string_view fmt, Args &&...args)
-        {
+        template<minifmt::Formattable... Args>
+        void warn(string_view fmt, Args &&...args) {
             log(LogLevel::warn, fmt, std::forward<Args>(args)...);
         }
-
-        template<typename... Args>
-        void error(string_view fmt, Args &&...args)
-        {
+        template<minifmt::Formattable... Args>
+        void error(string_view fmt, Args &&...args) {
             log(LogLevel::err, fmt, std::forward<Args>(args)...);
         }
-        template<typename... Args>
-        void critical(string_view fmt, Args &&...args)
-        {
+        template<minifmt::Formattable... Args>
+        void critical(string_view fmt, Args &&...args) {
             log(LogLevel::critical, fmt, std::forward<Args>(args)...);
         }
+
+    private:
+        void _log(LogLevelType, string_view fmt, minifmt::FmtIDList, ...);
+        void _writeHeader(LogLevelType);
+
+        string const _name;
+        LogLevelType _level;
     };
+
     using LoggerRef = Logger*;
 #endif
 

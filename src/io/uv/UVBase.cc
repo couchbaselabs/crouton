@@ -18,7 +18,7 @@
 
 #include "io/uv/UVBase.hh"
 #include "EventLoop.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Misc.hh"
 #include "Task.hh"
 #include "UVInternal.hh"

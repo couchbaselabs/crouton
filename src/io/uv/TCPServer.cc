@@ -19,7 +19,7 @@
 #include "io/TCPServer.hh"
 #include "io/TCPSocket.hh"
 #include "UVInternal.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 
 namespace crouton::io {
     using namespace std;

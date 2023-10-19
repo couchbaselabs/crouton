@@ -21,7 +21,7 @@
 #include "Coroutine.hh"
 #include "Internal.hh"
 #include "util/Bytes.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Scheduler.hh"
 #include "io/uv/UVBase.hh"
 

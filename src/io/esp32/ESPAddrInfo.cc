@@ -19,7 +19,7 @@
 #include "io/AddrInfo.hh"
 #include "ESPBase.hh"
 #include "CoCondition.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <lwip/dns.h>
 
 namespace crouton::io {

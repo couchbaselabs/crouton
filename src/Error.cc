@@ -19,7 +19,7 @@
 #include "Error.hh"
 #include "Backtrace.hh"
 #include "Internal.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <iostream>
 #include <mutex>
 #include <sstream>

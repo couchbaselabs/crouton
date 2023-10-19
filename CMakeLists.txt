@@ -111,7 +111,6 @@ add_library( LibCrouton STATIC
     src/Coroutine.cc
     src/Error.cc
     src/Future.cc
-    src/Logging.cc
     src/Scheduler.cc
     src/Select.cc
 
@@ -120,6 +119,7 @@ add_library( LibCrouton STATIC
     src/io/HTTPParser.cc
     src/io/ISocket.cc
     src/io/IStream.cc
+    src/io/Process.cc
     src/io/URL.cc
     src/io/WebSocket.cc
 
@@ -129,7 +129,6 @@ add_library( LibCrouton STATIC
     src/io/uv/FileStream.cc
     src/io/uv/Filesystem.cc
     src/io/uv/Pipe.cc
-    src/io/uv/Process.cc
     src/io/uv/Stream.cc
     src/io/uv/TCPServer.cc
     src/io/uv/TCPSocket.cc
@@ -141,6 +140,8 @@ add_library( LibCrouton STATIC
     src/support/Backtrace+Windows.cc
     src/support/betterassert.cc
     src/support/Memoized.cc
+    src/support/Logging.cc
+    src/support/MiniFormat.cc
     src/support/StringUtils.cc
 )
 

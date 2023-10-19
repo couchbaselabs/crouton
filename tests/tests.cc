@@ -17,9 +17,10 @@
 //
 
 #include "tests.hh"
-#include "MiniFormat.hh"
+#include "Actor.hh"
 #include "Misc.hh"
 #include "Producer.hh"
+#include "util/MiniFormat.hh"
 #include "util/Relation.hh"
 #include "io/uv/UVBase.hh"
 
@@ -237,9 +238,16 @@ TEST_CASE("Producer Consumer") {
 
 
 TEST_CASE("MiniFormat") {
-    CHECK(minifmt::format("No placeholders")
-          == "No placeholders");
+    CHECK(minifmt::format("No placeholders") == "No placeholders");
+    CHECK(minifmt::format("Escaped {{... {}!", 7) == "Escaped {... 7!");
+    CHECK(minifmt::format("Escaped {{{{... {}!", 7) == "Escaped {{... 7!");
+    CHECK(minifmt::format("Escaped {{{}!", 7) == "Escaped {7!");
+    CHECK(minifmt::format("{{Escaped ... {}!", 7) == "{Escaped ... 7!");
+    CHECK(minifmt::format("Escaped ... {}!{{", 7) == "Escaped ... 7!{");
+    CHECK(minifmt::format("Escaped {{... {}! ...}}", 7) == "Escaped {... 7! ...}");
+    CHECK(minifmt::format("Escaped {{... {}! }", 7) == "Escaped {... 7! }");
 
+    CHECK(minifmt::format("{} {}", false, true) == "false true");
     CHECK(minifmt::format("char '{}', i16 {}, u16 {}, i32 {}, u32 {}, i {}, u {}",
                           'X', int16_t(-1234), uint16_t(65432), int32_t(123456789), uint32_t(987654321),
                           int(-1234567), unsigned(7654321))

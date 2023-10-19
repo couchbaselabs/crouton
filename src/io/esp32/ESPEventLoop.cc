@@ -17,7 +17,7 @@
 //
 
 #include "EventLoop.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Task.hh"
 
 #include <freertos/FreeRTOS.h>

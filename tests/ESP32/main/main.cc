@@ -1,4 +1,5 @@
 #include "Crouton.hh"
+#include "util/Logging.hh"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -6,6 +7,7 @@
 #include <esp_chip_info.h>
 #include <esp_event.h>
 #include <esp_flash.h>
+#include <esp_log.h>
 #include <esp_netif.h>
 #include <esp_pthread.h>
 #include <lwip/dns.h>
@@ -39,6 +41,7 @@ static Generator<int64_t> fibonacci(int64_t limit, bool slow = false) {
 void coro_main() {
     printf("---------- CORO MAIN ----------\n\n");
     InitLogging();
+    esp_log_level_set("Crouton", ESP_LOG_DEBUG);
 //    LCoro->set_level(LogLevel::trace);
 //    LLoop->set_level(LogLevel::trace);
 //    LSched->set_level(LogLevel::trace);

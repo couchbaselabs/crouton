@@ -17,7 +17,7 @@
 #include "Codec.hh"
 #include "BLIPProtocol.hh"
 #include "Endian.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <algorithm>
 #include <mutex>
 #include <spdlog/fmt/fmt.h>

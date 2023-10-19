@@ -200,7 +200,7 @@ namespace crouton::io::blip {
                 crouton::Error::raise(BLIPError::InvalidFrame, "message ends before end of properties");
             _complete = true;
             state = kEnd;
-            LBLIP->info("Finished receiving {}", *this);
+            LBLIP->info("Finished receiving {}", minifmt::write(*this));
             if (_onResponse) {
                 auto ref = dynamic_pointer_cast<MessageIn>(this->shared_from_this());
                 _onResponse->setResult(ref);

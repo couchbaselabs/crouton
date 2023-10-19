@@ -13,7 +13,7 @@
 #pragma once
 #include "util/Bytes.hh"
 #include "Error.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <cstdint>
 
 namespace crouton::io::blip {

@@ -17,7 +17,7 @@
 //
 
 #include "io/WebSocket.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Misc.hh"
 #include "StringUtils.hh"
 #include "Internal.hh"
@@ -174,7 +174,7 @@ namespace crouton::io::ws {
             return close();
         } else {
             // Peer is initiating a close; echo it:
-            LNet->warn("Peer sent {}; echoing it", msg);
+            LNet->warn("Peer sent {}; echoing it", minifmt::write(msg));
             return send(std::move(msg));
         }
     }

@@ -18,7 +18,7 @@
 
 #include "Coroutine.hh"
 #include "Memoized.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Scheduler.hh"
 
 #include <charconv>

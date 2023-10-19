@@ -22,7 +22,7 @@
 #include "CoCondition.hh"
 #include "ESPBase.hh"
 #include "Internal.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "io/AddrInfo.hh"
 
 #include <esp_log.h>
@@ -67,7 +67,7 @@ namespace crouton::io::esp {
             err = AWAIT block;
         if (err) {
             Error error(LWIPError{err});
-            LNet->error("...TCP connection failed: {}", error);
+            LNet->error("...TCP connection failed: {}", minifmt::write(error));
             RETURN error;
         }
 
@@ -177,13 +177,13 @@ namespace crouton::io::esp {
         // Warning: This is called on the lwip thread.
         //FIXME: Needs a mutex accessing _readBufs?
         if (pb) {
-            ESP_LOGI("TCPSocket", "read completed, %u bytes", pb->tot_len);
+            LNet->debug("read completed, {} bytes", pb->tot_len);
             if (_readBufs == nullptr)
                 _readBufs = pb;                 // Note: I take over the reference to pb
             else
                 pbuf_cat(_readBufs, pb);
         } else {
-            ESP_LOGI("TCPSocket", "read completed, LWIP error %d", err);
+            LNet->debug("read completed, LWIP error {}", err);
             _readErr = err ? Error(LWIPError(err)) : Error(CroutonError::EndOfData);
         }
         assert(_readBufs || _readErr);
@@ -215,7 +215,7 @@ namespace crouton::io::esp {
                     LNet->debug("...TCPSocket::write unblocked", chunk.size());
                     break;
                 default:
-                    LNet->error("TCPSocket::write -- error {}", err);
+                    LNet->error("TCPSocket::write -- error {}", minifmt::write(err));
                     RETURN LWIPError(err);
             }
         }
@@ -225,7 +225,7 @@ namespace crouton::io::esp {
 
     int TCPSocket::_writeCallback(uint16_t len) {
         // Warning: This is called on the lwip thread.
-        ESP_LOGI("TCPSocket", "write completed, %u bytes", len);
+        LNet->debug("write completed, {} bytes", len);
         _writeBlocker.notify();
         return 0;
     }

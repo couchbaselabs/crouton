@@ -55,7 +55,7 @@
 #pragma once
 
 #include "Error.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 
 #if defined(_WIN32)
 #   if !defined(_CRT_SECURE_NO_DEPRECATE)
@@ -215,8 +215,9 @@ namespace crouton::io::mbed {
 #else
             static std::once_flag once;
             call_once(once, [] {
-                // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
-                LMbed = MakeLogger("mbedTLS", LogLevel::warn);
+                // This logger is off by default, because mbedTLS logging is very noisy --
+                // even in a successful handshake it will write several error-level logs.
+                LMbed = MakeLogger("mbedTLS", LogLevel::off);
             });
 
             // spdlog level values corresponding to ones used by mbedTLS
@@ -249,6 +250,7 @@ namespace crouton::io::mbed {
             mbedtls_debug_set_threshold(kSpdToMbedLogLevel[LMbed->level()]);
 #endif
         }
+
 
         // Returns a shared singleton mbedTLS random-number generator context.
         static mbedtls_ctr_drbg_context* get_drbg_context() {
