@@ -17,6 +17,7 @@
 //
 
 #include "EventLoop.hh"
+#include "Future.hh"
 #include "util/Logging.hh"
 #include "Task.hh"
 
@@ -26,6 +27,7 @@
 
 #include <cmath>
 #include <functional>
+#include <thread>
 
 namespace crouton {
     using namespace std;
@@ -36,7 +38,7 @@ namespace crouton {
     static constexpr size_t kQueueLength = 16;
 
     /** The struct that goes in the FreeRTOS event queue.
-        Can't use any fancy C++ RIAA stuff because these get memcpy'd by FreeRTOS. */
+        Can't use any fancy C++ RAII stuff because these structs get memcpy'd by FreeRTOS. */
     struct Event {
         enum Type : uint8_t {
             Interrupt,
@@ -212,7 +214,28 @@ namespace crouton {
 
 
     Future<void> OnBackgroundThread(std::function<void()> fn) {
-        Error(CroutonError::Unimplemented).raise();  // TODO
+        static Scheduler* sBGScheduler;
+        static std::thread bgThread([] {
+            sBGScheduler = &Scheduler::current();
+            while (true)
+                sBGScheduler->run();
+        });
+
+        while (!sBGScheduler)
+            vTaskDelay(10);
+
+        auto provider = Future<void>::provider();
+        sBGScheduler->onEventLoop([provider, fn] {
+            try {
+                fn();
+                provider->setResult();
+            } catch (std::exception const& x) {
+                LLoop->error("*** Caught unexpected exception in OnBackgroundThread fn: {} ***",
+                             x.what());
+                provider->setError(Error(x));
+            }
+        });
+        return Future(provider);
     }
 
 }
