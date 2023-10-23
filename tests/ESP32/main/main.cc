@@ -102,10 +102,10 @@ Task mainTask() {
 CROUTON_MAIN(mainTask)
 
 
-
+// entry point of the `protocol_examples_common` component
 extern "C" esp_err_t example_connect(void);
 
-// Taken from ESP-IDF "hello world" example
+// Adapted from ESP-IDF "hello world" example
 static void initialize() {
     printf("Hello world!\n");
 

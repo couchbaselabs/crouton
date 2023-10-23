@@ -610,6 +610,8 @@
 		27B330822AB911470066C8DA /* demo_blipclient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = demo_blipclient.cc; sourceTree = "<group>"; };
 		27B330842AB912D30066C8DA /* BLIP.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
 		27BA40742AA502DD0011BB86 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
+		27BCD2CE2AE73844009DFCED /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		27BCD2CF2AE738DF009DFCED /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		27E98EDE2AC2099E002F3D35 /* test_generator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = test_generator.cc; sourceTree = "<group>"; };
 		27E98EE02AC21940002F3D35 /* Awaitable.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Awaitable.hh; sourceTree = "<group>"; };
 		27ED1C702AABF47200ADC971 /* CoroLifecycle.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoroLifecycle.hh; sourceTree = "<group>"; };
@@ -1061,6 +1063,7 @@
 		277B65322ADA07E0006F053D /* ESP32 */ = {
 			isa = PBXGroup;
 			children = (
+				27BCD2CF2AE738DF009DFCED /* README.md */,
 				277B65332ADA07E0006F053D /* sdkconfig */,
 				277B65362ADA07E0006F053D /* CMakeLists.txt */,
 				277B6C112ADA07E3006F053D /* main */,
@@ -1081,6 +1084,7 @@
 		277B6C222ADF25CD006F053D /* esp32 */ = {
 			isa = PBXGroup;
 			children = (
+				27BCD2CE2AE73844009DFCED /* README.md */,
 				277B6C232ADF2632006F053D /* CMakeLists.txt */,
 				277B6C1D2ADDBE82006F053D /* ESPBase.hh */,
 				277B6C1E2ADDDF13006F053D /* ESPBase.cc */,
