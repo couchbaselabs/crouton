@@ -94,7 +94,7 @@ An example embedded app is at [tests/ESP32](tests/ESP32/README.md).
 
 [![Build](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml/badge.svg)](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml)
 
-This is new code, under heavy development! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, Visual Studio 17 2022 on Windows, and ESP-IDF 5.0.
+This is new code, under heavy development! So far, it builds with Clang (Xcode 15) on macOS, GCC 12 on Ubuntu, Visual Studio 17 2022 on Windows, and ESP-IDF 5.0.
 
 The tests run regularly on macOS, and occasionally on Ubuntu (though not in CI.) Test coverage is very limited.
 
@@ -108,12 +108,12 @@ APIs are still in flux. Things get refactored a lot.
 ### Prerequisites:
 
 - CMake
-- Clang 15, Xcode 14, or GCC 12
+- Clang 15, Xcode 15, or GCC 12
 - zlib (aka libz)
 
 #### on macOS:
 
-- Install Xcode 14 or later, or at least the command-line tools.
+- Install Xcode 15 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
 #### on Ubuntu Linux
@@ -127,7 +127,7 @@ APIs are still in flux. Things get refactored a lot.
 
 The library is `libCrouton`, in either the `build_cmake/debug/` or `build_cmake/release/` directory.
 
-### Building With Xcode
+### Building With Xcode 15+
 
 **Before first building with Xcode**, you must use CMake to build libuv and mbedTLS:
 
