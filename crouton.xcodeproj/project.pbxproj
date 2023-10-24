@@ -1769,7 +1769,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if which missing_includes.rb >/dev/null\nthen\n  cd \"$SRCROOT\"\n  missing_includes.rb -w --base include/util/Base.hh include src\nelse\n  echo \"Script missing_includes.rb not found.\"\n  echo \"You can get it from https://gist.github.com/snej/2672fe996d39752e23c471f6ed789958\"\nfi\n";
+			shellScript = "if which missing_includes.rb >/dev/null\nthen\n  cd \"$SRCROOT\"\n  missing_includes.rb -w --base include/util/Base.hh --ignore cassert include src\nelse\n  echo \"Script missing_includes.rb not found.\"\n  echo \"You can get it from https://gist.github.com/snej/2672fe996d39752e23c471f6ed789958\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
