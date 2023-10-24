@@ -81,13 +81,13 @@ namespace crouton::io::http {
         Response& operator=(Response&&) noexcept;
 
         /// The HTTP status code.
-        Status status() const               {return _parser.status;}
+        Status status() const noexcept Pure                 {return _parser.status;}
 
         /// The HTTP status message.
-        string const& statusMessage() const {return _parser.statusMessage;}
+        string const& statusMessage() const noexcept Pure   {return _parser.statusMessage;}
 
         /// The response headers.
-        Headers const& headers() const      {return _parser.headers;}
+        Headers const& headers() const noexcept Pure        {return _parser.headers;}
 
         ASYNC<void> open() override             {return _parser.readHeaders();}
         bool isOpen() const override            {return _parser.status != Status::Unknown;}
@@ -106,8 +106,8 @@ namespace crouton::io::http {
     private:
         Connection* _connection;
         Parser      _parser;
-        string          _buf;
-        size_t          _bufUsed = 0;
+        string      _buf;
+        size_t      _bufUsed = 0;
     };
 
 }

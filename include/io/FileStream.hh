@@ -20,9 +20,10 @@
 #include "io/IStream.hh"
 #include "Generator.hh"
 
-
-namespace crouton::io {
+namespace crouton {
     struct Buffer;
+}
+namespace crouton::io {
     
     /** Asynchronous file I/O. 
 
@@ -36,12 +37,12 @@ namespace crouton::io {
         /// Constructs a FileStream; next, call open().
         FileStream(string const& path, int flags = ReadOnly, int mode = 0644);
 
-        FileStream(FileStream&& fs);
-        FileStream& operator=(FileStream&& fs);
+        FileStream(FileStream&& fs) noexcept;
+        FileStream& operator=(FileStream&& fs) noexcept;
         ~FileStream();
 
         /// True if the file is open.
-        bool isOpen() const override                {return _fd >= 0;}
+        bool isOpen() const override Pure           {return _fd >= 0;}
 
         /// Resolves once the stream has opened.
         ASYNC<void> open() override;

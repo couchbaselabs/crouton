@@ -19,40 +19,50 @@
 #pragma once
 #include "Future.hh"
 
-struct addrinfo;
-struct sockaddr;
+#ifdef ESP_PLATFORM
+    struct ip_addr;
+#else
+    struct addrinfo;
+    struct sockaddr;
+#endif
 
 namespace crouton::io {
 
     /** An asynchronous DNS lookup. */
     class AddrInfo {
     public:
+#ifdef ESP_PLATFORM
+        using RawAddress = ::ip_addr;
+#else
+        using RawAddress = ::sockaddr;
+#endif
 
         /// Does a DNS lookup of the given hostname, returning an AddrInfo or an error.
         staticASYNC<AddrInfo> lookup(string hostname, uint16_t port =0);
 
         /// Returns the primary address, which may be either IPv4 or IPv6.
-        sockaddr const& primaryAddress() const;
+        RawAddress const& primaryAddress() const;
 
-        /// Returns the primary address of whichever address family you pass.
-        /// If there is none, throws `UV__EAI_ADDRFAMILY`.
+        /// Returns (a pointer to) the primary address of whichever address family you pass,
+        /// or nullptr if none.
         /// @note For convenience you can also pass 4 instead of AF_INET, or 6 instead of AF_INET6.
-        sockaddr const& primaryAddress(int af) const;
+        RawAddress const* primaryAddress(int af) const;
 
         /// The primary address converted to a numeric string.
         string primaryAddressString() const;
 
-        ~AddrInfo();
-        AddrInfo(AddrInfo&& ai) :_info(ai._info) {ai._info = nullptr;}
-        AddrInfo& operator=(AddrInfo&& ai);
-
     private:
-        AddrInfo(struct ::addrinfo* info) :_info(info) { }
-        AddrInfo(AddrInfo const&) = delete;
-        AddrInfo& operator=(AddrInfo const&) = delete;
-        sockaddr const* _primaryAddress(int af) const;
+#ifdef ESP_PLATFORM
+        using addrinfo = ::ip_addr;
+        using deleter = std::default_delete<addrinfo>;
+#else
+        using addrinfo = ::addrinfo;
+        struct deleter { void operator() (addrinfo*); };
+#endif
 
-        struct ::addrinfo* _info;
+        explicit AddrInfo(addrinfo*);
+
+        std::unique_ptr<addrinfo,deleter> _info;
     };
 
 }

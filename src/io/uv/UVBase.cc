@@ -16,22 +16,30 @@
 // limitations under the License.
 //
 
-#include "io/UVBase.hh"
+#include "io/uv/UVBase.hh"
 #include "EventLoop.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
+#include "Misc.hh"
 #include "Task.hh"
 #include "UVInternal.hh"
 #include <charconv>
 #include <cmath>
 
 namespace crouton {
+    using namespace crouton::io::uv;
+
+    void Randomize(void* buf, size_t len) {
+        uv_random_t req;
+        check(uv_random(curLoop(), &req, buf, len, 0, nullptr), "generating random bytes");
+    }
+
     ConstBytes::ConstBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
     MutableBytes::MutableBytes(uv_buf_t buf) :Bytes((byte*)buf.base, buf.len) { }
 
-    ConstBytes::operator uv_buf_t() const   { return uv_buf_init((char*)data(), unsigned(size())); }
-    MutableBytes::operator uv_buf_t() const { return uv_buf_init((char*)data(), unsigned(size())); }
+    ConstBytes::operator uv_buf_t() const noexcept   { return uv_buf_init((char*)data(), unsigned(size())); }
+    MutableBytes::operator uv_buf_t() const noexcept { return uv_buf_init((char*)data(), unsigned(size())); }
 
-    string ErrorDomainInfo<io::UVError>::description(errorcode_t code) {
+    string ErrorDomainInfo<io::uv::UVError>::description(errorcode_t code) {
         switch (code) {
             case UV__EAI_NONAME:    return "unknown host";
             default:                return uv_strerror(code);
@@ -39,7 +47,7 @@ namespace crouton {
     };
 }
 
-namespace crouton::io {
+namespace crouton::io::uv {
     using namespace std;
 
     
@@ -51,8 +59,6 @@ namespace crouton::io {
         bool runOnce(bool waitForIO =true) override;
         void stop(bool threadSafe) override;
         void perform(std::function<void()>) override;
-
-        ASYNC<void> sleep(double delaySecs);
 
         void ensureWaits();
         uv_loop_s* uvLoop() {return _loop.get();}
@@ -140,20 +146,15 @@ namespace crouton::io {
         return ((UVEventLoop&)Scheduler::current().eventLoop()).uvLoop();
     }
 
-
-    void Randomize(void* buf, size_t len) {
-        uv_random_t req;
-        check(uv_random(curLoop(), &req, buf, len, 0, nullptr), "generating random bytes");
-    }
-
 }
 
 
 namespace crouton {
     using namespace std;
+    using namespace crouton::io::uv;
 
     EventLoop* Scheduler::newEventLoop() {
-        auto loop = new io::UVEventLoop();
+        auto loop = new UVEventLoop();
         loop->ensureWaits();
         return loop;
     }
@@ -166,36 +167,42 @@ namespace crouton {
 
     Timer::Timer(std::function<void()> fn)
     :_fn(std::move(fn))
-    ,_handle(new uv_timer_t)
+    ,_impl(new uv_timer_t)
     {
-        uv_timer_init(io::curLoop(), _handle);
-        _handle->data = this;
+        uv_timer_init(curLoop(), ((uv_timer_t*)_impl));
+        ((uv_timer_t*)_impl)->data = this;
     }
 
 
     Timer::~Timer() {
-        uv_timer_stop(_handle);
-        io::closeHandle(_handle);
+        auto handle = ((uv_timer_t*)_impl);
+        uv_timer_stop(handle);
+        closeHandle(handle);
     }
 
 
     void Timer::_start(double delaySecs, double repeatSecs) {
         auto callback = [](uv_timer_t *handle) noexcept {
             auto self = (Timer*)handle->data;
-            try {
-                self->_fn();
-            } catch (...) {
-                LLoop->error("*** Caught unexpected exception in Timer callback ***");
-            }
-            if (self->_deleteMe)
-                delete self;
+            self->_fire();
         };
-        uv_timer_start(_handle, callback, ms(delaySecs), ms(repeatSecs));
+        uv_timer_start(((uv_timer_t*)_impl), callback, ms(delaySecs), ms(repeatSecs));
+    }
+
+
+    void Timer::_fire() {
+        try {
+            _fn();
+        } catch (...) {
+            LLoop->error("*** Caught unexpected exception in Timer callback ***");
+        }
+        if (_deleteMe)
+            delete this;
     }
 
 
     void Timer::stop() {
-        uv_timer_stop(_handle);
+        uv_timer_stop(((uv_timer_t*)_impl));
     }
 
 
@@ -221,7 +228,7 @@ namespace crouton {
 
     Future<void> OnBackgroundThread(std::function<void()> fn) {
         auto work = new QueuedWork{.fn = std::move(fn)};
-        io::check(uv_queue_work(io::curLoop(), work, [](uv_work_t *req) noexcept {
+        check(uv_queue_work(curLoop(), work, [](uv_work_t *req) noexcept {
             auto work = static_cast<QueuedWork*>(req);
             try {
                 work->fn();

@@ -17,10 +17,11 @@
 //
 
 #include "CoroLifecycle.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Memoized.hh"
 #include "Scheduler.hh"
 #include <mutex>
+#include <ranges>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -39,6 +40,11 @@ namespace crouton::lifecycle {
     enum class coroState { born, active, awaiting, yielding, ending };
 
     static constexpr const char* kStateNames[] = {"born", "active", "awaiting", "yielding", "ending"};
+
+    // If true, the sCoros table will remember destroyed/deleted coroutines, so if a destroyed
+    // coroutine handle is accessed it can tell you its former sequence number and owner.
+    // The downside is that the table uses more memory over time since it never shrinks.
+    static constexpr bool kRememberDestroyedCoros = true;
 
     static unsigned sLastSequence = 0;
 
@@ -62,9 +68,12 @@ namespace crouton::lifecycle {
         { }
 
         coroInfo(coroInfo const&) = delete;
+        coroInfo& operator=(coroInfo const&) = delete;
+        coroInfo(coroInfo&&) = default;
+        coroInfo& operator=(coroInfo&&) = default;
 
         void setState(coroState s) {
-            if (state == coroState::awaiting) {
+            if (state == coroState::awaiting || state == coroState::yielding) {
                 awaitingCoro = nullptr;
                 awaiting = nullptr;
                 awaitingType = nullptr;
@@ -76,7 +85,7 @@ namespace crouton::lifecycle {
             return out << "¢" << info.sequence;
         }
 
-        coro_handle         handle;                     // Its handle
+        coro_handle         handle;                     // Its handle; nullptr if tombstone
         coroState           state = coroState::born;    // Current state
         coroInfo*           caller = nullptr;           // Caller, if on stack
         coro_handle         awaitingCoro;               // Coro it's awaiting
@@ -105,14 +114,21 @@ namespace crouton::lifecycle {
     static unordered_map<void*, coroInfo> sCoros;   // Maps coro_handle -> coroInfo
 
     /// Gets a coro_handle's coroInfo. Mutex must be locked.
-    static coroInfo& _getInfo(coro_handle h) {
+    static auto _getInfoIter(coro_handle h) {
         auto i = sCoros.find(h.address());
         if (i == sCoros.end()) {
-            LCoro->critical("Unknown coroutine_handle {}", h.address());
+            LCoro->critical("FATAL: Unknown coroutine_handle {}", h.address());
             abort();
+        } else if (i->second.handle == nullptr) {
+            LCoro->critical("FATAL: Using destroyed coroutine_handle {}; formerly ¢{} [{} {}]",
+                            h.address(), i->second.sequence, i->second.typeName, i->second.name);
+            abort();
+        } else {
+            return i;
         }
-        return i->second;
     }
+
+    static coroInfo& _getInfo(coro_handle h)  {return _getInfoIter(h)->second;}
 
     /// Gets a coro_handle's coroInfo.
     static coroInfo& getInfo(coro_handle h) {
@@ -134,7 +150,7 @@ namespace crouton::lifecycle {
     static size_t _count() {
         size_t n = 0;
         for (auto &[addr, info] : sCoros) {
-            if (!info.ignoreInCount)
+            if (info.handle && !info.ignoreInCount)
                 ++n;
         }
         return n;
@@ -156,7 +172,7 @@ namespace crouton::lifecycle {
 
     /// Logs the coroutines in the current thread's stack.
     static void logStack() {
-        if (LCoro->should_log(spdlog::level::trace)) {
+        if (LCoro->should_log(LogLevel::trace)) {
             stringstream out;
             for (auto c = tCurrent; c; c = c->caller)
                 out << ' ' << *c;
@@ -167,7 +183,7 @@ namespace crouton::lifecycle {
     /// Returns the coroutine this one called.
     static coroInfo* _currentCalleeOf(coroInfo &caller) {
         for (auto &[h, info] : sCoros) {
-            if (info.caller == &caller)
+            if (info.caller == &caller && info.handle)
                 return &info;
         }
         return nullptr;
@@ -176,7 +192,7 @@ namespace crouton::lifecycle {
     /// Asserts that this is the current coroutine (of this thread.)
     static void assertCurrent(coroInfo &h) {
         if (tCurrent != &h) {
-            LCoro->warn("??? Expected {} to be current, not {}", *tCurrent, h);
+            LCoro->warn("??? Expected {} to be current, not {}", minifmt::write(*tCurrent), minifmt::write(h));
             assert(tCurrent == &h);
         }
     }
@@ -225,31 +241,41 @@ namespace crouton::lifecycle {
 
 
     void created(coro_handle h, bool ready, std::type_info const& implType) {
+        precondition(h);
         unique_lock<mutex> lock(sCorosMutex);
         auto [i, added] = sCoros.try_emplace(h.address(), h, implType);
-        assert(added);
+        if (kRememberDestroyedCoros) {
+            if (!added) {
+                // Reusing a tombstone when a new coro is allocated at the same address:
+                assert(!i->second.handle);
+                i->second = coroInfo{h, implType};
+            }
+        } else {
+            assert(added);
+        }
         lock.unlock();
+        
         if (ready) {
             i->second.setState(coroState::active);
-            LCoro->debug("{} created and starting", verbose{i->second});
+            LCoro->debug("{} created and starting", minifmt::write(verbose{i->second}));
             pushCurrent(i->second);
         } else {
-            LCoro->debug("{} created", verbose{i->second});
+            LCoro->debug("{} created", minifmt::write(verbose{i->second}));
         }
     }
 
     void suspendInitial(coro_handle cur) {
         auto& curInfo = getInfo(cur);
-        LCoro->trace("{} initially suspended", curInfo);
-
-        popCurrent(curInfo);
-        assert(curInfo.state == coroState::active);
-        curInfo.setState(coroState::born);
+        LCoro->trace("{} initially suspended", minifmt::write(curInfo));
+        if (curInfo.state == coroState::active) {
+            popCurrent(curInfo);
+            curInfo.setState(coroState::born);
+        }
     }
 
     void ready(coro_handle h) {
         auto& curInfo = getInfo(h);
-        LCoro->trace("{} starting", curInfo);
+        LCoro->trace("{} starting", minifmt::write(curInfo));
 
         assert(curInfo.state == coroState::born);
         curInfo.setState(coroState::active);
@@ -259,7 +285,7 @@ namespace crouton::lifecycle {
     static coro_handle switching(coroInfo& curInfo, coro_handle next) {
         if (next && !isNoop(next)) {
             auto& nextInfo = getInfo(next);
-            LCoro->trace("{} resuming", nextInfo);
+            LCoro->trace("{} resuming", minifmt::write(nextInfo));
             assert(nextInfo.state != coroState::active);
             nextInfo.setState(coroState::active);
             nextInfo.awaiting = nullptr;
@@ -278,7 +304,7 @@ namespace crouton::lifecycle {
             return next;
 
         if (to) {
-            LCoro->trace("{} awaiting {} {}", curInfo, GetTypeName(toType), to);
+            LCoro->trace("{} awaiting {} {}", minifmt::write(curInfo), GetTypeName(toType), minifmt::write(to));
         }
         assert(curInfo.state == coroState::active);
         curInfo.setState(coroState::awaiting);
@@ -297,7 +323,7 @@ namespace crouton::lifecycle {
         if (cur == next)
             return next;
 
-        LCoro->trace("{} awaiting {}", curInfo, logCoro{awaitingCoro});
+        LCoro->trace("{} awaiting {}", minifmt::write(curInfo), minifmt::write(logCoro{awaitingCoro}));
         assert(curInfo.state == coroState::active);
         curInfo.setState(coroState::awaiting);
         curInfo.awaitingCoro = awaitingCoro;
@@ -305,15 +331,17 @@ namespace crouton::lifecycle {
         return switching(curInfo, next);
     }
 
-    coro_handle yieldingTo(coro_handle cur, coro_handle next) {
+    coro_handle yieldingTo(coro_handle cur, coro_handle next, bool isCall) {
         auto& curInfo = getInfo(cur);
         assertCurrent(curInfo);
         if (cur == next)
             return next;
 
-        LCoro->trace("{} yielded to {}", curInfo, logCoro{next});
+        LCoro->trace("{} yielded to {}", minifmt::write(curInfo), minifmt::write(logCoro{next}));
         assert(curInfo.state == coroState::active);
         curInfo.setState(coroState::yielding);
+        if (isCall && !isNoop(next))
+            curInfo.awaitingCoro = next;
 
         return switching(curInfo, next);
     }
@@ -323,7 +351,7 @@ namespace crouton::lifecycle {
         assertCurrent(curInfo);
         
         if (curInfo.state < coroState::ending) {
-            LCoro->trace("{} finished", curInfo);
+            LCoro->trace("{} finished", minifmt::write(curInfo));
             curInfo.setState(coroState::ending);
         }
 
@@ -332,7 +360,7 @@ namespace crouton::lifecycle {
 
     void resume(coro_handle h) {
         auto& curInfo = getInfo(h);
-        LCoro->trace("{}.resume() ...", curInfo);
+        LCoro->trace("{}.resume() ...", minifmt::write(curInfo));
 
         pushCurrent(curInfo);
 
@@ -348,21 +376,20 @@ namespace crouton::lifecycle {
     void threw(coro_handle h) {
         auto& curInfo = getInfo(h);
         assertCurrent(curInfo);
-        LCoro->error("{} threw an exception.", curInfo);
+        LCoro->error("{} threw an exception.", minifmt::write(curInfo));
         curInfo.setState(coroState::ending);
     }
 
     void returning(coro_handle h) {
         auto& curInfo = getInfo(h);
         assertCurrent(curInfo);
-        LCoro->trace("{} returned.", curInfo);
+        LCoro->trace("{} returned.", minifmt::write(curInfo));
         curInfo.setState(coroState::ending);
     }
 
     void ended(coro_handle h) {
         unique_lock<mutex> lock(sCorosMutex);
-        auto i = sCoros.find(h.address());
-        assert(i != sCoros.end());
+        auto i = _getInfoIter(h);
         auto& info = i->second;
 
         assert(&info != tCurrent);
@@ -371,10 +398,18 @@ namespace crouton::lifecycle {
             assert(other.second.caller != &info);
 
         if (info.state < coroState::ending)
-            LCoro->warn("{} destructed before returning or throwing", info);
-        LCoro->debug("{} destructed. ({} left)", info, _count() - 1);
-        
-        sCoros.erase(i);
+            LCoro->warn("{} destructed before returning or throwing", minifmt::write(info));
+        LCoro->debug("{} destructed. ({} left)", minifmt::write(info), _count() - 1);
+
+        if (kRememberDestroyedCoros) {
+            i->second.handle = nullptr; // mark as tombstone
+        } else {
+            sCoros.erase(i);
+        }
+    }
+
+    void destroy(coro_handle h) {
+        h.destroy();
     }
 
 
@@ -383,37 +418,44 @@ namespace crouton::lifecycle {
 
     // logs all coroutines, in order they were created
     void logAll() {
+        using enum coroState;
         unique_lock<mutex> lock(sCorosMutex);
         vector<coroInfo*> infos;
-        for (auto &[addr, info] : sCoros)
-            infos.emplace_back(&info);
+        for (auto &[addr, info] : sCoros) {
+            if (info.handle)
+                infos.emplace_back(&info);
+        }
         sort(infos.begin(), infos.end(), [](auto a, auto b) {return a->sequence < b->sequence;});
         LCoro->info("{} Existing Coroutines:", infos.size());
         for (auto info : infos) {
             switch (info->state) {
-                case coroState::born:
-                    LCoro->info("\t{} [born]", verbose{*info});
+                case born:
+                    LCoro->info("\t{} [born]", minifmt::write(verbose{*info}));
                     break;
-                case coroState::active: 
+                case active:
                     if (coroInfo* calling = _currentCalleeOf(*info))
-                        LCoro->info("\t{} -> calling ¢{}", verbose{*info}, calling->sequence);
+                        LCoro->info("\t{} -> calling ¢{}", minifmt::write(verbose{*info}), calling->sequence);
                     else
-                        LCoro->info("\t{} **CURRENT**", verbose{*info});
+                        LCoro->info("\t{} **CURRENT**", minifmt::write(verbose{*info}));
                     break;
-                case coroState::awaiting:
+                case awaiting:
                     if (info->awaitingCoro)
-                        LCoro->info("\t{} -> awaiting ¢{}", verbose{*info},
+                        LCoro->info("\t{} -> awaiting ¢{}", minifmt::write(verbose{*info}),
                                     _getInfo(info->awaitingCoro).sequence);
                     else if (info->awaiting)
-                        LCoro->info("\t{} -> awaiting {} {}", verbose{*info}, GetTypeName(*info->awaitingType), info->awaiting);
+                        LCoro->info("\t{} -> awaiting {} {}", minifmt::write(verbose{*info}), GetTypeName(*info->awaitingType), minifmt::write(info->awaiting));
                     else
-                        LCoro->info("\t{} -> awaiting <?>", verbose{*info});
+                        LCoro->info("\t{} -> awaiting <?>", minifmt::write(verbose{*info}));
                     break;
-                case coroState::yielding:
-                    LCoro->info("\t{} -- yielding", verbose{*info});
+                case yielding:
+                    if (info->awaitingCoro)
+                        LCoro->info("\t{} -> yielding to ¢{}", minifmt::write(verbose{*info}),
+                                    _getInfo(info->awaitingCoro).sequence);
+                    else
+                        LCoro->info("\t{} -- yielding", minifmt::write(verbose{*info}));
                     break;
-                case coroState::ending:
-                    LCoro->info("\t{} [ending]", verbose{*info});
+                case ending:
+                    LCoro->info("\t{} [ending]", minifmt::write(verbose{*info}));
                     break;
             }
         }
@@ -421,30 +463,34 @@ namespace crouton::lifecycle {
 
 
     void logStacks() {
+        using enum coroState;
         unique_lock<mutex> lock(sCorosMutex);
-        LCoro->info("{} Existing Coroutines, By Stack:", sCoros.size());
+        size_t n = std::ranges::count_if(sCoros, [](auto &p) {return p.second.handle != nullptr;});
+        LCoro->info("{} Existing Coroutines, By Stack:", n);
 
         unordered_set<coroInfo*> remaining;
         unordered_map<coroInfo*,coroInfo*> next;    // next[c] = the caller/awaiter of c
         for (auto &[h,c] : sCoros) {
-            remaining.insert(&c);
-            if (c.state == coroState::active && c.caller) {
-                next.insert({&c, c.caller});
-            } else if (c.state == coroState::awaiting && c.awaitingCoro) {
-                coroInfo& other = _getInfo(c.awaitingCoro);
-                next.insert({&other, &c});
+            if (c.handle) {
+                remaining.insert(&c);
+                if (c.state == active && c.caller) {
+                    next.insert({&c, c.caller});
+                } else if ((c.state == awaiting || c.state == yielding) && c.awaitingCoro) {
+                    coroInfo& other = _getInfo(c.awaitingCoro);
+                    next[&other] = &c;
+                }
             }
         }
 
         auto printStack = [&](coroInfo &c) {
             int depth = 1;
-            if (c.state == coroState::active) {
-                LCoro->info("        {}: {}", depth, verbose{c});
+            if (c.state == active) {
+                LCoro->info("        {}: {}", depth, minifmt::write(verbose{c}));
             } else if (c.awaiting) {
-                LCoro->info("        {}: {} (awaiting {} {})", depth, verbose{c},
-                            GetTypeName(*c.awaitingType), c.awaiting);
+                LCoro->info("        {}: {} (awaiting {} {})", depth, minifmt::write(verbose{c}),
+                            GetTypeName(*c.awaitingType), minifmt::write(c.awaiting));
             } else {
-                LCoro->info("        {}: {} ({})", depth, verbose{c}, kStateNames[int(c.state)]);
+                LCoro->info("        {}: {} ({})", depth, minifmt::write(verbose{c}), kStateNames[int(c.state)]);
             }
             remaining.erase(&c);
 
@@ -452,7 +498,7 @@ namespace crouton::lifecycle {
             while (true) {
                 if (auto i = next.find(cur); i != next.end()) {
                     cur = i->second;
-                    LCoro->info("        {}: {} ({})", ++depth, verbose{*cur}, kStateNames[int(cur->state)]);
+                    LCoro->info("        {}: {} ({})", ++depth, minifmt::write(verbose{*cur}), kStateNames[int(cur->state)]);
                     remaining.erase(cur);
                 } else {
                     break;
@@ -467,7 +513,7 @@ namespace crouton::lifecycle {
 
         for (auto &[h,c] : sCoros) {
             if (remaining.contains(&c) && next.contains(&c)
-                    && (c.state == coroState::active || !c.awaitingCoro)) {
+                    && (c.state == active || !c.awaitingCoro)) {
                 LCoro->info("    Stack:");
                 printStack(c);
             }
@@ -476,7 +522,7 @@ namespace crouton::lifecycle {
         if (!remaining.empty()) {
             LCoro->info("    Others:");
             for (coroInfo *c : remaining)
-                LCoro->info("        -- {} ({})", verbose{*c}, kStateNames[int(c->state)]);
+                LCoro->info("        -  {} ({})", minifmt::write(verbose{*c}), kStateNames[int(c->state)]);
         }
     }
 
@@ -485,7 +531,6 @@ namespace crouton::lifecycle {
 
 
 #if CROUTON_LIFECYCLES
-void dumpCoros() {
-    crouton::lifecycle::logAll();
-}
+void dumpCoros()            {crouton::lifecycle::logAll();}
+void dumpCoroStacks()       {crouton::lifecycle::logStacks();}
 #endif

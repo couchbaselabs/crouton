@@ -27,16 +27,16 @@ namespace crouton::util {
     template <class Self>
     class Child {
     public:
-        explicit Child(Self* self)
+        explicit Child(Self* self) noexcept
         :_selfOffset(unsigned(uintptr_t(this) - uintptr_t(self)))
         {
             assert((void*)this >= self && (void*)(this + 1) <= self + 1);
         }
 
-        Self* self()        {return (Self*)(uintptr_t(this) - _selfOffset);}
+        Self* self() noexcept Pure   {return (Self*)(uintptr_t(this) - _selfOffset);}
 
     private:
-        unsigned const      _selfOffset;        // My byte offset within my Self instance
+        unsigned const  _selfOffset;        // My byte offset within my Self instance
     };
 
 
@@ -53,17 +53,17 @@ namespace crouton::util {
     class OneToOne : private Child<Self> {
     public:
         /// Initializes an unconnected OneToOne. This should be a member initializer of Self.
-        explicit OneToOne(Self* self)   :Child<Self>(self) { }
+        explicit OneToOne(Self* self) noexcept   :Child<Self>(self) { }
 
         /// Initializes a connected OneToOne. This should be a member initializer of Self.
-        OneToOne(Self* self, OneToOne<Other,Self>* other)
+        OneToOne(Self* self, OneToOne<Other,Self>* other) noexcept
         :OneToOne(self)
         {
             _other = other;
             hookup();
         }
 
-        OneToOne(OneToOne&& old)
+        OneToOne(OneToOne&& old) noexcept
         :Child<Self>(old)
         ,_other(old._other)
         {
@@ -71,14 +71,14 @@ namespace crouton::util {
             hookup();
         }
 
-        OneToOne& operator=(OneToOne&& old) {
+        OneToOne& operator=(OneToOne&& old) noexcept {
             _other = old._other;
             old._other = nullptr;
             hookup();
         }
 
         /// Connects to an `Other` object, or none. Breaks any existing link.
-        OneToOne& operator= (OneToOne<Other,Self>* b) {
+        OneToOne& operator= (OneToOne<Other,Self>* b) noexcept {
             if (b != _other) {
                 unhook();
                 _other = b;
@@ -88,12 +88,12 @@ namespace crouton::util {
         }
 
         /// A pointer to the target `Other` object. May be nullptr.
-        Other* other() const        {return _other ? _other->self() : nullptr;}
+        Other* other() const noexcept Pure      {return _other ? _other->self() : nullptr;}
 
-        operator Other*() const     {return other();}
-        Other* operator->() const   {return other();}
+        operator Other*() const noexcept Pure   {return other();}
+        Other* operator->() const noexcept Pure {return other();}
 
-        ~OneToOne()                 {unhook();}
+        ~OneToOne() noexcept                    {unhook();}
 
     private:
         friend class OneToOne<Other,Self>;
@@ -101,12 +101,12 @@ namespace crouton::util {
         OneToOne(OneToOne const&) = delete;
         OneToOne& operator=(OneToOne const&) = delete;
 
-        void hookup() {
+        void hookup() noexcept {
             if (_other)
                 _other->_other = this;
         }
 
-        void unhook() {
+        void unhook() noexcept {
             if (_other) {
                 assert(_other->_other == this);
                 _other->_other = nullptr;
@@ -130,15 +130,15 @@ namespace crouton::util {
         using super = LinkedList<ToOne<Other,Self>>;
 
         /// Initializes an unconnected Child. This should be a member initializer of Self.
-        explicit ToMany(Self* self)     :Child<Self>(self) { }
+        explicit ToMany(Self* self)  noexcept    :Child<Self>(self) { }
 
-        ToMany(ToMany&& other)
+        ToMany(ToMany&& other) noexcept
         :super(std::move(other))
         {
             adopt();
         }
 
-        ToMany& operator=(ToMany&& other) {
+        ToMany& operator=(ToMany&& other) noexcept {
             if (&other != this) {
                 super::operator=(std::move(other));
                 adopt();
@@ -150,34 +150,34 @@ namespace crouton::util {
 
         class iterator {
         public:
-            explicit iterator(typename super::iterator i)                   :_i(i) { }
-            Other& operator*() const                                        {return *(_i->self());}
-            Other* operator->() const                                       {return _i->self();}
-            iterator& operator++()                                          {++_i; return *this;}
-            friend bool operator==(iterator const& a, iterator const& b)    {return a._i == b._i;}
+            explicit iterator(typename super::iterator i) noexcept            :_i(i) { }
+            Other& operator*() const noexcept Pure                            {return *(_i->self());}
+            Other* operator->() const noexcept Pure                           {return _i->self();}
+            iterator& operator++() noexcept                                   {++_i; return *this;}
+            friend bool operator==(iterator const& a, iterator const& b) Pure {return a._i == b._i;}
         private:
             typename super::iterator _i;
         };
 
-        iterator begin()                            {return iterator(super::begin());}
-        iterator end()                              {return iterator(super::end());}
+        iterator begin() noexcept Pure                       {return iterator(super::begin());}
+        iterator end() noexcept Pure                         {return iterator(super::end());}
 
-        void push_front(ToOne<Other,Self>& link)    {super::push_front(link); link._parent = this;}
-        void push_back(ToOne<Other,Self>& link)     {super::push_back(link); link._parent = this;}
-        void erase(ToOne<Other,Self>& link)         {super::erase(link); link._parent = nullptr;}
+        void push_front(ToOne<Other,Self>& link) noexcept    {super::push_front(link); link._parent = this;}
+        void push_back(ToOne<Other,Self>& link) noexcept     {super::push_back(link); link._parent = this;}
+        void erase(ToOne<Other,Self>& link) noexcept         {super::erase(link); link._parent = nullptr;}
 
-        void clear()                                {deAdopt(); super::clear();}
+        void clear() noexcept                                {deAdopt(); super::clear();}
 
-        ~ToMany()                                   {deAdopt();}
+        ~ToMany() noexcept                                   {deAdopt();}
 
     private:
         friend ToOne<Other,Self>;
 
-        void adopt() {
+        void adopt() noexcept {
             for (ToOne<Other,Self>& child : (super&)*this)
                 child._parent = this;
         }
-        void deAdopt() {
+        void deAdopt() noexcept {
             for (ToOne<Other,Self>& child : (super&)*this)
                 child._parent = nullptr;
         }
@@ -195,10 +195,10 @@ namespace crouton::util {
     class ToOne : private Link, private Child<Self> {
     public:
         /// Initializes an unconnected instance. This should be a member initializer of Self.
-        explicit ToOne(Self* self)     :Child<Self>(self) { }
+        explicit ToOne(Self* self) noexcept     :Child<Self>(self) { }
 
         /// Initializes a connected instance. This should be a member initializer of Self.
-        ToOne(Self* self, ToMany<Other,Self>* other)
+        ToOne(Self* self, ToMany<Other,Self>* other) noexcept
         :Child<Self>(self)
         ,_parent(other)
         {
@@ -206,7 +206,7 @@ namespace crouton::util {
                 _parent->push_back(*this);
         }
 
-        ToOne(ToOne&& old)
+        ToOne(ToOne&& old) noexcept
         :Link(std::move(old))
         ,Child<Self>(old)
         ,_parent(old._parent)
@@ -214,14 +214,14 @@ namespace crouton::util {
             old._parent = nullptr;
         }
 
-        ToOne& operator=(ToOne&& old) {
+        ToOne& operator=(ToOne&& old) noexcept {
             this->Link::operator=(std::move(old));
             _parent = old._parent;
             old._parent = nullptr;
         }
 
         /// Connects to an `Other` object, or none. Breaks any existing link.
-        ToOne& operator= (ToMany<Other,Self>* parent) {
+        ToOne& operator= (ToMany<Other,Self>* parent) noexcept {
             if (parent != _parent) {
                 remove();
                 _parent = parent;
@@ -232,7 +232,7 @@ namespace crouton::util {
         }
 
         /// A pointer to the target `Other` object. May be nullptr.
-        Other* other() const     {return _parent ? _parent->self() : nullptr;}
+        Other* other() const noexcept Pure   {return _parent ? _parent->self() : nullptr;}
 
     private:
         friend class ToMany<Other,Self>;

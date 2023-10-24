@@ -21,9 +21,9 @@
 #include "Coroutine.hh"
 #include "Internal.hh"
 #include "util/Bytes.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Scheduler.hh"
-#include "io/UVBase.hh"
+#include "io/uv/UVBase.hh"
 
 #include <algorithm>
 #include <concepts>
@@ -36,7 +36,7 @@
 
 
 
-namespace crouton::io {
+namespace crouton::io::uv {
 
     /// Checks a libuv function result and throws a UVError exception if it's negative.
     static inline void check(std::signed_integral auto status, const char* what) {
@@ -85,35 +85,6 @@ namespace crouton::io {
 
         const char* _what;
     };
-
-
-    /** A data buffer used by stream_wrapper and Stream. */
-    struct Buffer {
-        static constexpr size_t kCapacity = 65536 - 2 * sizeof(uint32_t);
-
-        uint32_t    size = 0;               ///< Length of valid data
-        uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
-        std::byte   data[kCapacity];        ///< The data itself
-
-        size_t available() const {return size - used;}
-        bool empty() const       {return size == used;}
-
-        ConstBytes bytes() const {return {data + used, size - used};}
-
-        ConstBytes read(size_t maxLen) {
-            size_t n = std::min(maxLen, available());
-            ConstBytes result(data + used, n);
-            used += n;
-            return result;
-        }
-
-        void unRead(size_t len) {
-            assert(len <= used);
-            used -= len;
-        }
-    };
-
-    using BufferRef = std::unique_ptr<Buffer>;
 
 
 }

@@ -1,6 +1,8 @@
 #  Crouton
 
-Crouton is a C++20 coroutine runtime library that provides some general purpose utilities, as well as cross-platform event loops, I/O and networking based on the [libuv][LIBUV], [mbedTLS][MBEDTLS] and [llhttp][LLHTTP] libraries. (On Apple platforms it can also use the system Network.framework.)
+**Crouton** is a C++20 coroutine runtime library that provides some general purpose concurrency utilities, as well as cross-platform event loops, I/O and networking that work the same way on Mac, Linux, Windows and ESP32 microcontrollers.
+
+The cross-platform support is based on the widely-used [libuv][LIBUV], [mbedTLS][MBEDTLS] and [llhttp][LLHTTP] libraries. (On Apple platforms it can also use the system Network.framework. On [ESP32][ESP32], where libuv is not supported, it uses lwip and FreeRTOS APIs instead.)
 
 A **Coroutine** is _a function that can return partway through, and then later be resumed where it left off._ Knuth wrote about them in the 1960s and they remained a curiosity for a long time, but they've since become widely used under the hood of the "async / await" concurrency model used in languages like JavaScript, C#, Rust, Nim, and Swift. Crouton brings this to C++.
 
@@ -53,15 +55,15 @@ How is that better than threads? It's safer and easier to reason about. The only
     
 * Core classes & APIs:
     * General-purpose `Error` and `Result<T>` types
-    * Logging, a thin wrapper around [spdlog][SPDLOG]
+    * Logging uses either a thin wrapper around [spdlog][SPDLOG], or a smaller compatible library I wrote.
 
 * Cross-Platform:
     * macOS (builds and passes tests)
       * iOS? ("It's still Darwin…")
     * Linux (builds and passes test)
       * Android? ("It's still Linux…")
+    * [ESP32][ESP32] embedded CPUs (builds and passes tests. File APIs not available yet.)
     * Windows (sometimes builds; not yet tested; help wanted!)
-    * Would very much like to support some embedded platforms like ESP32 (help wanted!)
 
 ## Example
 
@@ -86,11 +88,13 @@ cout << endl;
 
 See also [demo_server.cc](tests/demo_server.cc), a simple HTTP and WebSocket server.
 
+An example embedded app is at [tests/ESP32](tests/ESP32/README.md).
+
 ## Status: ☠️EXPERIMENTAL☠️
 
 [![Build](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml/badge.svg)](https://github.com/couchbaselabs/crouton/actions/workflows/build.yml)
 
-This is new code, under heavy development! So far, it builds with Clang (Xcode 14) on macOS, GCC 12 on Ubuntu, and Visual Studio 17 2022 on Windows.
+This is new code, under heavy development! So far, it builds with Clang (Xcode 15) on macOS, GCC 12 on Ubuntu, Visual Studio 17 2022 on Windows, and ESP-IDF 5.0.
 
 The tests run regularly on macOS, and occasionally on Ubuntu (though not in CI.) Test coverage is very limited.
 
@@ -104,12 +108,12 @@ APIs are still in flux. Things get refactored a lot.
 ### Prerequisites:
 
 - CMake
-- Clang 15, Xcode 14, or GCC 12
+- Clang 15, Xcode 15, or GCC 12
 - zlib (aka libz)
 
 #### on macOS:
 
-- Install Xcode 14 or later, or at least the command-line tools.
+- Install Xcode 15 or later, or at least the command-line tools.
 - Install CMake; this is most easily done with [HomeBrew](https://brew.sh), by running `brew install cmake`
 
 #### on Ubuntu Linux
@@ -123,7 +127,7 @@ APIs are still in flux. Things get refactored a lot.
 
 The library is `libCrouton`, in either the `build_cmake/debug/` or `build_cmake/release/` directory.
 
-### Building With Xcode
+### Building With Xcode 15+
 
 **Before first building with Xcode**, you must use CMake to build libuv and mbedTLS:
 
@@ -136,6 +140,9 @@ Then:
 - Select the `Tests` scheme and Run. 
 - To locate the binaries, choose Product > Show Build Folder In Finder
 
+### Building For ESP32 Embedded Systems
+
+The ESP-IDF component is at `src/io/esp32`; please see the [README](src/io/esp32/README.md) for details. A demo app is at [tests/ESP32](tests/ESP32/README.md).
 
 ## License(s)
 
@@ -171,3 +178,4 @@ Then:
 [BAKER]: https://lewissbaker.github.io/2022/08/27/understanding-the-compiler-transform
 [BSL]: src/io/blip/licences/BSL.txt
 [BLIP]: src/io/blip/README.md
+[ESP32]: https://www.espressif.com

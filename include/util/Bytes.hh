@@ -39,16 +39,18 @@ namespace crouton {
         using super::span;       // inherits all of std::span's constructors
         using super::operator=;
 
-        Bytes(string& str) :super((T*)str.data(), str.size()) { }
+        Bytes(string& str) noexcept :super((T*)str.data(), str.size()) { }
 
-        explicit operator string_view() const {return {(const char*)this->data(), this->size()};}
+        explicit operator string_view() const noexcept Pure {
+            return {(const char*)this->data(), this->size()};
+        }
 
-        Self first(size_t n) const          {return Self(super::first(n));}
-        Self last(size_t n) const           {return Self(super::last(n));}
-        Self without_first(size_t n) const  {return last(this->size() - n);}
-        Self without_last(size_t n) const   {return first(this->size() - n);}
+        Self first(size_t n) const noexcept Pure          {return Self(super::first(n));}
+        Self last(size_t n) const noexcept Pure           {return Self(super::last(n));}
+        Self without_first(size_t n) const noexcept Pure  {return last(this->size() - n);}
+        Self without_last(size_t n) const noexcept Pure   {return first(this->size() - n);}
 
-        T* endByte() const                  {return this->data() + this->size();}
+        T* endByte() const noexcept Pure                  {return this->data() + this->size();}
     };
 
 
@@ -71,7 +73,7 @@ namespace crouton {
         ConstBytes(const void* begin, const void* end) :ConstBytes(begin, uintptr_t(end) - uintptr_t(begin)) { }
 
         ConstBytes(uv_buf_t);
-        explicit operator uv_buf_t() const;
+        explicit operator uv_buf_t() const noexcept;
 
         [[nodiscard]] size_t read(void *dstBuf, size_t dstSize) noexcept {
             size_t n = std::min(dstSize, size());
@@ -112,16 +114,47 @@ namespace crouton {
 
         MutableBytes(uv_buf_t);
 
-        operator uv_buf_t() const;
+        operator uv_buf_t() const noexcept Pure;
 
-        [[nodiscard]] size_t write(const void* src, size_t len) {
+        [[nodiscard]] size_t write(const void* src, size_t len) noexcept {
             size_t n = std::min(len, this->size());
             ::memcpy(data(), src, n);
             *this = without_first(n);
             return n;
         }
 
-        [[nodiscard]] size_t write(ConstBytes bytes) {return write(bytes.data(), bytes.size());}
+        [[nodiscard]] size_t write(ConstBytes bytes) noexcept {
+            return write(bytes.data(), bytes.size());
+        }
     };
+
+
+    /** A data buffer used by stream_wrapper and Stream. */
+    struct Buffer {
+        static constexpr size_t kCapacity = 65536 - 2 * sizeof(uint32_t);
+
+        uint32_t    size = 0;               ///< Length of valid data
+        uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
+        std::byte   data[kCapacity];        ///< The data itself
+
+        size_t available() const noexcept Pure {return size - used;}
+        bool empty() const noexcept Pure       {return size == used;}
+
+        ConstBytes bytes() const noexcept Pure {return {data + used, size - used};}
+
+        ConstBytes read(size_t maxLen) {
+            size_t n = std::min(maxLen, available());
+            ConstBytes result(data + used, n);
+            used += n;
+            return result;
+        }
+
+        void unRead(size_t len) {
+            assert(len <= used);
+            used -= len;
+        }
+    };
+
+    using BufferRef = std::unique_ptr<Buffer>;
 
 }

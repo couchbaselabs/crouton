@@ -323,7 +323,7 @@ namespace uWS {
 
             if ( !isServer ) {
                 ((uint8_t*)dst)[1] |= 0x80;
-                crouton::io::Randomize(mask.data(), 4);
+                crouton::Randomize(mask.data(), 4);
                 memcpy(dst + headerLength, mask.data(), 4);
                 headerLength += 4;
             }

@@ -21,6 +21,7 @@
 
 namespace crouton::io {
     using namespace std;
+    using namespace crouton::io::uv;
 
     pair<Pipe,Pipe> Pipe::createPair() {
         uv_file fds[2];

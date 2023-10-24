@@ -19,7 +19,7 @@
 #ifdef __APPLE__
 
 #include "io/apple/NWConnection.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 
 #include <Network/Network.h>
 #include <Security/SecBase.h>

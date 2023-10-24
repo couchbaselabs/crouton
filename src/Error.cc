@@ -19,9 +19,10 @@
 #include "Error.hh"
 #include "Backtrace.hh"
 #include "Internal.hh"
-#include "Logging.hh"
-#include "UVInternal.hh"
-#include "llhttp.h"
+#include "util/Logging.hh"
+#include <cstring>
+#include <iostream>
+#include <mutex>
 #include <sstream>
 
 namespace crouton {
@@ -38,10 +39,16 @@ namespace crouton {
     }
 
 
-    type_info const& Error::typeInfo() const {
+    Error::DomainInfo Error::typeInfo() const {
+#if CROUTON_RTTI
         if (_code != 0)
-            return *sDomains[_domain].type;
+            return *(std::type_info*)sDomains[_domain].type;
         return typeid(void);
+#else
+        if (_code != 0)
+            return sDomains[_domain].type;
+        return nullptr;
+#endif
     }
 
 
@@ -67,10 +74,12 @@ namespace crouton {
     }
 
 
-    void Error::raise(string_view logMessage) const {
-        spdlog::error("*** Throwing crouton::Exception({}, {}): {} ({})",
-                      domain(), _code, description(), logMessage);
-        assert(*this); // it's illegal to throw `noerror`
+    void Error::raise(string_view logMessage, std::source_location const& loc) const {
+        Log->error("*** Throwing crouton::Exception({}, {}): {} ({}) -- from {} [{}:{}]",
+                      domain(), _code, description(), logMessage,
+                      loc.function_name(), loc.file_name(), loc.line());
+        fleece::Backtrace(1).writeTo(std::cerr);
+        precondition(*this); // it's illegal to throw `noerror`
         throw Exception(*this);
     }
 
@@ -81,7 +90,7 @@ namespace crouton {
     std::array<Error::DomainMeta,Error::kNDomains> Error::sDomains;
 
 
-    uint8_t Error::_registerDomain(std::type_info const& type,
+    uint8_t Error::_registerDomain(DomainInfo typeRef,
                                    string_view name,
                                    ErrorDescriptionFunc description)
     {
@@ -91,12 +100,18 @@ namespace crouton {
         static mutex sMutex;
         unique_lock<mutex> lock(sMutex);
 
-        spdlog::info("Error: Registering domain {}", type.name());
+        const void* type;
+#if CROUTON_RTTI
+        type = &typeRef;
+#else
+        type = typeRef;
+#endif
+        Log->debug("Error: Registering domain {}", name);
         for (auto &d : sDomains) {
-            if (d.type == &type) {
+            if (d.type == type) {
                 return uint8_t(&d - &sDomains[0]);
             } else if (d.type == nullptr ) {
-                d.type = &type;
+                d.type = type;
                 d.name = name;
                 d.description = description;
                 return uint8_t(&d - &sDomains[0]);
@@ -126,6 +141,7 @@ namespace crouton {
             {errorcode_t(LogicError), "internal error (logic error)"},
             {errorcode_t(ParseError), "unreadable data"},
             {errorcode_t(Timeout), "operation timed out"},
+            {errorcode_t(EndOfData), "unexpected end of data"},
             {errorcode_t(Unimplemented), "unimplemented operation"},
         };
         return NameEntry::lookup(code, names);
@@ -171,20 +187,24 @@ namespace crouton {
 
 
     static CppError exceptionToCppError(std::exception const& x) {
+#if CROUTON_RTTI
         string name = fleece::Unmangle(typeid(x));
         for (auto &entry : kExceptionNames) {
             if (0 == strcmp(entry.name, name.c_str()))
                 return CppError{entry.code};
         }
-        spdlog::warn("No CppErr enum value matches exception class {}", name);
+        Log->warn("No CppErr enum value matches exception class {}", name);
+#endif
         return exception;
     }
 
 
     Error::Error(std::exception const& x) {
+#if CROUTON_RTTI
         if (auto exc = dynamic_cast<Exception const*>(&x))
             *this = exc->error();
         else
+#endif
             *this = exceptionToCppError(x);
     }
 

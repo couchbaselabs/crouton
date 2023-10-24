@@ -91,12 +91,12 @@ namespace crouton {
 
             coro_handle await_suspend(coro_handle h) noexcept   {
                 _sched->suspend(h);
-                return lifecycle::suspendingTo(h, typeid(*_sched), _sched,
+                return lifecycle::suspendingTo(h, CRTN_TYPEID(*_sched), _sched,
                                                Scheduler::current().next());
             }
 
             void await_resume() noexcept {
-                assert(_sched->isCurrent());
+                precondition(_sched->isCurrent());
             }
         private:
             Scheduler* _sched;
@@ -146,7 +146,8 @@ namespace crouton {
         struct SuspensionImpl;
         friend class Suspension;
         
-        Scheduler() = default;
+        Scheduler();
+        ~Scheduler();
         static Scheduler& _create();
         EventLoop* newEventLoop();
         coro_handle eventLoopHandle();
@@ -163,8 +164,8 @@ namespace crouton {
         static inline thread_local Scheduler* sCurSched;    // Current thread's instance
 
         std::deque<coro_handle> _ready;                     // Coroutines that are ready to run
-        SuspensionMap           _suspended;                 // Suspended/sleeping coroutines
-        EventLoop*              _eventLoop;                 // My event loop
+        std::unique_ptr<SuspensionMap> _suspended;          // Suspended/sleeping coroutines
+        EventLoop*              _eventLoop = nullptr;       // My event loop
         coro_handle             _eventLoopTask = nullptr;   // EventLoop's coroutine handle
         std::atomic<bool>       _woke = false;              // True if a suspended is waking
         bool                    _ownsEventLoop = false;     // True if I created _eventLoop
@@ -178,13 +179,13 @@ namespace crouton {
     class Suspension {
     public:
         /// Default constructor creates an empty/null Suspension.
-        Suspension()                    :_impl(nullptr) { }
+        Suspension()                                    :_impl(nullptr) { }
 
-        Suspension(Suspension&& s)      :_impl(s._impl) {s._impl = nullptr;}
-        Suspension& operator=(Suspension&& s) {std::swap(_impl, s._impl); return *this;}
-        ~Suspension()                   {if (_impl) cancel();}
+        Suspension(Suspension&& s) noexcept             :_impl(s._impl) {s._impl = nullptr;}
+        Suspension& operator=(Suspension&& s) noexcept  {std::swap(_impl, s._impl); return *this;}
+        ~Suspension()                                   {if (_impl) cancel();}
 
-        explicit operator bool() const  {return _impl != nullptr;}
+        explicit operator bool() const Pure {return _impl != nullptr;}
 
         coro_handle handle() const;
 
@@ -202,7 +203,7 @@ namespace crouton {
 
     private:
         friend class Scheduler;
-        explicit Suspension(Scheduler::SuspensionImpl* impl) :_impl(impl) { };
+        explicit Suspension(Scheduler::SuspensionImpl* impl) noexcept :_impl(impl) { };
         Suspension(Suspension const&) = delete;
 
         Scheduler::SuspensionImpl* _impl;
@@ -215,7 +216,7 @@ namespace crouton {
     struct Yielder : public CORO_NS::suspend_always {
         coro_handle await_suspend(coro_handle h) noexcept {
             _handle = h;
-            return lifecycle::yieldingTo(h, Scheduler::current().yield(h));
+            return lifecycle::yieldingTo(h, Scheduler::current().yield(h), false);
         }
 
         void await_resume() noexcept {

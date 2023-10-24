@@ -19,17 +19,15 @@
 #pragma once
 #include "Error.hh"
 
-namespace crouton::io {
+namespace crouton::io::uv {
 
     /** Enum for using libuv errors with Error. */
     enum class UVError : errorcode_t { };
 
-    /// Writes cryptographically-secure random bytes to the destination buffer.
-    void Randomize(void* buf, size_t len);
 }
 
 namespace crouton {
-    template <> struct ErrorDomainInfo<io::UVError> {
+    template <> struct ErrorDomainInfo<io::uv::UVError> {
         static constexpr string_view name = "libuv";
         static string description(errorcode_t);
     };

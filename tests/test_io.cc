@@ -127,7 +127,8 @@ TEST_CASE("DNS lookup", "[uv]") {
         AddrInfo addr = AWAIT AddrInfo::lookup("example.com");
         cerr << "Addr = " << addr.primaryAddressString() << endl;
         auto ip4addr = addr.primaryAddress(4);
-        CHECK(ip4addr.sa_family == AF_INET);
+        REQUIRE(ip4addr);
+        CHECK(ip4addr->sa_family == AF_INET);
         CHECK(addr.primaryAddressString() == "93.184.216.34");
         RETURN noerror;
     });
@@ -137,15 +138,15 @@ TEST_CASE("DNS lookup", "[uv]") {
 
 TEST_CASE("Read a socket", "[uv]") {
     RunCoroutine([]() -> Future<void> {
-        TCPSocket socket;
+        auto socket = ISocket::newSocket(false);
         cerr << "-- Test Connecting...\n";
-        AWAIT socket.connect("example.com", 80);
+        AWAIT socket->connect("example.com", 80);
 
         cerr << "-- Connected! Test Writing...\n";
-        AWAIT socket.write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
+        AWAIT socket->stream().write("GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n");
 
         cerr << "-- Test Reading...\n";
-        string result = AWAIT socket.readAll();
+        string result = AWAIT socket->stream().readAll();
 
         cerr << "HTTP response:\n" << result << endl;
         CHECK(result.starts_with("HTTP/1.1 "));

@@ -44,13 +44,13 @@ namespace crouton {
     template <typename T>
     class Generator : public Coroutine<GeneratorImpl<T>>, public ISeries<T> {
     public:
-        Generator(Generator&&) = default;
+        Generator(Generator&&) noexcept = default;
 
         ~Generator() {
             if (auto h = this->handle()) {
                 if (!h.done())
                     this->impl().stop();
-                h.destroy();
+                lifecycle::destroy(h);
             }
         }
 
@@ -72,7 +72,7 @@ namespace crouton {
 
         coro_handle await_suspend(coro_handle cur) override {
             coro_handle next = this->impl().generateFor(cur);
-            return lifecycle::suspendingTo(cur, typeid(this), this, next);
+            return lifecycle::suspendingTo(cur, this->handle(), next);
         }
 
         Result<T> await_resume() override                   {return this->impl().yieldedValue();}
@@ -119,7 +119,7 @@ namespace crouton {
 
         void clear()            {_yielded_value = noerror;}
 
-        bool isReady() const    {return _ready;}
+        bool isReady() const Pure    {return _ready;}
 
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
         Result<T> next() {
@@ -154,9 +154,9 @@ namespace crouton {
         // Invoked by the coroutine's `co_yield`. Captures the value and transfers control.
         template <std::convertible_to<Result<T>> From>
         YielderTo yield_value(From&& value) {
-            assert(!_eof);
+            precondition(!_eof);
             _yielded_value = std::forward<From>(value);
-            assert(!_yielded_value.empty());
+            precondition(!_yielded_value.empty());
             ready();
             auto resumer = _consumer;
             if (resumer)
@@ -200,7 +200,7 @@ namespace crouton {
 
         // Tells me which coroutine should resume after I co_yield the next value.
         coro_handle generateFor(coro_handle consumer) {
-            assert(!_consumer); // multiple awaiters not supported
+            precondition(!_consumer); // multiple awaiters not supported
             _consumer = consumer;
             clear();
             return this->handle();

@@ -43,6 +43,11 @@
 		275EB4372ACDCC5D0022ED53 /* BLIPIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B330502AB2763B0066C8DA /* BLIPIO.cc */; };
 		275EB4402ACDCD660022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
 		275EB4412ACDCD760022ED53 /* libBLIP.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275EB43F2ACDCC5D0022ED53 /* libBLIP.a */; };
+		277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652B2AD8B5D8006F053D /* betterassert.cc */; };
+		277B652E2AD9FCDC006F053D /* Backtrace+Unix.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */; };
+		277B6C172ADDB6B7006F053D /* ESPTCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */; };
+		277B6C292AE06CDA006F053D /* MiniFormat.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277B6C272AE06CDA006F053D /* MiniFormat.hh */; };
+		277B6C2A2AE06CDA006F053D /* MiniFormat.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277B6C282AE06CDA006F053D /* MiniFormat.cc */; };
 		277E8A412ABA4AA200E78CB1 /* CoCondition.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */; };
 		277E8A422ABA4AA200E78CB1 /* CoCondition.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277E8A402ABA4AA200E78CB1 /* CoCondition.cc */; };
 		277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */ = {isa = PBXBuildFile; fileRef = 277E8A432ABA50FB00E78CB1 /* LinkedList.hh */; };
@@ -331,6 +336,26 @@
 		275EB43F2ACDCC5D0022ED53 /* libBLIP.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libBLIP.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		277B65272AD739B1006F053D /* Producer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Producer.hh; sourceTree = "<group>"; };
 		277B65282AD766EF006F053D /* Relation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Relation.hh; sourceTree = "<group>"; };
+		277B652A2AD8B5CA006F053D /* betterassert.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = betterassert.hh; sourceTree = "<group>"; };
+		277B652B2AD8B5D8006F053D /* betterassert.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = betterassert.cc; sourceTree = "<group>"; };
+		277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+Unix.cc"; sourceTree = "<group>"; };
+		277B652F2AD9FD47006F053D /* Backtrace+Windows.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+Windows.cc"; sourceTree = "<group>"; };
+		277B65302AD9FECA006F053D /* Backtrace+ESP32.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Backtrace+ESP32.cc"; sourceTree = "<group>"; };
+		277B65332ADA07E0006F053D /* sdkconfig */ = {isa = PBXFileReference; lastKnownFileType = text; path = sdkconfig; sourceTree = "<group>"; };
+		277B65362ADA07E0006F053D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		277B6C122ADA07E3006F053D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		277B6C132ADA07E3006F053D /* main.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cc; sourceTree = "<group>"; };
+		277B6C142ADA0873006F053D /* ESPEventLoop.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPEventLoop.cc; sourceTree = "<group>"; };
+		277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPTCPSocket.hh; sourceTree = "<group>"; };
+		277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPTCPSocket.cc; sourceTree = "<group>"; };
+		277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPAddrInfo.cc; sourceTree = "<group>"; };
+		277B6C1D2ADDBE82006F053D /* ESPBase.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ESPBase.hh; sourceTree = "<group>"; };
+		277B6C1E2ADDDF13006F053D /* ESPBase.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ESPBase.cc; sourceTree = "<group>"; };
+		277B6C212ADDEEF3006F053D /* Kconfig.projbuild */ = {isa = PBXFileReference; lastKnownFileType = text; path = Kconfig.projbuild; sourceTree = "<group>"; };
+		277B6C232ADF2632006F053D /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		277B6C242ADF2EC4006F053D /* Misc.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Misc.hh; sourceTree = "<group>"; };
+		277B6C272AE06CDA006F053D /* MiniFormat.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MiniFormat.hh; sourceTree = "<group>"; };
+		277B6C282AE06CDA006F053D /* MiniFormat.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MiniFormat.cc; sourceTree = "<group>"; };
 		277E8A3F2ABA4AA200E78CB1 /* CoCondition.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoCondition.hh; sourceTree = "<group>"; };
 		277E8A402ABA4AA200E78CB1 /* CoCondition.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CoCondition.cc; sourceTree = "<group>"; };
 		277E8A432ABA50FB00E78CB1 /* LinkedList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LinkedList.hh; sourceTree = "<group>"; };
@@ -585,6 +610,8 @@
 		27B330822AB911470066C8DA /* demo_blipclient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = demo_blipclient.cc; sourceTree = "<group>"; };
 		27B330842AB912D30066C8DA /* BLIP.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
 		27BA40742AA502DD0011BB86 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
+		27BCD2CE2AE73844009DFCED /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		27BCD2CF2AE738DF009DFCED /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		27E98EDE2AC2099E002F3D35 /* test_generator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = test_generator.cc; sourceTree = "<group>"; };
 		27E98EE02AC21940002F3D35 /* Awaitable.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Awaitable.hh; sourceTree = "<group>"; };
 		27ED1C702AABF47200ADC971 /* CoroLifecycle.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoroLifecycle.hh; sourceTree = "<group>"; };
@@ -596,7 +623,7 @@
 		27F49CD22A9E48A100BFB24C /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Backtrace.hh; sourceTree = "<group>"; };
 		27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Backtrace.cc; sourceTree = "<group>"; };
-		27F49CD82A9E593700BFB24C /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; usesTabs = 1; };
+		27F49CD82A9E593700BFB24C /* Makefile */ = {isa = PBXFileReference; indentWidth = 8; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; usesTabs = 1; };
 		27F603022A9EB826006FA1D0 /* IStream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IStream.hh; sourceTree = "<group>"; };
 		27F603032A9EB826006FA1D0 /* IStream.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IStream.cc; sourceTree = "<group>"; };
 		27F603062A9FA366006FA1D0 /* NWConnection.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = NWConnection.hh; sourceTree = "<group>"; };
@@ -692,8 +719,8 @@
 				279D5D5C2A93BB5C005C3066 /* EventLoop.hh */,
 				272728FF2A8D6B43000CCA22 /* Future.hh */,
 				272729002A8D6B43000CCA22 /* Generator.hh */,
+				277B6C242ADF2EC4006F053D /* Misc.hh */,
 				277B65272AD739B1006F053D /* Producer.hh */,
-				278F7F222AAA98FE005B12F2 /* Logging.hh */,
 				2788E3582AC4F8BA00254A88 /* PubSub.hh */,
 				27B3306C2AB3C3B40066C8DA /* Queue.hh */,
 				27BA40742AA502DD0011BB86 /* Result.hh */,
@@ -752,6 +779,7 @@
 				2711C18C2A9965B600361566 /* demo_client.cc */,
 				27B330822AB911470066C8DA /* demo_blipclient.cc */,
 				279D5D5D2A951599005C3066 /* Info.plist */,
+				277B65322ADA07E0006F053D /* ESP32 */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -765,7 +793,6 @@
 				277E8A472ABB537D00E78CB1 /* Error.cc */,
 				272730542A8ED3D1000CCA22 /* Future.cc */,
 				278F7F282AAB9171005B12F2 /* Internal.hh */,
-				278F7F232AAA98FE005B12F2 /* Logging.cc */,
 				272730472A8D8A73000CCA22 /* Scheduler.cc */,
 				2788E3532AC38B5E00254A88 /* Select.cc */,
 				2788E3572AC4E34100254A88 /* io */,
@@ -1023,11 +1050,75 @@
 			isa = PBXGroup;
 			children = (
 				278F7E5D2AAA69B5005B12F2 /* Base.hh */,
+				277B652A2AD8B5CA006F053D /* betterassert.hh */,
 				27B3306A2AB391F30066C8DA /* Bytes.hh */,
 				277E8A432ABA50FB00E78CB1 /* LinkedList.hh */,
+				278F7F222AAA98FE005B12F2 /* Logging.hh */,
 				277B65282AD766EF006F053D /* Relation.hh */,
+				277B6C272AE06CDA006F053D /* MiniFormat.hh */,
 			);
 			path = util;
+			sourceTree = "<group>";
+		};
+		277B65322ADA07E0006F053D /* ESP32 */ = {
+			isa = PBXGroup;
+			children = (
+				27BCD2CF2AE738DF009DFCED /* README.md */,
+				277B65332ADA07E0006F053D /* sdkconfig */,
+				277B65362ADA07E0006F053D /* CMakeLists.txt */,
+				277B6C112ADA07E3006F053D /* main */,
+			);
+			path = ESP32;
+			sourceTree = "<group>";
+		};
+		277B6C112ADA07E3006F053D /* main */ = {
+			isa = PBXGroup;
+			children = (
+				277B6C122ADA07E3006F053D /* CMakeLists.txt */,
+				277B6C212ADDEEF3006F053D /* Kconfig.projbuild */,
+				277B6C132ADA07E3006F053D /* main.cc */,
+			);
+			path = main;
+			sourceTree = "<group>";
+		};
+		277B6C222ADF25CD006F053D /* esp32 */ = {
+			isa = PBXGroup;
+			children = (
+				27BCD2CE2AE73844009DFCED /* README.md */,
+				277B6C232ADF2632006F053D /* CMakeLists.txt */,
+				277B6C1D2ADDBE82006F053D /* ESPBase.hh */,
+				277B6C1E2ADDDF13006F053D /* ESPBase.cc */,
+				277B65302AD9FECA006F053D /* Backtrace+ESP32.cc */,
+				277B6C142ADA0873006F053D /* ESPEventLoop.cc */,
+				277B6C1A2ADDB904006F053D /* ESPAddrInfo.cc */,
+				277B6C152ADDB6B7006F053D /* ESPTCPSocket.hh */,
+				277B6C162ADDB6B7006F053D /* ESPTCPSocket.cc */,
+			);
+			path = esp32;
+			sourceTree = "<group>";
+		};
+		277B6C252ADF318A006F053D /* uv */ = {
+			isa = PBXGroup;
+			children = (
+				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
+				272730512A8EC61D000CCA22 /* FileStream.cc */,
+				278F7E4E2AA2ADFD005B12F2 /* Filesystem.cc */,
+				279D5D642A952DD1005C3066 /* Pipe.cc */,
+				279D5D602A952986005C3066 /* Stream.cc */,
+				279D5D462A902588005C3066 /* TCPServer.cc */,
+				2727303F2A8D6F35000CCA22 /* TCPSocket.cc */,
+				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
+				272730492A8D99B0000CCA22 /* UVInternal.hh */,
+			);
+			path = uv;
+			sourceTree = "<group>";
+		};
+		277B6C262ADF3787006F053D /* uv */ = {
+			isa = PBXGroup;
+			children = (
+				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
+			);
+			path = uv;
 			sourceTree = "<group>";
 		};
 		2788E3562AC4E31700254A88 /* io */ = {
@@ -1047,10 +1138,10 @@
 				279D5D452A902588005C3066 /* TCPServer.hh */,
 				2727303E2A8D6F35000CCA22 /* TCPSocket.hh */,
 				272A85242A96DCB30083D947 /* URL.hh */,
-				2727304C2A8E9D48000CCA22 /* UVBase.hh */,
 				272A852E2A982DE50083D947 /* WebSocket.hh */,
 				278F7E362AA1168A005B12F2 /* apple */,
 				278F7E372AA11696005B12F2 /* mbed */,
+				277B6C262ADF3787006F053D /* uv */,
 			);
 			path = io;
 			sourceTree = "<group>";
@@ -1058,27 +1149,20 @@
 		2788E3572AC4E34100254A88 /* io */ = {
 			isa = PBXGroup;
 			children = (
-				279D5D412A8FE08D005C3066 /* AddrInfo.cc */,
-				272730512A8EC61D000CCA22 /* FileStream.cc */,
-				278F7E4E2AA2ADFD005B12F2 /* Filesystem.cc */,
 				272A85292A97B2090083D947 /* HTTPConnection.cc */,
 				278F7E592AA93D5A005B12F2 /* HTTPHandler.cc */,
 				278F7E392AA1489B005B12F2 /* HTTPParser.cc */,
 				278F7E562AA7EDBF005B12F2 /* ISocket.cc */,
 				27F603032A9EB826006FA1D0 /* IStream.cc */,
-				279D5D642A952DD1005C3066 /* Pipe.cc */,
 				278F7E522AA7D1BC005B12F2 /* Process.cc */,
-				279D5D602A952986005C3066 /* Stream.cc */,
-				279D5D462A902588005C3066 /* TCPServer.cc */,
-				2727303F2A8D6F35000CCA22 /* TCPSocket.cc */,
 				272A85252A96DCB30083D947 /* URL.cc */,
-				2727304D2A8E9D99000CCA22 /* UVBase.cc */,
-				272730492A8D99B0000CCA22 /* UVInternal.hh */,
 				272A852F2A982DE50083D947 /* WebSocket.cc */,
 				278F7E4B2AA28642005B12F2 /* WebSocketProtocol.hh */,
 				278F7E352AA1165C005B12F2 /* apple */,
 				27B3304C2AB2763B0066C8DA /* blip */,
+				277B6C222ADF25CD006F053D /* esp32 */,
 				278F7E292A9FF3DA005B12F2 /* mbed */,
+				277B6C252ADF318A006F053D /* uv */,
 			);
 			path = io;
 			sourceTree = "<group>";
@@ -1395,11 +1479,16 @@
 			isa = PBXGroup;
 			children = (
 				27F49CD52A9E4E8E00BFB24C /* Backtrace.cc */,
+				277B652D2AD9FCDC006F053D /* Backtrace+Unix.cc */,
+				277B652F2AD9FD47006F053D /* Backtrace+Windows.cc */,
 				27F49CD42A9E4E8E00BFB24C /* Backtrace.hh */,
+				277B652B2AD8B5D8006F053D /* betterassert.cc */,
 				2727304B2A8E811B000CCA22 /* Defer.hh */,
 				27B330692AB388960066C8DA /* Endian.hh */,
+				278F7F232AAA98FE005B12F2 /* Logging.cc */,
 				275A5F132AAFB3B1009791E8 /* Memoized.hh */,
 				275A5F142AAFB3B1009791E8 /* Memoized.cc */,
+				277B6C282AE06CDA006F053D /* MiniFormat.cc */,
 				278F7E3E2AA24FEE005B12F2 /* StringUtils.hh */,
 				27B330572AB278870066C8DA /* StringUtils.cc */,
 			);
@@ -1440,6 +1529,7 @@
 				277E8A442ABA50FB00E78CB1 /* LinkedList.hh in Headers */,
 				27B330632AB373430066C8DA /* MessageOut.hh in Headers */,
 				27B330522AB2763B0066C8DA /* Message.hh in Headers */,
+				277B6C172ADDB6B7006F053D /* ESPTCPSocket.hh in Headers */,
 				27B3305D2AB36F1D0066C8DA /* MessageBuilder.hh in Headers */,
 				279D5D652A952DD1005C3066 /* Pipe.hh in Headers */,
 				27F603082A9FA366006FA1D0 /* NWConnection.hh in Headers */,
@@ -1453,6 +1543,7 @@
 				27B330732AB8FF790066C8DA /* BLIPConnection.hh in Headers */,
 				277E8A462ABA7A1800E78CB1 /* Error.hh in Headers */,
 				27F49CD62A9E4E8E00BFB24C /* Backtrace.hh in Headers */,
+				277B6C292AE06CDA006F053D /* MiniFormat.hh in Headers */,
 				27B330532AB2763B0066C8DA /* BLIPIO.hh in Headers */,
 				27B330682AB384880066C8DA /* Codec.hh in Headers */,
 				275A5F152AAFB3B1009791E8 /* Memoized.hh in Headers */,
@@ -1678,7 +1769,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if which missing_includes.rb >/dev/null\nthen\n  cd \"$SRCROOT\"\n  missing_includes.rb -w --base include/util/Base.hh include src\nelse\n  echo \"Script missing_includes.rb not found.\"\n  echo \"You can get it from https://gist.github.com/snej/2672fe996d39752e23c471f6ed789958\"\nfi\n";
+			shellScript = "if which missing_includes.rb >/dev/null\nthen\n  cd \"$SRCROOT\"\n  missing_includes.rb -w --base include/util/Base.hh --ignore cassert include src\nelse\n  echo \"Script missing_includes.rb not found.\"\n  echo \"You can get it from https://gist.github.com/snej/2672fe996d39752e23c471f6ed789958\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -1719,9 +1810,12 @@
 				2788E3542AC38B5E00254A88 /* Select.cc in Sources */,
 				278F7F202AAA9212005B12F2 /* bundled_fmtlib_format.cpp in Sources */,
 				278F7E5B2AA93D5A005B12F2 /* HTTPHandler.cc in Sources */,
+				277B652E2AD9FCDC006F053D /* Backtrace+Unix.cc in Sources */,
 				272730412A8D6F35000CCA22 /* TCPSocket.cc in Sources */,
+				277B6C2A2AE06CDA006F053D /* MiniFormat.cc in Sources */,
 				27F603092A9FA366006FA1D0 /* NWConnection.cc in Sources */,
 				272730482A8D8A73000CCA22 /* Scheduler.cc in Sources */,
+				277B652C2AD8B5D8006F053D /* betterassert.cc in Sources */,
 				272730532A8EC61D000CCA22 /* FileStream.cc in Sources */,
 				272A852B2A97B2090083D947 /* HTTPConnection.cc in Sources */,
 				2727304E2A8E9D99000CCA22 /* UVBase.cc in Sources */,

@@ -55,7 +55,7 @@
 #pragma once
 
 #include "Error.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 
 #if defined(_WIN32)
 #   if !defined(_CRT_SECURE_NO_DEPRECATE)
@@ -63,6 +63,11 @@
 #   endif
 #   include <winsock2.h>
 #   include <ws2tcpip.h>
+#endif
+
+#ifdef ESP_PLATFORM
+#include <mbedtls/esp_debug.h>
+#include <mbedtls/esp_config.h>
 #endif
 
 #include <mbedtls/base64.h>
@@ -74,8 +79,10 @@
 #include <mbedtls/pem.h>
 #include <mbedtls/ssl.h>
 #include <cstring>
+#include <mutex>
 
 #ifdef __APPLE__
+    // macOS, iOS:
     #include <fcntl.h>
     #include <TargetConditionals.h>
     #ifdef TARGET_OS_OSX
@@ -83,8 +90,17 @@
         #include <Security/SecImportExport.h>
         #include <Security/SecTrust.h>
     #endif
-#elif !defined(_WIN32)
-    // For Unix read_system_root_certs():
+#elif defined(ESP_PLATFORM)
+    // ESP32:
+    #include <esp_crt_bundle.h>
+#elif defined(_WIN32)
+    // Windows:
+    #include <wincrypt.h>
+    #include <sstream>
+    #pragma comment (lib, "crypt32.lib")
+    #pragma comment (lib, "cryptui.lib")
+#else
+    // Other Unix; for read_system_root_certs():
     #include <dirent.h>
     #include <fcntl.h>
     #include <fnmatch.h>
@@ -92,12 +108,8 @@
     #include <iostream>
     #include <sstream>
     #include <sys/stat.h>
-#else
-    #include <wincrypt.h>
-    #include <sstream>
-    #pragma comment (lib, "crypt32.lib")
-    #pragma comment (lib, "cryptui.lib")
 #endif
+
 
 namespace crouton::io::mbed {
     /// Domain for mbedTLS error codes.
@@ -112,7 +124,7 @@ namespace crouton {
             mbedtls_strerror(code, msg, sizeof(msg));
             //if (withCode) {
             size_t len = strlen(msg);
-            snprintf(msg + len, sizeof(msg) - len, " (-0x%04x)", -code);
+            snprintf(msg + len, sizeof(msg) - len, " (-0x%04x)", int(-code));
             //}
             return string(msg);
         }
@@ -142,32 +154,7 @@ namespace crouton::io::mbed {
     // - SPDLOG_LEVEL_CRITICAL 5
     // - SPDLOG_LEVEL_OFF 6
 
-    // Default log level is Warn because mbedTLS logging is very noisy at any higher level.
-    static shared_ptr<spdlog::logger> LMbed = MakeLogger("mbedTLS", spdlog::level::warn);
-
-
-    // spdlog level values corresponding to ones used by mbedTLS
-    static constexpr int kSpdToMbedLogLevel[] = {4, 3, 2, 1, 1, 1, 0};
-
-
-    static void mbedLogCallback(void *ctx, int level, const char *file, int line, const char *msg) {
-        using enum spdlog::level::level_enum;
-        static constexpr spdlog::level::level_enum kMbedToSpdLevel[] = {
-            off, err, info, debug, trace};
-
-        auto spdLevel = kMbedToSpdLevel[level];
-        if (LMbed->should_log(spdLevel)) {
-            string_view msgStr(msg);
-            if (msgStr.ends_with('\n'))
-                msgStr = msgStr.substr(0, msgStr.size() - 1);
-
-            // Strip parent directory names from filename:
-            if (auto lastSlash = strrchr(file, '/'))
-                file = lastSlash + 1;
-
-            LMbed->log(spdlog::source_loc(file, line, "?"), spdLevel, msgStr);
-        }
-    }
+    LoggerRef LMbed;
 
 
     // Simple RAII helper for mbedTLS cert struct
@@ -194,8 +181,7 @@ namespace crouton::io::mbed {
         /// @param endpoint  Must be MBEDTLS_SSL_IS_CLIENT or MBEDTLS_SSL_IS_SERVER
         explicit TLSContext(int endpoint) {
             mbedtls_ssl_config_init(&_config);
-            mbedtls_ssl_conf_dbg(&_config, mbedLogCallback, this);
-            mbedtls_debug_set_threshold(kSpdToMbedLogLevel[LMbed->level()]);
+            setupLogging();
             mbedtls_ssl_conf_rng(&_config, mbedtls_ctr_drbg_random, get_drbg_context());
             check(mbedtls_ssl_config_defaults(&_config,
                                               endpoint,
@@ -203,8 +189,12 @@ namespace crouton::io::mbed {
                                               MBEDTLS_SSL_PRESET_DEFAULT),
                   "mbedtls_ssl_config_defaults");
 
+#ifdef ESP_PLATFORM
+            esp_crt_bundle_attach(&_config);
+#else
             if (auto roots = get_system_root_certs())
                 mbedtls_ssl_conf_ca_chain(&_config, roots, nullptr);
+#endif
         }
 
         ~TLSContext() {
@@ -216,6 +206,51 @@ namespace crouton::io::mbed {
         }
 
     private:
+
+        void setupLogging() {
+#ifdef ESP_PLATFORM
+    #ifdef CONFIG_MBEDTLS_DEBUG
+            mbedtls_esp_enable_debug_log(_config, kSpdToMbedLogLevel[LMbed->level()]);
+    #endif
+#else
+            static std::once_flag once;
+            call_once(once, [] {
+                // This logger is off by default, because mbedTLS logging is very noisy --
+                // even in a successful handshake it will write several error-level logs.
+                LMbed = MakeLogger("mbedTLS", LogLevel::off);
+            });
+
+            // spdlog level values corresponding to ones used by mbedTLS
+            static constexpr int kSpdToMbedLogLevel[] = {4, 3, 2, 1, 1, 1, 0};
+
+            auto mbedLogCallback = [](void *ctx, int level, const char *file, int line, 
+                                      const char *msg) {
+                using enum LogLevelType;
+                static constexpr LogLevelType kMbedToSpdLevel[] = {
+                    off, err, info, debug, trace};
+
+                auto spdLevel = kMbedToSpdLevel[level];
+                if (LMbed->should_log(spdLevel)) {
+                    string_view msgStr(msg);
+                    if (msgStr.ends_with('\n'))
+                        msgStr = msgStr.substr(0, msgStr.size() - 1);
+
+                    // Strip parent directory names from filename:
+                    if (auto lastSlash = strrchr(file, '/'))
+                        file = lastSlash + 1;
+
+#if CROUTON_USE_SPDLOG
+                    LMbed->log(spdlog::source_loc(file, line, "?"), spdLevel, msgStr);
+#else
+                    LMbed->log(spdLevel, msgStr);
+#endif
+                }
+            };
+            mbedtls_ssl_conf_dbg(&_config, mbedLogCallback, this);
+            mbedtls_debug_set_threshold(kSpdToMbedLogLevel[LMbed->level()]);
+#endif
+        }
+
 
         // Returns a shared singleton mbedTLS random-number generator context.
         static mbedtls_ctr_drbg_context* get_drbg_context() {
@@ -255,6 +290,7 @@ namespace crouton::io::mbed {
         }
 
 
+#if !defined(ESP_PLATFORM)
         // Returns the set of system trusted root CA certs.
         mbedtls_x509_crt* get_system_root_certs() {
             static once_flag once;
@@ -267,6 +303,7 @@ namespace crouton::io::mbed {
             });
             return s_system_root_certs;
         }
+#endif
 
 
         // Parses a data blob containing one or many X.59 certs.
@@ -340,7 +377,7 @@ namespace crouton::io::mbed {
             return certs.str();
         }
 
-#else
+#elif !defined(ESP_PLATFORM)
         // Read system root CA certs on Linux using OpenSSL's cert directory
         static string read_system_root_certs() {
 #ifdef __ANDROID__

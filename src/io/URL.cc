@@ -40,7 +40,7 @@ namespace crouton::io {
     static int tlsuv_parse_url(struct tlsuv_url_s *url, const char *urlstr);
 
 
-    bool URLRef::tryParse(const char* str) {
+    bool URLRef::tryParse(const char* str) noexcept {
         tlsuv_url_s url;
         if (tlsuv_parse_url(&url, str) != 0)
             return false;
@@ -102,7 +102,7 @@ namespace crouton::io {
                    string_view hostname_,
                    uint16_t port_,
                    string_view path_,
-                   string_view query_)
+                   string_view query_) noexcept
     :scheme(scheme_)
     ,hostname(hostname_)
     ,port(port_)
@@ -139,7 +139,7 @@ namespace crouton::io {
     }
 
 
-    string_view URLRef::queryValueForKey(string_view key) {
+    string_view URLRef::queryValueForKey(string_view key) noexcept {
         string_view remaining = query;
         while (!remaining.empty()) {
             string_view q;

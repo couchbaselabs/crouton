@@ -21,7 +21,7 @@
 
 namespace crouton {
 
-    bool equalIgnoringCase(string_view a, string_view b) {
+    bool equalIgnoringCase(string_view a, string_view b) noexcept {
         size_t len = a.size();
         if (len != b.size())
             return false;
@@ -56,7 +56,7 @@ namespace crouton {
 
 
     std::pair<string_view,string_view>
-    split(string_view str, char c) {
+    split(string_view str, char c) noexcept {
         if (auto p = str.find(c); p != string::npos)
             return {str.substr(0, p), str.substr(p + 1)};
         else
@@ -65,7 +65,7 @@ namespace crouton {
 
 
     std::pair<string_view,string_view>
-    splitAt(string_view str, size_t pos, size_t delimSize) {
+    splitAt(string_view str, size_t pos, size_t delimSize) noexcept {
         assert(pos + delimSize <= str.size());
         return {str.substr(0, pos), str.substr(pos + delimSize)};
     }

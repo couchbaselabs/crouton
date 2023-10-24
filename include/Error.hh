@@ -21,11 +21,15 @@
 
 #include <array>
 #include <concepts>
+#include <source_location>
 #include <stdexcept>
 #include <type_traits>
 #include <typeinfo>
 
 namespace crouton {
+
+    #define SOURCE_LOC std::source_location const& sourceLoc = std::source_location::current()
+
 
     /// Numeric base type of error codes. However, Error only uses 18 bits to store the code,
     /// giving a maximum range of ±131072. 
@@ -51,7 +55,7 @@ namespace crouton {
     template <typename T>
     concept ErrorDomain = requires {
         std::is_enum_v<T>;
-        requires std::same_as<std::underlying_type_t<T>, errorcode_t>;
+        requires std::convertible_to<std::underlying_type_t<T>, errorcode_t>;
         {ErrorDomainInfo<T>::name} -> std::convertible_to<string_view>;
         {ErrorDomainInfo<T>::description} -> std::convertible_to<ErrorDescriptionFunc>;
     };
@@ -64,6 +68,15 @@ namespace crouton {
     public:
         /// The default no-error value. Available as the constant `noerror`.
         constexpr Error() = default;
+
+#if CROUTON_RTTI
+        using DomainInfo = std::type_info const&;
+        #define ErrorDomainTypeID(T) typeid(T)
+#else
+        // Without RTTI, identify error domains by the address of their associated description fns.
+        using DomainInfo = const void*;
+        #define ErrorDomainTypeID(T) crouton::Error::DomainInfo(&crouton::ErrorDomainInfo<T>::description)
+#endif
 
         /// Constructs an Error from an enum value.
         template <ErrorDomain D>
@@ -81,13 +94,13 @@ namespace crouton {
         explicit Error(std::exception_ptr);
 
         /// The error's code as a plain integer.
-        errorcode_t code() const            {return _code;}
+        errorcode_t code() const Pure       {return _code;}
 
         /// The name of the error domain, which comes from `ErrorDomainInfo<T>::name`.
-        string_view domain() const;
+        string_view domain() const Pure;
 
         /// The `type_info` metadata of the original enum type.
-        std::type_info const& typeInfo() const;
+        DomainInfo typeInfo() const Pure;
 
         /// A human-readable description of the error.
         /// First calls `ErrorDomainInfo<D>::description` where `D` is the domain enum.
@@ -101,34 +114,40 @@ namespace crouton {
         friend std::ostream& operator<< (std::ostream&, Error const&);
 
         /// True if there is an error, false if none.
-        explicit operator bool() const      {return _code != 0;}
+        explicit operator bool() const Pure      {return _code != 0;}
 
         /// True if the error is of type D.
         template <ErrorDomain D> 
-        bool is() const                     {return typeInfo() == typeid(D);}
+        Pure bool is() const                     {return typeInfo() == ErrorDomainTypeID(D);}
 
         /// Converts the error code back into a D, if it is one.
         /// If its type isn't D, returns `D{0}`.
         template <ErrorDomain D>
-        D as() const                        {return D{is<D>() ? _code : errorcode_t{0}};}
+        Pure D as() const                        {return D{is<D>() ? _code : errorcode_t{0}};}
 
         /// Compares two Errors. Their domains and codes must match.
         friend bool operator== (Error const& a, Error const& b) = default;
 
         /// Compares an Error to an ErrorDomain enum value.
         friend bool operator== (Error const& err, ErrorDomain auto d) {
-            return err.typeInfo() == typeid(d) && err.code() == errorcode_t(d);
+            return err.typeInfo() == ErrorDomainTypeID(decltype(d)) && err.code() == errorcode_t(d);
         }
 
         /// Throws the error as an Exception.
-        [[noreturn]] void raise(string_view logMessage = "") const;
+        [[noreturn]] void raise(string_view logMessage = "", SOURCE_LOC) const;
 
         /// Throws the error as an Exception, if there is one.
-        void raise_if(string_view logMessage = "") const      {if (*this) raise(logMessage);}
+        void raise_if(string_view logMessage = "", SOURCE_LOC) const
+        {
+            if (*this) raise(logMessage, sourceLoc);
+        }
 
         /// Convenience that directly throws an Exception from an ErrorDomain enum.
         template <ErrorDomain D>
-        [[noreturn]] static void raise(D d, string_view msg = "") {Error(d).raise(msg);}
+        [[noreturn]] static void raise(D d, string_view msg = "", SOURCE_LOC)
+        {
+            Error(d).raise(msg, sourceLoc);
+        }
 
     private:
         Error(errorcode_t code, uint8_t domain) :_code(code), _domain(domain) {assert(_code == code);}
@@ -144,16 +163,16 @@ namespace crouton {
 
         template <ErrorDomain T>
         static uint8_t domainID() {
-            static uint8_t id = _registerDomain(typeid(T),
+            static uint8_t id = _registerDomain(ErrorDomainTypeID(T),
                                                 ErrorDomainInfo<T>::name,
                                                 ErrorDomainInfo<T>::description);
             return id;
         }
 
-        static uint8_t _registerDomain(std::type_info const&, string_view, ErrorDescriptionFunc);
+        static uint8_t _registerDomain(DomainInfo, string_view, ErrorDescriptionFunc);
 
         struct DomainMeta {
-            std::type_info const*   type {nullptr};         // The C++ type_info of the enum
+            const void*       type {nullptr};         // The C++ type_info of the enum
             string_view             name;                   // The name of the domain
             ErrorDescriptionFunc    description {nullptr};  // Function mapping codes to names
         };
@@ -184,6 +203,7 @@ namespace crouton {
         LogicError,                 // Something impossible happened due to a bug
         ParseError,                 // Syntax error parsing something, like an HTTP stream.
         Timeout,                    // Operation failed because it took too long
+        EndOfData,                  // Read past end of data in a stream
         Unimplemented,              // Unimplemented functionality or abstract-by-convention method
     };
 
@@ -226,4 +246,5 @@ namespace crouton {
         static string description(errorcode_t);
     };
 
+#undef ErrorDomainTypeID
 }

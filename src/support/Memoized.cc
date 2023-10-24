@@ -18,6 +18,7 @@
 
 #include "Memoized.hh"
 #include "Backtrace.hh"
+#include "StringUtils.hh"
 
 namespace crouton {
     using namespace std;
@@ -32,30 +33,42 @@ namespace crouton {
     }
 
 
+    static void cleanup(string &name) {
+        if (name.starts_with("crouton::"))
+            name = name.substr(9);
+        replaceStringInPlace(name, "std::__1::", "std::");  // probably libc++ specific
+        replaceStringInPlace(name, "std::basic_string<char, std::char_traits<char>, std::allocator<char>>", "std::string");
+    }
+
+
     string const& GetTypeName(type_info const& info) {
+#if CROUTON_RTTI
         static Memoized sTypeNames([](const void* addr) -> string {
             string name = fleece::Unmangle(*(type_info*)addr);      // Get unmangled name
-            auto bra = name.find('<');
-            if (auto p = name.find_last_of(":", bra); p != string::npos) // Strip namespaces
-                name = name.substr(p + 1);
+            cleanup(name);
             return name;
         });
         return sTypeNames.lookup(&info);
+#else
+        static const string name = "???";
+        return name;
+#endif
     }
 
 
     string const& GetFunctionName(const void* addr) {
         static Memoized sFnNames([](const void* addr) -> string {
-            string symbol = fleece::FunctionName(addr);
-            if (symbol.ends_with(" (.resume)"))
-                symbol = symbol.substr(0, symbol.size() - 10);
-            else if (symbol.ends_with(" (.destroy)"))
-                symbol = symbol.substr(0, symbol.size() - 11);
-            if (symbol.starts_with("crouton::"))
-                symbol = symbol.substr(9);
-            if (auto pos = symbol.find('('); pos != string::npos)
-                symbol = symbol.substr(0, pos);
-            return symbol;
+            string name = fleece::FunctionName(addr);
+            if (name.ends_with(" (.resume)"))
+                name = name.substr(0, name.size() - 10);
+            else if (name.ends_with(" (.destroy)"))
+                name = name.substr(0, name.size() - 11);
+            if (name.starts_with("crouton::"))
+                name = name.substr(9);
+            if (auto pos = name.find('('); pos != string::npos)
+                name = name.substr(0, pos);
+            cleanup(name);
+            return name;
         });
         return sFnNames.lookup(addr);
     }

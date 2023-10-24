@@ -18,10 +18,11 @@
 
 #include "Coroutine.hh"
 #include "Memoized.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "Scheduler.hh"
 
 #include <charconv>
+#include <iostream>
 
 namespace crouton {
     using namespace std;
@@ -33,7 +34,7 @@ namespace crouton {
     coro_handle CoMutex::await_suspend(coro_handle h) noexcept {
         auto& sched = Scheduler::current();
         _waiters.emplace_back(sched.suspend(h));
-        return lifecycle::suspendingTo(h, typeid(this), this, sched.next());
+        return lifecycle::suspendingTo(h, CRTN_TYPEID(*this), this, sched.next());
     }
 
     void CoMutex::unlock() {

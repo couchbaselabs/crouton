@@ -123,10 +123,10 @@ namespace crouton::io::http {
         bool parseData(ConstBytes);
 
         /// Returns true if the entire request has been read.
-        bool complete() const           {return _messageComplete;}
+        bool complete() const noexcept Pure             {return _messageComplete;}
 
         /// Returns true if the connection has been upgraded to another protocol.
-        bool upgraded() const           {return _upgraded;}
+        bool upgraded() const noexcept Pure             {return _upgraded;}
 
         //---- Metadata
 

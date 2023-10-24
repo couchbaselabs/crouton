@@ -17,7 +17,7 @@
 //
 
 #include "Crouton.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <iostream>
 
 #include "catch_amalgamated.hpp"

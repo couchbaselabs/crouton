@@ -26,7 +26,7 @@ struct uv_tcp_s;
 namespace crouton::io {
 
     /** A TCP socket. (For TLS connections, use TLSSocket or NWConnection.) */
-    class TCPSocket : public Stream, public ISocket {
+    class TCPSocket : public ISocket, public Stream {
     public:
         TCPSocket();
 
@@ -35,7 +35,7 @@ namespace crouton::io {
 
         bool isOpen() const override                {return Stream::isOpen();}
         IStream& stream() override                  {return *this;}
-        ASYNC<void> close() override {return Stream::close();}
+        ASYNC<void> close() override                {return Stream::close();}
 
     protected:
         friend class TCPServer;

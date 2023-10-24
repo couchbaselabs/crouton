@@ -17,6 +17,8 @@
 //
 
 #include "Crouton.hh"
+#include "io/TCPServer.hh"
+#include "util/Logging.hh"
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -49,11 +51,11 @@ staticASYNC<void> serveWebSocket(http::Handler::Request const& req, http::Handle
     if (! AWAIT socket.connect(req, res))
         RETURN noerror;
 
-    spdlog::info("-- Opened WebSocket");
+    Log->info("-- Opened WebSocket");
     Generator<ws::Message> rcvr = socket.receive();
     Result<ws::Message> msg;
     while ((msg = AWAIT rcvr)) {
-        spdlog::info("\treceived {}", msg);
+        Log->info("\treceived {}", minifmt::write(msg));
         switch (msg->type) {
             case ws::Message::Text:
             case ws::Message::Binary:
@@ -66,7 +68,7 @@ staticASYNC<void> serveWebSocket(http::Handler::Request const& req, http::Handle
                 break;              // WebSocket itself handles Ping and Pong
         }
     }
-    spdlog::info("-- Closing WebSocket");
+    Log->info("-- Closing WebSocket");
     AWAIT socket.close();
     RETURN noerror;
 }
@@ -79,16 +81,16 @@ static vector<http::Handler::Route> sRoutes = {
 
 
 static Task connectionTask(std::shared_ptr<TCPSocket> client) {
-    spdlog::info("-- Accepted connection");
+    Log->info("-- Accepted connection");
     http::Handler handler(client, sRoutes);
     AWAIT handler.run();
-    spdlog::info("-- Done!\n");
+    Log->info("-- Done!\n");
 }
 
 
 static Task run() {
     static TCPServer server(kPort);
-    spdlog::info("Listening at http://localhost:{}/ and ws://localhost:{}/ws", kPort, kPort);
+    Log->info("Listening at http://localhost:{}/ and ws://localhost:{}/ws", kPort, kPort);
     server.listen([](std::shared_ptr<TCPSocket> client) {
         connectionTask(std::move(client));
     });

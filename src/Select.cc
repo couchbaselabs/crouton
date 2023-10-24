@@ -22,7 +22,7 @@
 namespace crouton {
 
     Select::Select(std::initializer_list<ISelectable*> sources) {
-        assert(sources.size() <= kMaxSources);
+        precondition(sources.size() <= kMaxSources);
         size_t i = 0;
         for (ISelectable* source : sources)
             _sources[i++] = source;
@@ -47,7 +47,7 @@ namespace crouton {
 
     coro_handle Select::await_suspend(coro_handle h) {
         _suspension = Scheduler::current().suspend(h);
-        return lifecycle::suspendingTo(h, typeid(*this), this);
+        return lifecycle::suspendingTo(h, CRTN_TYPEID(*this), this);
     }
 
     int Select::await_resume() {

@@ -20,6 +20,10 @@
 #include "util/Base.hh"
 #include <typeinfo>
 
+#if defined(ESP_PLATFORM) && !defined(CROUTON_LIFECYCLES)
+#define CROUTON_LIFECYCLES 0
+#endif
+
 // Enable lifecycle tracking in debug builds, by default. Override by defining CROUTON_LIFECYCLES=0
 #if !defined(CROUTON_LIFECYCLES) && !defined(NDEBUG)
 #define CROUTON_LIFECYCLES 1
@@ -41,12 +45,13 @@ namespace crouton {
         coro_handle suspendingTo(coro_handle cur,
                                  coro_handle awaiting,
                                  coro_handle next);
-        coro_handle yieldingTo(coro_handle cur, coro_handle next);
+        coro_handle yieldingTo(coro_handle cur, coro_handle next, bool isCall);
         coro_handle finalSuspend(coro_handle cur, coro_handle next);
         void resume(coro_handle);   // calls h.resume()
         void threw(coro_handle);
         void returning(coro_handle);
         void ended(coro_handle);
+        void destroy(coro_handle);
 
         void ignoreInCount(coro_handle);
         size_t count();
@@ -66,12 +71,15 @@ namespace crouton {
         inline coro_handle suspendingTo(coro_handle cur,
                                         coro_handle awaiting,
                                         coro_handle next) {return next;}
-        inline coro_handle yieldingTo(coro_handle cur, coro_handle next) {return next;}
+        inline coro_handle yieldingTo(coro_handle cur, coro_handle next, bool) {return next;}
         inline coro_handle finalSuspend(coro_handle cur, coro_handle next) {return next;}
-        inline void resume(coro_handle h) {h.resume();}
         inline void threw(coro_handle) { }
         inline void returning(coro_handle) { }
         inline void ended(coro_handle) { }
+
+        // These two do something:
+        inline void resume(coro_handle h)   {h.resume();}
+        inline void destroy(coro_handle h)  {h.destroy();}
 
         inline void ignoreInCount(coro_handle) { }
         inline size_t count() {return 0;}
@@ -107,5 +115,9 @@ namespace crouton {
 }
 
 #if CROUTON_LIFECYCLES
+/** A useful function to call from a debugger: lists all coroutines, their states and owners. */
 void dumpCoros();
+/** A useful function to call from a debugger: shows the virtual "stacks" of coroutines,
+    i.e. which coroutine is blocked awaiting which other coroutine or Awaitable object. */
+void dumpCoroStacks();
 #endif

@@ -31,14 +31,14 @@ namespace crouton {
     template <typename T>
     class SeriesProducer {
     public:
-        SeriesProducer()    :_consumer(this) { }
-        SeriesProducer(SeriesProducer&&) = default;
-        SeriesProducer& operator=(SeriesProducer&&) = default;
+        SeriesProducer() noexcept    :_consumer(this) { }
+        SeriesProducer(SeriesProducer&&) noexcept = default;
+        SeriesProducer& operator=(SeriesProducer&&) noexcept = default;
         ~SeriesProducer()   {assert(!_consumer);}
 
         /// Creates the SeriesConsumer. Can only be called once.
         std::unique_ptr<SeriesConsumer<T>> make_consumer() {
-            assert(!_consumer);
+            precondition(!_consumer);
             return std::unique_ptr<SeriesConsumer<T>>(new SeriesConsumer<T>(this));
         }
 
@@ -52,7 +52,7 @@ namespace crouton {
             coro_handle await_suspend(coro_handle cur) {
                 assert(!self._suspension);
                 self._suspension = Scheduler::current().suspend(cur);
-                return lifecycle::suspendingTo(cur, typeid(&self), &self, nullptr);
+                return lifecycle::suspendingTo(cur, CRTN_TYPEID(self), &self, nullptr);
             }
 
             [[nodiscard]] bool await_resume() {
@@ -71,7 +71,7 @@ namespace crouton {
         /// **Must be awaited.** Suspends until the SeriesConsumer reads the previous value.
         /// `co_await` returns true if the SeriesConsumer still exists, false if it's been destroyed.
         [[nodiscard]] AwaitProduce produce(Result<T> value) {
-            assert(!_consumer || !_consumer->_eof);
+            precondition(!_consumer || !_consumer->_eof);
             return AwaitProduce(this, std::move(value));
         }
 
@@ -88,17 +88,17 @@ namespace crouton {
     template <typename T>
     class SeriesConsumer final : public ISeries<T> {
     public:
-        SeriesConsumer(SeriesConsumer&&) = default;
-        SeriesConsumer& operator=(SeriesConsumer&&) = default;
+        SeriesConsumer(SeriesConsumer&&) noexcept = default;
+        SeriesConsumer& operator=(SeriesConsumer&&) noexcept = default;
 
-        bool await_ready() override {
-            assert(_producer);
+        bool await_ready() noexcept override {
+            precondition(_producer);
             return _hasValue;
         }
 
         coro_handle await_suspend(coro_handle cur) override {
             _suspension = Scheduler::current().suspend(cur);
-            return lifecycle::suspendingTo(cur, typeid(this), this, nullptr);
+            return lifecycle::suspendingTo(cur, CRTN_TYPEID(*this), this, nullptr);
         }
 
         [[nodiscard]] Result<T> await_resume() override {

@@ -24,11 +24,20 @@
 #include "io/apple/NWConnection.hh"
 #endif
 
+#ifdef ESP_PLATFORM
+#include "ESPTCPSocket.hh"
+#endif
+
 namespace crouton::io {
 
     std::unique_ptr<ISocket> ISocket::newSocket(bool useTLS) {
-#ifdef __APPLE__
+#if defined(__APPLE__)
         return std::make_unique<apple::NWConnection>(useTLS);
+#elif defined(ESP_PLATFORM)
+        if (useTLS)
+            return std::make_unique<mbed::TLSSocket>();
+        else
+            return std::make_unique<esp::TCPSocket>();
 #else
         if (useTLS)
             return std::make_unique<mbed::TLSSocket>();

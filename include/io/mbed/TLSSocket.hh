@@ -21,7 +21,7 @@
 #include "io/IStream.hh"
 
 
-namespace crouton::io {
+namespace crouton {
     struct Buffer;
 }
 

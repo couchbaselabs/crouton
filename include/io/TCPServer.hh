@@ -17,14 +17,13 @@
 //
 
 #pragma once
-#include "util/Base.hh"
+#include "io/TCPSocket.hh"
 
 #include <functional>
 
 struct uv_tcp_s;
 
 namespace crouton::io {
-    class TCPSocket;
 
     class TCPServer {
     public:

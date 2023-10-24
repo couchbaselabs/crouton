@@ -94,4 +94,9 @@ namespace fleece {
     /// The name will be unmangled, if possible.
     std::string FunctionName(const void *pc);
 
+
+    namespace internal {
+        int backtrace(void** buffer, size_t max);
+        char* unmangle(const char*);
+    }
 }

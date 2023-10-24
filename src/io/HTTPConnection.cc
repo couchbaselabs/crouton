@@ -17,9 +17,8 @@
 //
 
 #include "io/HTTPConnection.hh"
-#include "io/TCPSocket.hh"
-#include "io/mbed/TLSSocket.hh"
-#include "UVInternal.hh"
+#include "io/ISocket.hh"
+#include "Internal.hh"
 #include "llhttp.h"
 #include <sstream>
 
@@ -100,7 +99,7 @@ namespace crouton::io::http {
             out << "Host: " << _url.hostname << "\r\n";
             out << "Connection: close\r\n";
             if (req.method != Method::GET && !req.bodyStream) {
-                assert(!req.headers.contains("Content-Length"));
+                assert_always(!req.headers.contains("Content-Length"));
                 out << "Content-Length: " << req.body.size() << "\r\n";
             }
             out << "\r\n";

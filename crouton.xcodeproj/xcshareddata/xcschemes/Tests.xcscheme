@@ -64,7 +64,11 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "&quot;[pubsub]&quot;"
+            argument = "&quot;MiniFormat&quot;"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "&quot;Producer Consumer&quot;"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
@@ -72,7 +76,7 @@
          <EnvironmentVariable
             key = "SPDLOG_LEVEL"
             value = "info"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "SPDLOG_LEVEL"

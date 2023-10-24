@@ -13,7 +13,7 @@
 #pragma once
 #include "util/Bytes.hh"
 #include "Error.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <cstdint>
 
 namespace crouton::io::blip {
@@ -59,7 +59,7 @@ namespace crouton::io::blip {
     };
 
 
-    extern std::shared_ptr<spdlog::logger> LBLIP;
+    extern LoggerRef LBLIP;
 
 
 #pragma mark - VARINTS:

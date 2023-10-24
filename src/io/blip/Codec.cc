@@ -17,9 +17,11 @@
 #include "Codec.hh"
 #include "BLIPProtocol.hh"
 #include "Endian.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include <algorithm>
 #include <mutex>
+#include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/ostr.h>    // Makes custom types loggable via `operator <<` overloads
 
 namespace crouton::io::blip {
     using namespace std;
@@ -36,7 +38,7 @@ namespace crouton::io::blip {
     static constexpr int kZlibDeflateMemLevel = 9;
 
 
-    shared_ptr<spdlog::logger> LZip = MakeLogger("Zip");
+    LoggerRef LZip = MakeLogger("Zip");
 
     Codec::Codec()
     :_checksum((uint32_t)crc32(0, nullptr, 0))  // the required initial value

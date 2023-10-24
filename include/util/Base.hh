@@ -22,7 +22,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <cassert>
+#include "util/betterassert.hh"
 
 // Find <coroutine> in std or experimental.
 // Always use `CORO_NS` instead of `std` for coroutine types
@@ -46,16 +46,30 @@
 #define __has_attribute(x) 0
 #endif
 
-#if __has_attribute(__unused__)
-#define __unused    __attribute__((__unused__))
+#ifndef __unused
+#if __has_attribute(unused)
+#define __unused    __attribute__((unused))
 #else
 #define __unused
 #endif
+#endif
 
-#if __has_attribute(__pure__)
-#define pure        __attribute__((__pure__))
+#if __has_attribute(pure)
+#define Pure        __attribute__((pure))
 #else
-#define pure
+#define Pure
+#endif
+
+#if __cpp_rtti
+#   define CROUTON_RTTI 1
+#else
+#   define CROUTON_RTTI 0
+#endif
+
+#if CROUTON_RTTI
+#  define CRTN_TYPEID(T)  typeid(T)
+#else
+#  define CRTN_TYPEID(T)  (*(std:: type_info*)-1L)   // just a placeholder
 #endif
 
 

@@ -20,6 +20,7 @@
 #include "util/LinkedList.hh"
 #include "Scheduler.hh"
 
+#include <atomic>
 #include <concepts>
 #include <optional>
 
@@ -32,9 +33,9 @@ namespace crouton {
     class CoCondition {
     public:
         CoCondition() = default;
-        CoCondition(CoCondition&&) = default;
-        CoCondition& operator=(CoCondition&&) = default;
-        ~CoCondition() {assert(_awaiters.empty());}
+        CoCondition(CoCondition&&) noexcept = default;
+        CoCondition& operator=(CoCondition&&) noexcept = default;
+        ~CoCondition() {precondition(_awaiters.empty());}
 
         void notifyOne();
 
@@ -66,6 +67,46 @@ namespace crouton {
 #pragma mark - BLOCKER:
 
 
+    // base class of Blocker<T>
+    class BlockerBase {
+    public:
+        bool await_ready() noexcept     {
+            return _state.load() == Ready;
+        }
+
+        coro_handle await_suspend(coro_handle h) noexcept {
+            _suspension = Scheduler::current().suspend(h);
+            State curState = Initial;
+            if (!_state.compare_exchange_strong(curState, Waiting)) {
+                assert(curState == Ready);
+                _suspension.wakeUp();
+            }
+            return lifecycle::suspendingTo(h, CRTN_TYPEID(*this), this);
+        }
+
+        void await_resume() noexcept {
+            assert(_state.load() == Ready);
+        }
+
+        void notify() {
+            State prevState = _state.exchange(Ready);
+            if (prevState == Waiting)
+                _suspension.wakeUp();
+            //return prevState != Ready;
+        }
+
+        void reset() {
+            _state.store(Initial);
+        }
+
+    protected:
+        enum State { Initial, Waiting, Ready };
+
+        Suspension          _suspension;
+        std::atomic<State>  _state = Initial;
+    };
+
+
     /** A simpler way to await a future event. A coroutine that `co_await`s a Blocker will block
         until something calls the Blocker's `notify` method. This provides an easy way to turn
         a completion-callback based API into a coroutine-based one: create a Blocker, start
@@ -77,16 +118,10 @@ namespace crouton {
 
         Blocker supports only one waiting coroutine. If you need more, use a CoCondition. */
     template <typename T>
-    class Blocker {
+    class Blocker : public BlockerBase {
     public:
-        bool await_ready() noexcept     {return _value.has_value();}
-
-        coro_handle await_suspend(coro_handle h) noexcept {
-            _suspension = Scheduler::current().suspend(h);
-            return lifecycle::suspendingTo(h, typeid(*this), this);
-        }
-
         T await_resume() noexcept {
+            assert(_state == Ready);
             T result = std::move(_value).value();
             _value = std::nullopt;
             return result;
@@ -96,33 +131,15 @@ namespace crouton {
         void notify(U&& val) {
             assert(!_value);
             _value.emplace(std::forward<U>(val));
-            _suspension.wakeUp();
+            BlockerBase::notify();
         }
 
     private:
-        Suspension _suspension;
         std::optional<T> _value;
     };
 
 
     template <>
-    class Blocker<void> {
-    public:
-        bool await_ready() noexcept     {return _hasValue;}
-
-        coro_handle await_suspend(coro_handle h) noexcept {
-            assert(!_suspension);
-            _suspension = Scheduler::current().suspend(h);
-            return lifecycle::suspendingTo(h, typeid(*this), this);
-        }
-
-        void await_resume() noexcept    {_hasValue = false;}
-
-        void notify()                   {_hasValue = true; _suspension.wakeUp();}
-
-    private:
-        Suspension  _suspension;
-        bool        _hasValue = false;
-    };
+    class Blocker<void> : public BlockerBase { };
 
 }

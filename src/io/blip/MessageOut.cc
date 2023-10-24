@@ -107,7 +107,7 @@ namespace crouton::io::blip {
 
 
     ASYNC<MessageInRef> MessageOut::onResponse() {
-        assert(!_onResponse);
+        precondition(!_onResponse);
         _onResponse = Future<MessageInRef>::provider();
         return Future(_onResponse);
     }
@@ -162,7 +162,7 @@ namespace crouton::io::blip {
     : _payload(std::move(payload))
     ,_unsentPayload(_payload)
     {
-        assert(_payload.size() <= UINT32_MAX);
+        precondition(_payload.size() <= UINT32_MAX);
     }
 
 

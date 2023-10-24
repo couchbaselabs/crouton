@@ -14,11 +14,12 @@
 #include "Error.hh"
 #include "Internal.hh"
 #include "MessageOut.hh"
-#include "Logging.hh"
+#include "util/Logging.hh"
 #include "StringUtils.hh"
 #include "Task.hh"
 #include <ranges>
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/ostr.h>    // Makes custom types loggable via `operator <<` overloads
 
 namespace crouton {
     string ErrorDomainInfo<io::blip::BLIPError>::description(errorcode_t code) {
@@ -49,7 +50,7 @@ namespace crouton::io::blip {
     static constexpr size_t kOutboxCapacity = 10;
 
     /// Logger
-    shared_ptr<spdlog::logger> LBLIP = MakeLogger("BLIP");
+    LoggerRef LBLIP = MakeLogger("BLIP");
 
 
     uint64_t readUVarint(ConstBytes& bytes) {
@@ -109,7 +110,7 @@ namespace crouton::io::blip {
             } while (i != begin());
             ++i;
         }
-        LBLIP->debug("Requeuing {} {}...", kMessageTypeNames[msg->type()], msg->number());
+        LBLIP->debug("Requeuing {} {}...", kMessageTypeNames[msg->type()], minifmt::write(msg->number()));
         pushBefore(i, msg);  // inserts _at_ position i, before message *i
     }
 
@@ -192,7 +193,7 @@ namespace crouton::io::blip {
     /// Public API to send a new request.
     Future<MessageInRef> BLIPIO::sendRequest(MessageBuilder& mb) {
         auto message = make_shared<MessageOut>(this, mb, MessageNo::None);
-        assert(message->type() == kRequestType);
+        precondition(message->type() == kRequestType);
         send(message);
         return message->onResponse();
     }
@@ -211,11 +212,11 @@ namespace crouton::io::blip {
     bool BLIPIO::_queueMessage(MessageOutRef msg) {
         if (!_sendOpen) {
             LBLIP->warn("Can't send {} {}; socket is closed for writes",
-                        kMessageTypeNames[msg->type()], msg->number());
+                        kMessageTypeNames[msg->type()], minifmt::write(msg->number()));
             msg->disconnected();
             return false;
         }
-        LBLIP->info("Sending {}", *msg);
+        LBLIP->info("Sending {}", minifmt::write(*msg));
         _maxOutboxDepth = max(_maxOutboxDepth, _outbox.size() + 1);
         _totalOutboxDepth += _outbox.size() + 1;
         ++_countOutboxDepth;
@@ -226,7 +227,7 @@ namespace crouton::io::blip {
 
     /** Adds an outgoing message to the icebox (until an ACK arrives.) */
     void BLIPIO::freezeMessage(MessageOutRef msg) {
-        LBLIP->debug("Freezing {} {}", kMessageTypeNames[msg->type()], msg->number());
+        LBLIP->debug("Freezing {} {}", kMessageTypeNames[msg->type()], minifmt::write(msg->number()));
         assert(!_outbox.contains(msg));
         assert(ranges::find(_icebox, msg) == _icebox.end());
         _icebox.push_back(msg);
@@ -235,7 +236,7 @@ namespace crouton::io::blip {
 
     /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
     void BLIPIO::thawMessage(MessageOutRef msg) {
-        LBLIP->debug("Thawing {} {}", kMessageTypeNames[msg->type()], msg->number());
+        LBLIP->debug("Thawing {} {}", kMessageTypeNames[msg->type()], minifmt::write(msg->number()));
         auto i = ranges::find(_icebox, msg);
         assert(i != _icebox.end());
         _icebox.erase(i);
@@ -292,9 +293,9 @@ namespace crouton::io::blip {
         *flagsPos = frameFlags;
         ConstBytes frame(frameBuf, out.data());
 
-        if (LBLIP->should_log(spdlog::level::debug)) {
+        if (LBLIP->should_log(LogLevel::debug)) {
             LBLIP->debug("    Sending frame: {} {} {}{}{}{}, bytes {}--{}",
-                         kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
+                         kMessageTypeNames[frameFlags & kTypeMask], minifmt::write(msg->number()),
                          (frameFlags & kMoreComing ? 'M' : '-'),
                          (frameFlags & kUrgent ? 'U' : '-'),
                          (frameFlags & kNoReply ? 'N' : '-'),
@@ -315,7 +316,7 @@ namespace crouton::io::blip {
                 if (auto newMsg = _wayOutBox.maybePop())
                     _queueMessage(*newMsg);
                 // Add response message to _pendingResponses:
-                LBLIP->debug("Sent last frame of {}", *msg);
+                LBLIP->debug("Sent last frame of {}", minifmt::write(*msg));
                 if (MessageIn* response = msg->createResponse())
                     _pendingResponses.emplace(response->number(), response);
                 else
@@ -338,7 +339,7 @@ namespace crouton::io::blip {
         FrameFlags flags = FrameFlags(f);
 
         LBLIP->debug("Received frame: {} {} {}{}{}{}, length {}",
-                     kMessageTypeNames[flags & kTypeMask], msgNo,
+                     kMessageTypeNames[flags & kTypeMask], minifmt::write(msgNo),
                      (flags & kMoreComing ? 'M' : '-'),
                      (flags & kUrgent ? 'U' : '-'),
                      (flags & kNoReply ? 'N' : '-'),
@@ -389,7 +390,7 @@ namespace crouton::io::blip {
             // Existing request: return it, and remove from _pendingRequests if the last frame:
             msg = i->second;
             if (!(flags & kMoreComing)) {
-                LBLIP->debug("REQ {} has reached the end of its frames", msgNo);
+                LBLIP->debug("REQ {} has reached the end of its frames", minifmt::write(msgNo));
                 _pendingRequests.erase(i);
             }
         } else if (msgNo == _numRequestsReceived + 1) {
@@ -398,10 +399,10 @@ namespace crouton::io::blip {
             msg = make_shared<MessageIn>(this, flags, msgNo);
             if (flags & kMoreComing) {
                 _pendingRequests.emplace(msgNo, msg);
-                LBLIP->debug("REQ {} has more frames coming", msgNo);
+                LBLIP->debug("REQ {} has more frames coming", minifmt::write(msgNo));
             }
         } else {
-            string err = fmt::format("Bad incoming REQ {} ({})", msgNo,
+            string err = fmt::format("Bad incoming REQ {} ({})", minifmt::write(msgNo),
                                      (msgNo <= _numRequestsReceived ? "already finished" : "too high"));
             Error::raise(BLIPError::InvalidFrame, err);
         }
@@ -416,11 +417,11 @@ namespace crouton::io::blip {
         if (i != _pendingResponses.end()) {
             msg = i->second;
             if (!(flags & kMoreComing)) {
-                LBLIP->debug("RES {} has reached the end of its frames", msgNo);
+                LBLIP->debug("RES {} has reached the end of its frames", minifmt::write(msgNo));
                 _pendingResponses.erase(i);
             }
         } else {
-            string err = fmt::format("Bad incoming RES {} ({})", msgNo,
+            string err = fmt::format("Bad incoming RES {} ({})", minifmt::write(msgNo),
                                      (msgNo <= _lastMessageNo ? "no request waiting" : "too high"));
             Error::raise(BLIPError::InvalidFrame, err);
         }
@@ -439,7 +440,7 @@ namespace crouton::io::blip {
             });
             if (i == _icebox.end()) {
                 LBLIP->debug("Received ACK of non-current message ({} {})",
-                             (onResponse ? "RES" : "REQ"), msgNo);
+                             (onResponse ? "RES" : "REQ"), minifmt::write(msgNo));
                 return;
             }
             msg = *i;
