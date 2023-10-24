@@ -46,16 +46,18 @@
 #define __has_attribute(x) 0
 #endif
 
-#if __has_attribute(__unused__)
-#define __unused    __attribute__((__unused__))
+#ifndef __unused
+#if __has_attribute(unused)
+#define __unused    __attribute__((unused))
 #else
 #define __unused
 #endif
+#endif
 
-#if __has_attribute(__pure__) && !defined(ESP_PLATFORM)
-#define pure        __attribute__((__pure__))
+#if __has_attribute(pure)
+#define Pure        __attribute__((pure))
 #else
-#define pure
+#define Pure
 #endif
 
 #if __cpp_rtti

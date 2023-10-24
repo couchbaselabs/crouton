@@ -185,7 +185,7 @@ namespace crouton {
         Suspension& operator=(Suspension&& s) noexcept  {std::swap(_impl, s._impl); return *this;}
         ~Suspension()                                   {if (_impl) cancel();}
 
-        explicit operator bool() const pure {return _impl != nullptr;}
+        explicit operator bool() const Pure {return _impl != nullptr;}
 
         coro_handle handle() const;
 

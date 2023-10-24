@@ -37,7 +37,7 @@ namespace crouton {
         using promise_type = IMPL;                  // The name `promise_type` is magic here
 
         /// Returns my Impl object.
-        IMPL& impl() pure                           {return _handle.promise();}
+        IMPL& impl() Pure                           {return _handle.promise();}
 
     protected:
         using handle_type = CORO_NS::coroutine_handle<IMPL>;

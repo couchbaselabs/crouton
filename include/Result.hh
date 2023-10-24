@@ -54,16 +54,16 @@ namespace crouton {
         void set()  requires (std::is_void_v<T>)    {_value = TT();}
 
         /// True if there is a T value.
-        bool ok() const noexcept pure               {return _value.index() == 0;}
+        bool ok() const noexcept Pure               {return _value.index() == 0;}
 
         /// True if there is neither a value nor an error.
-        bool empty() const noexcept pure {
+        bool empty() const noexcept Pure {
             Error const* err = std::get_if<Error>(&_value);
             return err && !*err;
         }
 
         /// True if there is an error.
-        bool isError() const noexcept pure {
+        bool isError() const noexcept Pure {
             Error const* err = std::get_if<Error>(&_value);
             return err && *err;
         }
@@ -80,7 +80,7 @@ namespace crouton {
         }
 
         /// Returns the error, if any, else `noerror`.
-        Error error() const noexcept pure {
+        Error error() const noexcept Pure {
             Error const* err = std::get_if<Error>(&_value);
             return err ? *err : noerror;
         }

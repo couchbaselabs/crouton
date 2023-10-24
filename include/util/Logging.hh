@@ -49,9 +49,9 @@ namespace crouton {
     public:
         Logger(string name, LogLevelType level)         :_name(std::move(name)), _level(level) { }
 
-        LogLevelType level() const pure                 {return _level;}
+        LogLevelType level() const Pure                 {return _level;}
         void set_level(LogLevelType level)              {_level = level;}
-        bool should_log(LogLevelType level) const pure  {return level >= _level;}
+        bool should_log(LogLevelType level) const Pure  {return level >= _level;}
 
         template<minifmt::Formattable... Args>
         void log(LogLevelType lvl, string_view fmt, Args &&...args) {

@@ -94,13 +94,13 @@ namespace crouton {
         explicit Error(std::exception_ptr);
 
         /// The error's code as a plain integer.
-        errorcode_t code() const pure       {return _code;}
+        errorcode_t code() const Pure       {return _code;}
 
         /// The name of the error domain, which comes from `ErrorDomainInfo<T>::name`.
-        string_view domain() const pure;
+        string_view domain() const Pure;
 
         /// The `type_info` metadata of the original enum type.
-        DomainInfo typeInfo() const pure;
+        DomainInfo typeInfo() const Pure;
 
         /// A human-readable description of the error.
         /// First calls `ErrorDomainInfo<D>::description` where `D` is the domain enum.
@@ -114,16 +114,16 @@ namespace crouton {
         friend std::ostream& operator<< (std::ostream&, Error const&);
 
         /// True if there is an error, false if none.
-        explicit operator bool() const pure      {return _code != 0;}
+        explicit operator bool() const Pure      {return _code != 0;}
 
         /// True if the error is of type D.
         template <ErrorDomain D> 
-        bool is() const pure                     {return typeInfo() == ErrorDomainTypeID(D);}
+        Pure bool is() const                     {return typeInfo() == ErrorDomainTypeID(D);}
 
         /// Converts the error code back into a D, if it is one.
         /// If its type isn't D, returns `D{0}`.
         template <ErrorDomain D>
-        D as() const pure                        {return D{is<D>() ? _code : errorcode_t{0}};}
+        Pure D as() const                        {return D{is<D>() ? _code : errorcode_t{0}};}
 
         /// Compares two Errors. Their domains and codes must match.
         friend bool operator== (Error const& a, Error const& b) = default;

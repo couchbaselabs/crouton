@@ -26,29 +26,29 @@ namespace crouton {
 
 
     /// Plain-ASCII version of `tolower`, with no nonsense about locales or ints.
-    pure inline char toLower(char c) noexcept {
+    Pure inline char toLower(char c) noexcept {
         if (c >= 'A' && c <= 'Z')
             c += 32;
         return c;
     }
 
     /// Plain-ASCII version of `toupper`, with no nonsense about locales or ints.
-    pure inline char toUpper(char c) noexcept {
+    Pure inline char toUpper(char c) noexcept {
         if (c >= 'a' && c <= 'z')
             c -= 32;
         return c;
     }
 
-    pure inline bool isAlphanumeric(char c) noexcept {
+    Pure inline bool isAlphanumeric(char c) noexcept {
         return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
-    pure inline bool isHexDigit(char c) noexcept {
+    Pure inline bool isHexDigit(char c) noexcept {
         return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
     }
 
     /// Converts an ASCII hex digit to its numeric value.
-    pure inline int hexDigitToInt(char c) noexcept {
+    Pure inline int hexDigitToInt(char c) noexcept {
         if (c < 'A')
             return c - '0';
         if (c < 'a') 
@@ -57,7 +57,7 @@ namespace crouton {
     }
 
     /// Returns a number 0..15 converted to an ASCII hex digit.
-    pure inline char asHexDigit(int n) noexcept {
+    Pure inline char asHexDigit(int n) noexcept {
         assert(n >= 0 && n < 16);
         if (n < 10) 
             return '0' + char(n);
@@ -65,7 +65,7 @@ namespace crouton {
     }
 
     /// True if a character can safely be used in a URL without escaping.
-    pure inline bool isURLSafe(char c) noexcept {
+    Pure inline bool isURLSafe(char c) noexcept {
         return isAlphanumeric(c) || strchr("-_.~", c) != nullptr;
     }
 
@@ -83,17 +83,17 @@ namespace crouton {
     string decodeHexString(string_view);
 
     /// Case-insensitive equality comparison (ASCII only!)
-    pure bool equalIgnoringCase(string_view a, string_view b) noexcept;
+    Pure bool equalIgnoringCase(string_view a, string_view b) noexcept;
 
     /// Splits a string around the first occurrence of `c`;
     /// if there is none, assumes it's at the end, i.e. returns `{str, ""}`.
-    pure std::pair<string_view,string_view> split(string_view str, char c) noexcept;
+    Pure std::pair<string_view,string_view> split(string_view str, char c) noexcept;
 
     /// Splits a string at an index.
     /// @param str  The string to split
     /// @param pos  The index at which to split
     /// @param delimSize  The length of the delimiter being split around.
-    pure std::pair<string_view,string_view> 
+    Pure std::pair<string_view,string_view> 
         splitAt(string_view str, size_t pos, size_t delimSize = 0) noexcept;
 
     /// Replaces all occurrences of `substring` with `replacement`, in-place.

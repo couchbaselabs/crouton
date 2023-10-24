@@ -40,7 +40,7 @@ namespace crouton::util {
         }
 
         /// True if this Link is in a list.
-        bool inList() const noexcept pure      {return _next != nullptr;}
+        bool inList() const noexcept Pure      {return _next != nullptr;}
 
     protected:
         /// Removes the Link from whatever list it's in.
@@ -104,10 +104,10 @@ namespace crouton::util {
             return *this;
         }
 
-        bool empty() const noexcept pure         {return _head._next == &_head;}
+        bool empty() const noexcept Pure         {return _head._next == &_head;}
 
-        Link& front() noexcept pure              {assert(!empty()); return *_head._next;}
-        Link& back() noexcept pure               {assert(!empty()); return *_head._prev;}
+        Link& front() noexcept Pure              {assert(!empty()); return *_head._next;}
+        Link& back() noexcept Pure               {assert(!empty()); return *_head._prev;}
 
         void push_front(Link& link) noexcept     {link.insertAfter(&_head);}
         void push_back(Link& link) noexcept      {link.insertAfter(_head._prev);}
@@ -135,15 +135,15 @@ namespace crouton::util {
         static Link* next(Link* link) noexcept   {return link->_next;}
 
     protected:
-        Link* _begin() noexcept pure                  {return _head._next;}
-        Link* _end() noexcept pure                    {return &_head;}
-        Link const* _begin() const noexcept pure      {return _head._next;}
-        Link const* _end() const noexcept pure        {return &_head;}
+        Link* _begin() noexcept Pure                  {return _head._next;}
+        Link* _end() noexcept Pure                    {return &_head;}
+        Link const* _begin() const noexcept Pure      {return _head._next;}
+        Link const* _end() const noexcept Pure        {return &_head;}
 
         template <class LINK>
-        static LINK& downcast(Link& link) noexcept pure {return static_cast<LINK&>(link);}
+        Pure static LINK& downcast(Link& link) noexcept {return static_cast<LINK&>(link);}
         template <class LINK>
-        static Link& upcast(LINK& link) noexcept pure   {return static_cast<Link&>(link);}
+        Pure static Link& upcast(LINK& link) noexcept   {return static_cast<Link&>(link);}
 
     private:
         LinkList(LinkList const&) = delete;
@@ -173,10 +173,10 @@ namespace crouton::util {
             return *this;
         }
 
-        bool empty() const noexcept pure         {return LinkList::empty();}
+        bool empty() const noexcept Pure         {return LinkList::empty();}
 
-        LINK& front() noexcept pure              {return downcast<LINK>(LinkList::front());}
-        LINK& back() noexcept pure               {return downcast<LINK>(LinkList::back());}
+        LINK& front() noexcept Pure              {return downcast<LINK>(LinkList::front());}
+        LINK& back() noexcept Pure               {return downcast<LINK>(LinkList::back());}
 
         void push_front(LINK& link) noexcept     {LinkList::push_front(upcast(link));}
         void push_back(LINK& link) noexcept      {LinkList::push_back(upcast(link));}
@@ -190,11 +190,11 @@ namespace crouton::util {
         template <class T>
         class Iterator {
         public:
-            T& operator*() const noexcept pure       {return LinkList::downcast<LINK>(*_link);}
-            T* operator->() const noexcept pure      {return &LinkList::downcast<LINK>(*_link);}
+            T& operator*() const noexcept Pure       {return LinkList::downcast<LINK>(*_link);}
+            T* operator->() const noexcept Pure      {return &LinkList::downcast<LINK>(*_link);}
             Iterator& operator++() noexcept          {_link = next(_link); return *this;}
 
-            friend bool operator==(Iterator const& a, Iterator const& b) noexcept pure {
+            friend bool operator==(Iterator const& a, Iterator const& b) noexcept Pure {
                 return a._link == b._link;
             }
         private:
@@ -206,10 +206,10 @@ namespace crouton::util {
         using iterator       = Iterator<LINK>;
         using const_iterator = Iterator<const LINK>;
 
-        iterator begin() noexcept pure                {return iterator(_begin());}
-        iterator end() noexcept pure                  {return iterator(_end());}
-        const_iterator begin() const noexcept pure    {return const_iterator(_begin());}
-        const_iterator end() const noexcept pure      {return const_iterator(_end());}
+        iterator begin() noexcept Pure                {return iterator(_begin());}
+        iterator end() noexcept Pure                  {return iterator(_end());}
+        const_iterator begin() const noexcept Pure    {return const_iterator(_begin());}
+        const_iterator end() const noexcept Pure      {return const_iterator(_end());}
     };
 
 }

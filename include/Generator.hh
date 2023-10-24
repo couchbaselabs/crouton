@@ -119,7 +119,7 @@ namespace crouton {
 
         void clear()            {_yielded_value = noerror;}
 
-        bool isReady() const pure    {return _ready;}
+        bool isReady() const Pure    {return _ready;}
 
         // Implementation of the public Generator's next() method. Called by non-coroutine code.
         Result<T> next() {

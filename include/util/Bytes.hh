@@ -41,16 +41,16 @@ namespace crouton {
 
         Bytes(string& str) noexcept :super((T*)str.data(), str.size()) { }
 
-        explicit operator string_view() const noexcept pure {
+        explicit operator string_view() const noexcept Pure {
             return {(const char*)this->data(), this->size()};
         }
 
-        Self first(size_t n) const noexcept pure          {return Self(super::first(n));}
-        Self last(size_t n) const noexcept pure           {return Self(super::last(n));}
-        Self without_first(size_t n) const noexcept pure  {return last(this->size() - n);}
-        Self without_last(size_t n) const noexcept pure   {return first(this->size() - n);}
+        Self first(size_t n) const noexcept Pure          {return Self(super::first(n));}
+        Self last(size_t n) const noexcept Pure           {return Self(super::last(n));}
+        Self without_first(size_t n) const noexcept Pure  {return last(this->size() - n);}
+        Self without_last(size_t n) const noexcept Pure   {return first(this->size() - n);}
 
-        T* endByte() const noexcept pure                  {return this->data() + this->size();}
+        T* endByte() const noexcept Pure                  {return this->data() + this->size();}
     };
 
 
@@ -114,7 +114,7 @@ namespace crouton {
 
         MutableBytes(uv_buf_t);
 
-        operator uv_buf_t() const noexcept pure;
+        operator uv_buf_t() const noexcept Pure;
 
         [[nodiscard]] size_t write(const void* src, size_t len) noexcept {
             size_t n = std::min(len, this->size());
@@ -137,10 +137,10 @@ namespace crouton {
         uint32_t    used = 0;               ///< Number of bytes consumed (from start of data)
         std::byte   data[kCapacity];        ///< The data itself
 
-        size_t available() const noexcept pure {return size - used;}
-        bool empty() const noexcept pure       {return size == used;}
+        size_t available() const noexcept Pure {return size - used;}
+        bool empty() const noexcept Pure       {return size == used;}
 
-        ConstBytes bytes() const noexcept pure {return {data + used, size - used};}
+        ConstBytes bytes() const noexcept Pure {return {data + used, size - used};}
 
         ConstBytes read(size_t maxLen) {
             size_t n = std::min(maxLen, available());

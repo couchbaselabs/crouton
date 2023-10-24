@@ -46,10 +46,10 @@ namespace crouton::io::esp {
         ASYNC<void> closeWrite() override;
 
         /// True if the stream has data available to read.
-        bool isReadable() const noexcept pure;
+        bool isReadable() const noexcept Pure;
 
         /// The number of bytes known to be available without blocking.
-        size_t bytesAvailable() const noexcept pure;
+        size_t bytesAvailable() const noexcept Pure;
 
         ASYNC<ConstBytes> readNoCopy(size_t maxLen = 65536) override;
 

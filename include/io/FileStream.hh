@@ -42,7 +42,7 @@ namespace crouton::io {
         ~FileStream();
 
         /// True if the file is open.
-        bool isOpen() const override pure           {return _fd >= 0;}
+        bool isOpen() const override Pure           {return _fd >= 0;}
 
         /// Resolves once the stream has opened.
         ASYNC<void> open() override;

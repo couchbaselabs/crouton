@@ -33,7 +33,7 @@ namespace crouton::util {
             assert((void*)this >= self && (void*)(this + 1) <= self + 1);
         }
 
-        Self* self() noexcept pure   {return (Self*)(uintptr_t(this) - _selfOffset);}
+        Self* self() noexcept Pure   {return (Self*)(uintptr_t(this) - _selfOffset);}
 
     private:
         unsigned const  _selfOffset;        // My byte offset within my Self instance
@@ -88,10 +88,10 @@ namespace crouton::util {
         }
 
         /// A pointer to the target `Other` object. May be nullptr.
-        Other* other() const noexcept pure      {return _other ? _other->self() : nullptr;}
+        Other* other() const noexcept Pure      {return _other ? _other->self() : nullptr;}
 
-        operator Other*() const noexcept pure   {return other();}
-        Other* operator->() const noexcept pure {return other();}
+        operator Other*() const noexcept Pure   {return other();}
+        Other* operator->() const noexcept Pure {return other();}
 
         ~OneToOne() noexcept                    {unhook();}
 
@@ -151,16 +151,16 @@ namespace crouton::util {
         class iterator {
         public:
             explicit iterator(typename super::iterator i) noexcept            :_i(i) { }
-            Other& operator*() const noexcept pure                            {return *(_i->self());}
-            Other* operator->() const noexcept pure                           {return _i->self();}
+            Other& operator*() const noexcept Pure                            {return *(_i->self());}
+            Other* operator->() const noexcept Pure                           {return _i->self();}
             iterator& operator++() noexcept                                   {++_i; return *this;}
-            friend bool operator==(iterator const& a, iterator const& b) pure {return a._i == b._i;}
+            friend bool operator==(iterator const& a, iterator const& b) Pure {return a._i == b._i;}
         private:
             typename super::iterator _i;
         };
 
-        iterator begin() noexcept pure                       {return iterator(super::begin());}
-        iterator end() noexcept pure                         {return iterator(super::end());}
+        iterator begin() noexcept Pure                       {return iterator(super::begin());}
+        iterator end() noexcept Pure                         {return iterator(super::end());}
 
         void push_front(ToOne<Other,Self>& link) noexcept    {super::push_front(link); link._parent = this;}
         void push_back(ToOne<Other,Self>& link) noexcept     {super::push_back(link); link._parent = this;}
@@ -232,7 +232,7 @@ namespace crouton::util {
         }
 
         /// A pointer to the target `Other` object. May be nullptr.
-        Other* other() const noexcept pure   {return _parent ? _parent->self() : nullptr;}
+        Other* other() const noexcept Pure   {return _parent ? _parent->self() : nullptr;}
 
     private:
         friend class ToMany<Other,Self>;

@@ -58,7 +58,7 @@ namespace crouton::io {
         string unescapedPath() const   {return unescape(path);}
 
         /// Returns the value for a key in the query, or "" if not found.
-        string_view queryValueForKey(string_view key) noexcept pure;
+        string_view queryValueForKey(string_view key) noexcept Pure;
 
         /// Recombines the parts back into a URL. Useful if you've changed them.
         string reencoded() const;
@@ -92,7 +92,7 @@ namespace crouton::io {
         URL(URL&& url) noexcept             :URL(std::move(url._str)) { }
         URL& operator=(URL&& url)           {_str = std::move(url._str); parse(_str.c_str()); return *this;}
 
-        string const& asString() const noexcept pure {return _str;}
+        string const& asString() const noexcept Pure {return _str;}
         operator string() const             {return _str;}
 
         void reencode() {
