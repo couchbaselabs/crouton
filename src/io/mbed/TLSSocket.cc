@@ -20,6 +20,7 @@
 #include "io/ISocket.hh"
 #include "Internal.hh"
 #include "TLSContext.hh"
+#include <optional>
 
 // Code adapted from Couchbase's fork of sockpp:
 // https://github.com/couchbasedeps/sockpp/blob/couchbase-master/src/mbedtls_context.cpp

@@ -69,7 +69,7 @@
 #if CROUTON_RTTI
 #  define CRTN_TYPEID(T)  typeid(T)
 #else
-#  define CRTN_TYPEID(T)  (*(std::type_info*)-1L)   // just a placeholder
+#  define CRTN_TYPEID(T)  (*(std:: type_info*)-1L)   // just a placeholder
 #endif
 
 

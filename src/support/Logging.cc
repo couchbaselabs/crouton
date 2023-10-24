@@ -95,11 +95,15 @@ namespace crouton {
     void Logger::_writeHeader(LogLevelType lvl) {
         // sLogMutex must be locked
         timespec now;
-        clock_gettime(CLOCK_REALTIME, &now);
+        timespec_get(&now, TIME_UTC);
         if (now.tv_sec != sTime) {
             sTime = now.tv_sec;
             tm nowStruct;
+#ifdef _MSC_VER
+            nowStruct = *localtime(&sTime);
+#else
             localtime_r(&sTime, &nowStruct);
+#endif
             strcpy(sTimeBuf, "▣ ");
             strcat(sTimeBuf, io::TTY::err.dim);
             size_t len = strlen(sTimeBuf);

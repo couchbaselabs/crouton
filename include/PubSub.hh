@@ -462,7 +462,7 @@ namespace crouton::ps {
                 Future<void> timeout = Timer::sleep(_timeout);
                 Select select {&timeout, &series};
                 select.enable();
-                if ((AWAIT select) == 0) {
+                if (auto which = AWAIT select; which == 0) {
                     this->produce(CroutonError::Timeout);
                     RETURN;
                 }

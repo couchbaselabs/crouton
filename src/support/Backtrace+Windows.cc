@@ -28,7 +28,6 @@
 #include <algorithm>
 #include "util/betterassert.hh"
 
-
 #pragma comment(lib, "Dbghelp.lib")
 #include <Windows.h>
 #include <Dbghelp.h>
@@ -39,11 +38,11 @@ using namespace std;
 namespace fleece {
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-
-    static inline int backtrace(void** buffer, size_t max) {
-        return (int)CaptureStackBackTrace(0, (DWORD)max, buffer, nullptr);
+    namespace internal {
+        int backtrace(void** buffer, size_t max) {
+            return (int)CaptureStackBackTrace(0, (DWORD)max, buffer, nullptr);
+        }
     }
-
 
     bool Backtrace::writeTo(ostream &out) const {
         const auto process = GetCurrentProcess();
@@ -96,13 +95,18 @@ namespace fleece {
 
 #else
     // Windows Store apps cannot get backtraces
-    static inline int backtrace(void** buffer, size_t max) {return 0;}
+    namespace internal {
+        int backtrace(void** buffer, size_t max) {return 0;}
+    }
+
     bool Backtrace::writeTo(std::ostream&) const  {return false;}
 #endif
 
 
-    static char* unmangle(const char *function) {
-        return (char*)function;
+    namespace internal {
+        char* unmangle(const char *function) {
+            return (char*)function;
+        }
     }
 
 

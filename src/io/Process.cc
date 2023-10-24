@@ -121,6 +121,7 @@ namespace crouton::io {
 #endif
         try {
             initArgs(argc, argv);
+            InitLogging();
             Task task = fn();
             Scheduler::current().run();
             return 0;

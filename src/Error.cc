@@ -20,6 +20,7 @@
 #include "Backtrace.hh"
 #include "Internal.hh"
 #include "util/Logging.hh"
+#include <cstring>
 #include <iostream>
 #include <mutex>
 #include <sstream>

@@ -47,44 +47,44 @@ namespace fleece {
     using namespace std;
 
 
-#ifndef HAVE_EXECINFO
-    // Use libunwind to emulate backtrace(). This is limited in that it won't traverse any stack
-    // frames before a signal handler, so it's not useful for logging the stack upon a crash.
-    // Adapted from https://stackoverflow.com/a/28858941
-    // See also https://stackoverflow.com/q/29559347 for more details & possible workarounds
-
-    struct BacktraceState {
-        void** current;
-        void** end;
-    };
-
-    static _Unwind_Reason_Code unwindCallback(struct _Unwind_Context* context, void* arg) {
-        BacktraceState* state = static_cast<BacktraceState*>(arg);
-        uintptr_t pc = _Unwind_GetIP(context);
-        if (pc) {
-            if (state->current == state->end) {
-                return _URC_END_OF_STACK;
-            } else {
-                *state->current++ = reinterpret_cast<void*>(pc);
-            }
-        }
-        return _URC_NO_REASON;
-    }
-
-    static int backtrace(void** buffer, size_t max) {
-        BacktraceState state = {buffer, buffer + max};
-        _Unwind_Backtrace(unwindCallback, &state);
-
-        return int(state.current - buffer);
-    }
-#endif
-
-
     namespace internal {
+#ifdef HAVE_EXECINFO
         int backtrace(void** buffer, size_t max) {
             return ::backtrace(buffer, int(max));
         }
+#else
+        // Use libunwind to emulate backtrace(). This is limited in that it won't traverse any stack
+        // frames before a signal handler, so it's not useful for logging the stack upon a crash.
+        // Adapted from https://stackoverflow.com/a/28858941
+        // See also https://stackoverflow.com/q/29559347 for more details & possible workarounds
 
+        struct BacktraceState {
+            void** current;
+            void** end;
+        };
+
+        static _Unwind_Reason_Code unwindCallback(struct _Unwind_Context* context, void* arg) {
+            BacktraceState* state = static_cast<BacktraceState*>(arg);
+            uintptr_t pc = _Unwind_GetIP(context);
+            if (pc) {
+                if (state->current == state->end) {
+                    return _URC_END_OF_STACK;
+                } else {
+                    *state->current++ = reinterpret_cast<void*>(pc);
+                }
+            }
+            return _URC_NO_REASON;
+        }
+
+        int backtrace(void** buffer, size_t max) {
+            BacktraceState state = {buffer, buffer + max};
+            _Unwind_Backtrace(unwindCallback, &state);
+
+            return int(state.current - buffer);
+        }
+#endif
+
+        
         char* unmangle(const char *function) {
 #ifdef HAVE_UNMANGLE
             int status;
